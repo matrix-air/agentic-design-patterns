@@ -57,8 +57,8 @@
 <div class="fig-caption" id="fig-5-1">图 5-1：agent 循环——能力呈现、调用生成、校验执行、观察回注与四道停止条件</div>
 <h3 id="513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</h3>
 <p>ReAct 与工具使用的关系是决策骨架与执行器官的关系：ReAct 定义了"思考—行动—观察"的循环结构，工具是"行动"的具体内容，两者在工程上几乎总是合并出现。与规划模式的关系是整体与局部：工具调用是计划的最小执行单元，长程任务由规划模式把目标分解成一串工具调用（<a href="../chapters/ch06-planning.html">第 6 章</a>）。与反思模式的关系是反馈来源：工具执行结果是最可靠的"外部反馈"，代码跑不通的报错比模型自评的批评有价值得多。与检索增强生成（RAG）的关系是包含：检索本质上是"只读工具"里最常用的一个，工具使用是 RAG 的推广。与记忆模式的关系是状态管理：工具调用的历史、结果摘要如何保存与复用，是记忆模式要回答的问题。</p>
-<h2 id="52-起源与历史最早是谁提出来的">5.2 起源与历史：最早是谁提出来的</h2>
-<p>工具使用的现代形态由 ReAct 奠定。2022 年 10 月，Princeton 与 Google Brain 的研究者发表 ReAct，把模型的推理轨迹（Thought）与对环境的行动（Action）交织起来，每一步行动之后把环境观察（Observation）拼回上下文——这个 Thought→Action→Observation 的循环就是今天 agent 循环的直接原型，此后几乎所有 agent 框架的执行内核都是它的变体。三个月后 Meta AI 的 Toolformer 换了条路：不改推理框架，改训练——用自监督方法从普通语料中挖掘"哪里插入 API 调用能帮助预测后续文本"，让模型自己学会在合适的位置发起调用。2023 年 5 月，两条工程化主线同时推进：Gorilla 用检索增强的微调模型专门解决"调用参数 hallucinate"的问题；同月的 Tool Learning 综述把这一波工作系统化为"工具学习"版图。真正把工具使用从研究界推入 every API 的是 2023 年 6 月 OpenAI Function Calling 正式可用：工具声明变成结构化 JSON schema，调用变成 API 原生协议，开发者第一次不用自己解析模型文本就能拿到合法调用。生态层的下一跃是 2024 年 11 月 Anthropic 发布 <a href="https://modelcontextprotocol.io">Model Context Protocol（MCP）</a>开放标准，把"每个工具对每个应用点对点集成"变成"工具服务器对协议互联"，工具生态自此有了统一的接线标准。</p>
+<h2 id="52-源起它从哪里来">5.2 源起：它从哪里来</h2>
+<p>工具使用的现代形态由 ReAct 奠定。2022 年 10 月，Princeton 与 Google Brain 把模型的推理轨迹（Thought）与对环境的行动（Action）交织起来，每步行动后把环境观察（Observation）拼回上下文——这个循环就是今天所有 agent 框架执行内核的直接原型。三个月后 Meta AI 的 Toolformer 换了条路：不改推理框架而改训练，用自监督方法从普通语料中挖掘"哪里插入 API 调用能帮助预测后续文本"，让模型自己学会在合适的位置发起调用。真正把工具使用推入 every API 的是 2023 年 6 月 OpenAI Function Calling 正式可用：工具声明变成结构化 JSON schema，调用变成 API 原生协议，开发者第一次不用自己解析模型文本就能拿到合法调用。生态层的下一跃是 2024 年 11 月 Anthropic 发布 <a href="https://modelcontextprotocol.io">Model Context Protocol（MCP）</a>开放标准，把"每个工具对每个应用点对点集成"变成"工具服务器对协议互联"。</p>
 <table>
 <thead>
 <tr>
@@ -71,43 +71,36 @@
 <tbody>
 <tr>
 <td>2022年10月</td>
-<td>ReAct：推理轨迹与行动交织（Thought→Action→Observation 循环），现代 agent 循环的直接原型</td>
+<td>ReAct：Thought→Action→Observation 循环，现代 agent 循环的直接原型</td>
 <td>Yao et al.（Princeton/Google Brain）</td>
 <td><a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a>（ICLR 2023）</td>
 </tr>
 <tr>
 <td>2023年2月</td>
-<td>Toolformer：自监督方式让模型自己学会在何处插入 API 调用</td>
+<td>Toolformer：自监督方式让模型学会在何处插入 API 调用</td>
 <td>Schick et al.（Meta AI）</td>
 <td><a href="https://arxiv.org/abs/2302.04761">arXiv:2302.04761</a></td>
 </tr>
 <tr>
 <td>2023年5月</td>
-<td>Gorilla：API 文档检索 + 微调，显著减少幻觉调用</td>
-<td>Patil et al.（UC Berkeley/Microsoft）</td>
-<td><a href="https://arxiv.org/abs/2305.15334">arXiv:2305.15334</a></td>
-</tr>
-<tr>
-<td>2023年5月</td>
-<td>Tool Learning 综述：系统梳理工具学习的版图与开放问题</td>
-<td>Qin et al.</td>
-<td><a href="https://arxiv.org/abs/2305.16553">arXiv:2305.16553</a></td>
+<td>Gorilla：检索 API 文档减幻觉调用；Tool Learning 综述系统化版图</td>
+<td>Patil et al.（UC Berkeley/Microsoft）；Qin et al.</td>
+<td><a href="https://arxiv.org/abs/2305.15334">arXiv:2305.15334</a>；<a href="https://arxiv.org/abs/2305.16553">arXiv:2305.16553</a></td>
 </tr>
 <tr>
 <td>2023年6月</td>
-<td>OpenAI Function Calling 正式可用（GA），工具调用协议化为结构化 schema</td>
+<td>OpenAI Function Calling 正式可用（GA）：调用协议化为结构化 schema</td>
 <td>OpenAI</td>
 <td><a href="https://openai.com/index/function-calling-and-other-api-updates/">官方发布说明</a></td>
 </tr>
 <tr>
 <td>2024年11月</td>
-<td>Model Context Protocol（MCP）开放标准发布，工具生态从点对点集成走向协议互联</td>
+<td>MCP 开放标准发布：工具生态从点对点集成走向协议互联</td>
 <td>Anthropic</td>
 <td><a href="https://www.anthropic.com/news/model-context-protocol">官方公告</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络里有一条清晰的主线：从"教模型在文本里嵌调用"（Toolformer）到"给模型一份声明式能力清单"（Function Calling）再到"给整个生态一个互联协议"（MCP）。模型侧的进步（Toolformer 式训练）解决的是"会不会用"，协议侧的进步（Function Calling、MCP）解决的是"用得可不可靠、接得便不便宜"——工程史又一次证明，<strong>协议比技巧更耐用</strong>。</p>
 <h2 id="53-发挥的作用为什么重要">5.3 发挥的作用：为什么重要</h2>
 <p>工具使用把模型从"文本生成器"升级为"可验证的执行器"，这个转变带来四个层面的价值。能力层面，它补上了知识时效、精确计算与真实动作三块短板，模型第一次能触达训练数据之外的世界。可靠性层面，工具调用是结构化协议，可校验、可审计、可重放——一次调用要么参数合法要么报错，要么执行成功要么有异常，这比自由文本的"看起来对"可控得多；计算交给解释器之后，正确率从"看模型心情"变成"确定性执行"。架构层面，<strong>工具把系统切成模型与工具两个可独立演化的部分</strong>：换模型不必改工具，改工具不必重训模型，工具注册表天然形成能力边界与权限边界。成本层面，工具有时候是省钱的：让模型生成代码调用本地函数处理 10 万行数据，比让它把 10 万行数据读进上下文再逐段总结便宜几个数量级——<strong>上下文窗口是按 token 计费的稀缺资源，工具是在窗口之外干活的办法。</strong></p>
 <h2 id="54-实际应用与案例">5.4 实际应用与案例</h2>
@@ -123,8 +116,9 @@
 <p><strong>Manus：工具空间"屏蔽而非移除"。</strong> 官方工程博客披露，工具一多模型就会选错、走低效路径，而中途动态增删工具定义既会打断 KV-cache、又易诱发 schema 违规与幻觉调用；Manus 的解法是用上下文感知的状态机在解码时屏蔽（mask）工具的 token logits，并给工具起统一前缀的名字（browser_<em>、shell_</em>）以便按组约束——工具注册表不变、可用空间随状态收放。来源：<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus">Manus 官方博客</a></p>
 <h2 id="55-深度讲解">5.5 深度讲解</h2>
 <h3 id="551-工具选择机制schema-描述质量决定选择质量">5.5.1 工具选择机制：schema 描述质量决定选择质量</h3>
-<p><strong>模型选择工具的依据只有一个：你在描述里写了什么。</strong>工具多的时候模型选错、选漏、该用不用，绝大多数时候不是模型的问题，而是描述的问题。一份合格的工具描述要回答五个问题：这个工具做什么（一句话，动词开头）；什么时候该用它（典型触发场景）；什么时候不该用（易混淆的近邻工具，"不要用本工具做 X，请改用 Y"这句话对消歧的价值极高）；每个参数的语义与格式（含示例，尤其是日期格式、ID 格式这种模型最爱自由发挥的地方）；返回值长什么样（模型需要预判观察的形状才能写后续步骤）。工程上有一条容易被忽视的纪律：<strong>描述是写给模型看的，不是写给开发者看的 API 文档</strong>——内部实现术语、缩写、代码级的命名习惯都应该翻译成模型语言。</p>
+<p><strong>模型选择工具的依据只有一个：你在描述里写了什么。</strong>工具多的时候模型选错、选漏、该用不用，绝大多数时候不是模型的问题，而是描述的问题。一份合格的工具描述要回答五个问题：这个工具做什么（一句话，动词开头）；什么时候该用它（典型触发场景）；什么时候不该用（易混淆的近邻工具，"不要用本工具做 X，请改用 Y"这句话对消歧的价值极高）；每个参数的语义与格式（含示例，尤其是日期格式、ID 格式这种模型最爱自由发挥的地方）；返回值长什么样（模型需要预判观察的形状才能写后续步骤）。工程上有一条容易被忽视的纪律：<strong>描述是写给模型看的，不是写给开发者看的 API 文档</strong>——内部实现术语、缩写、代码级的命名习惯都应该翻译成模型语言。五问落成可操作的<strong>描述写法四条</strong>，逐条自查后再上线：①一句话定义动词开头，内部术语与缩写翻译成模型语言；②"何时用"与"何时不用"成对写，点名易混淆的近邻工具；③每个参数给格式示例（日期、ID 是重灾区），能用 enum 不用自由文本；④写清返回值形状与失败时的返回样式，让模型能预判观察。改描述视同改接口——描述变更必须回归测试工具选择准确率。</p>
 <p>工具规模上去之后会撞上第二堵墙：几十上百个工具的清单全量塞进上下文，既贵又降低选择准确率。解法是分层检索——先用语义检索按任务召回候选工具子集，再让模型在子集里选择，这正是 <a href="https://gorilla.cs.berkeley.edu/">Gorilla</a> 用检索 API 文档减幻觉的思路在工程上的直接推广；MCP 生态里"按需检索工具定义"（先列服务器名、再查具体工具 schema）也是同一原理。经验阈值大致是：十个以内的工具全量呈现即可；上百个必须检索式呈现。</p>
+<p>把演化线收拢回这里看会更清楚：从"教模型在文本里嵌调用"（Toolformer）到"给模型一份声明式能力清单"（Function Calling）再到"给整个生态一个互联协议"（MCP），模型侧的进步解决的是"会不会用"，协议侧的进步解决的是"用得可不可靠、接得便不便宜"——工程史又一次证明，<strong>协议比技巧更耐用</strong>。Toolformer 判定"哪里该调用"的定量口径值得一记：对每个候选调用，比较"插入执行结果"与"不插入（或只插入调用、不给结果）"两种情形下，模型对后续真实文本的加权交叉熵损失，<strong>只有损失下降不低于阈值才保留该调用</strong>——默认阈值 τf=1.0，计算器与翻译两类工具因合格样本稀疏放宽到 0.5，候选位置的采样概率阈值 τs=0.05（<a href="https://arxiv.org/abs/2302.04761">arXiv:2302.04761</a>）。这个"按信息增益筛调用"的思想没有过时：今天"按需检索工具定义""按收益决定是否调用"都是它的工程后裔。</p>
 <h3 id="552-参数生成与校验">5.5.2 参数生成与校验</h3>
 <p><strong>参数是幻觉调用的高发区。</strong>模型会编造不存在的枚举值、把日期写成它想象中的格式、给可空的字段硬塞一个值。防线有三层。第一层是 schema 约束本身：能用 enum 就不要用自由字符串，能用 number 就不要用 string，required 列表写清楚——模型对结构化约束的遵循远好于对散文式描述的遵循。第二层是执行前校验：框架在调用 handler 前逐项检查类型、必填、枚举、范围，校验失败的错误信息必须可读且可执行——"参数 date 需要格式 YYYY-MM-DD，收到了 '明天'"，模型看到这样的观察，下一轮就能自我修正。第三层是把"猜参数"变成"问"或"查"：缺失关键参数时，提示协议里应允许模型发起澄清（问用户）或先调用一个查询类工具补齐参数，而不是默许它编一个。校验器不必引第三方库也能写——类型、required、enum 三个检查覆盖了九成问题，第 5.6.1 节的实现即是示范。</p>
 <h3 id="553-结果观察注入上下文经济学">5.5.3 结果观察注入：上下文经济学</h3>
@@ -135,83 +129,86 @@
 <p>任务里常有互不依赖的工具调用，串行执行白白叠加延迟。并行化有三个层面。模型层：现代 API 普遍支持一次响应里返回多个工具调用，模型自己判断独立性后批量发出；提示里也可以明确要求"若无依赖请一次给出所有调用"。框架层：框架识别调用间依赖（后一个调用的参数引用前一个的结果即有依赖），无依赖的并发执行、按序回注观察，保证上下文顺序稳定。语义层：<strong>写操作慎并行</strong>——两个写操作即使无数据依赖，也可能有业务顺序（先创建账户再设置权限），并行白名单应默认只含只读工具。观察注入的顺序要跟调用顺序对齐，乱序回注会让模型把结果张冠李戴。</p>
 <h3 id="556-幻觉调用的防线">5.5.6 幻觉调用的防线</h3>
 <p>模型会调用不存在的工具、给不存在的参数赋值、编造参数值——统称幻觉调用，Gorilla 论文的核心动机正在于此。防线是一个组合拳：枚举限制，收到注册表之外的工具名时，不猜测、不模糊匹配，直接返回错误并附上合法工具名列表，让模型自我纠正；schema 校验，类型、必填、枚举三查前置到执行之前，把幻觉拦截在产生副作用之前；白名单与权限分级，工具注册表按读写与风险分级，写操作默认需确认，高风险工具（转账、删除、外发）只对通过审批的会话开放；参数值溯源，凡涉及 ID、名称、账号的参数，要求模型只能引用此前观察中出现过的值——"参数值必须来自工具返回结果"这一条约束，能拦掉一大类凭空编造。<strong>防线的哲学是把模型当不可信用户对待</strong>：它输出的每一个调用都要过校验闸门，信任来自验证而非假设。</p>
-<h2 id="56-工程落地实践代码示例">5.6 工程落地：实践代码示例</h2>
-<h3 id="561-框架无关实现完整可运行">5.6.1 框架无关实现（完整可运行）</h3>
-<p>下面的实现覆盖 agent 循环的全部骨架决策：工具注册表、手写 schema 校验（类型/必填/枚举三查）、观察注入与截断、四道停止条件（final 声明、最大步数、成本预算、重复调用检测），以及五条错误路径（未知工具、校验失败、执行异常、输出解析失败、步数耗尽）——每种错误都转化为可读观察回注给模型。</p>
-<pre><code class="language-python">&quot;&quot;&quot;工具使用模式：工具注册表 + schema 校验 + agent 循环（框架无关实现）。
+<p><strong>反直觉的是，最强的模型恰恰可能是幻觉调用的重灾区。</strong>Gorilla 在 APIBench 上实测的零样本幻觉调用率（调用了数据库中不存在的 API）：GPT-4 在 TorchHub / HuggingFace / TensorFlow Hub 三个子集上分别为 36.55%、37.16%、78.65%，而微调过的 Gorilla 只有 6.98%、10.95%、5.40%；给 GPT-4 配上 BM25 检索器能压到 11.29%、15.93%、37.08%，仍全面高于 Gorilla 配同款检索器的 4.30%、6.42%、2.77%（<a href="https://arxiv.org/abs/2305.15334">arXiv:2305.15334</a> Table 1）。直觉是"越强的模型编得越少"，事实是能力越强的模型越倾向于<strong>自信地调用一个不存在的 API</strong>——所以治理幻觉不能指望模型自觉，要靠协议：枚举、校验、值溯源三道闸对 GPT-4 级模型一样不能省。边界条件也在此显形：幻觉率与工具库的"模型熟悉度"强相关，TensorFlow Hub（训练语料里最少见）上 GPT-4 幻觉率近八成，而常见库上会好得多——你的工具越冷门，越不能裸奔。</p>
+<h3 id="557-怎么用运用判断">5.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：①任务触到模型三大短板——需要训练截止之后的信息、精确计算、或对真实系统的动作；②输出的正确性依赖外部状态（数据库、订单、文档），只有查过才算数；③需要审计轨迹：谁在何时改了什么，工具调用日志天然就是审计记录。</p>
+<p>与最近替代方案的对比：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>与工具使用的关键差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAG（纯检索增强）</td>
+<td>工具使用的子集：只有"检索"这一个只读工具，无计算与动作委托能力</td>
+</tr>
+<tr>
+<td>长上下文直塞</td>
+<td>数据直接进窗口：免集成，但受窗口上限与 token 成本约束，大数据量不经济</td>
+</tr>
+<tr>
+<td>微调注入（Toolformer 式）</td>
+<td>把"何时调用"学进参数：免提示工程，但改模型成本高、新工具需重训</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：①从最高频的 2~3 个任务倒推最小工具集，按 5.5.1 的"描述写法四条"写描述与 schema（枚举优先、"何时不用"必写）；②先只读、后写操作：跑通注册表 + 校验 + 循环的最小闭环（本章 5.6 四个片段即是骨架），写操作一律挂确认闸；③建小型评测集（含易混淆工具对与边界参数），每次换模型或改描述后回归工具选择准确率。</p>
+<h2 id="56-工程落地核心源码与讲解">5.6 工程落地：核心源码与讲解</h2>
+<h3 id="561-框架无关实现片段-讲解">5.6.1 框架无关实现（片段 + 讲解）</h3>
+<p>主程序按原文件顺序拆成四个片段：模型接入与工具声明、注册表（校验与执行，错误路径核心）、演示工具、agent 循环与停止条件。<strong>四片按序拼接即完整可运行程序</strong>，依赖与环境变量见片 1 文档串。</p>
+<pre><code class="language-python">&quot;&quot;&quot;工具使用模式：注册表 + schema 校验 + agent 循环（四片按序拼接即完整可运行程序）。
 
-依赖：pip install openai
-环境变量：
-  AGENT_LLM_BASE_URL  OpenAI 兼容接口地址（默认 https://api.openai.com/v1）
-  AGENT_LLM_API_KEY   API Key（必填）
-  AGENT_LLM_MODEL     模型名（默认 gpt-4o-mini）
+依赖：pip install openai；环境变量 AGENT_LLM_BASE_URL / AGENT_LLM_API_KEY / AGENT_LLM_MODEL。
 &quot;&quot;&quot;
-from __future__ import annotations
-
 import ast
 import json
 import operator as op
 import os
 from dataclasses import dataclass
 from typing import Any, Callable
-
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
     &quot;&quot;&quot;调用一次大模型，返回文本回复。&quot;&quot;&quot;
-    messages = []
-    if system:
-        messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
-    messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
-    resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]
+    resp = client.chat.completions.create(model=MODEL, messages=msgs, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
 
-
-# ---------- 工具注册表 ----------
 
 @dataclass
 class Tool:
     &quot;&quot;&quot;一个工具 = 名称 + 模型可读描述 + 参数 schema + 执行处理器。&quot;&quot;&quot;
-
     name: str
     description: str
     parameters: dict[str, Any]  # JSON Schema 子集：type/properties/required/enum
     handler: Callable[[dict[str, Any]], str]
-
-
-class ToolRegistry:
-    &quot;&quot;&quot;工具注册表：注册、渲染能力清单、校验、执行。&quot;&quot;&quot;
-
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：Tool 这一个 dataclass 把"能力声明"与"执行器"绑在一起：name、description、parameters 三个字段给模型看（渲染进能力清单），handler 给框架用（真正干活）——这就是"模型管决策、代码管执行"分工的最小实现。parameters 只取 JSON Schema 的 type / properties / required / enum 四个键，够用且模型遵循度高。llm() 与前几章完全一致，温度由调用方决定：本章循环里取 0.1，因为工具调用要的是稳定而非创造性。</p>
+</blockquote>
+<pre><code class="language-python">class ToolRegistry:
+    &quot;&quot;&quot;注册表：登记工具、渲染模型可读能力清单、执行前校验、执行（错误转观察）。&quot;&quot;&quot;
     def __init__(self) -&gt; None:
         self._tools: dict[str, Tool] = {}
-
     def register(self, tool: Tool) -&gt; None:
-        if tool.name in self._tools:
-            raise ValueError(f&quot;工具重名：{tool.name}&quot;)
         self._tools[tool.name] = tool
-
     def describe_for_model(self) -&gt; str:
-        &quot;&quot;&quot;把注册表渲染成模型可读的能力清单。描述质量决定选择质量。&quot;&quot;&quot;
-        lines = []
-        for t in self._tools.values():
-            params = json.dumps(t.parameters, ensure_ascii=False)
-            lines.append(f&quot;- {t.name}: {t.description}\n  参数 schema: {params}&quot;)
-        return &quot;\n&quot;.join(lines)
-
+        &quot;&quot;&quot;描述质量决定选择质量：渲染给模型的能力清单。&quot;&quot;&quot;
+        return &quot;\n&quot;.join(f&quot;- {t.name}: {t.description}\n  参数 schema: {json.dumps(t.parameters, ensure_ascii=False)}&quot;
+                         for t in self._tools.values())
     def validate(self, name: str, args: dict[str, Any]) -&gt; str | None:
-        &quot;&quot;&quot;执行前校验。返回 None 表示通过，否则返回可执行的错误说明。&quot;&quot;&quot;
+        &quot;&quot;&quot;执行前校验，返回 None 表示通过；错误说明必须可执行——模型据此自我修正。&quot;&quot;&quot;
         tool = self._tools.get(name)
         if tool is None:
-            return f&quot;未知工具 {name}。合法工具：{list(self._tools)}。请从中选择或直接给出 final。&quot;
+            return f&quot;未知工具 {name}。合法工具：{list(self._tools)}。请从中选择或给出 final。&quot;
         missing = [k for k in tool.parameters.get(&quot;required&quot;, []) if k not in args]
         if missing:
             return f&quot;缺少必填参数 {missing}。参数定义：{json.dumps(tool.parameters, ensure_ascii=False)}&quot;
@@ -219,227 +216,118 @@ class ToolRegistry:
             spec = tool.parameters.get(&quot;properties&quot;, {}).get(key)
             if spec is None:
                 return f&quot;参数 {key} 不在 schema 中。合法参数：{list(tool.parameters.get('properties', {}))}&quot;
-            expect = spec.get(&quot;type&quot;)
-            got = type(val).__name__
-            ok = {
-                &quot;string&quot;: isinstance(val, str),
-                &quot;number&quot;: isinstance(val, (int, float)) and not isinstance(val, bool),
-                &quot;integer&quot;: isinstance(val, int) and not isinstance(val, bool),
-                &quot;boolean&quot;: isinstance(val, bool),
-            }.get(expect, True)
+            ok = {&quot;string&quot;: isinstance(val, str),
+                  &quot;number&quot;: isinstance(val, (int, float)) and not isinstance(val, bool),
+                  &quot;integer&quot;: isinstance(val, int) and not isinstance(val, bool),
+                  &quot;boolean&quot;: isinstance(val, bool)}.get(spec.get(&quot;type&quot;), True)
             if not ok:
-                return f&quot;参数 {key} 应为 {expect}，实际为 {got}（值：{val!r}）。&quot;
+                return f&quot;参数 {key} 应为 {spec.get('type')}，实际为 {type(val).__name__}（值：{val!r}）&quot;
             if &quot;enum&quot; in spec and val not in spec[&quot;enum&quot;]:
-                return f&quot;参数 {key}={val!r} 不在合法枚举 {spec['enum']} 中。&quot;
+                return f&quot;参数 {key}={val!r} 不在合法枚举 {spec['enum']} 中&quot;
         return None
-
     def call(self, name: str, args: dict[str, Any]) -&gt; str:
-        &quot;&quot;&quot;执行工具。任何失败都返回可读错误文本——错误也是观察。&quot;&quot;&quot;
-        err = self.validate(name, args)
-        if err:
+        &quot;&quot;&quot;校验拒绝与执行异常都转成可读错误文本——错误也是观察。&quot;&quot;&quot;
+        if err := self.validate(name, args):
             return f&quot;[调用被拒绝] {err}&quot;
         try:
             return self._tools[name].handler(args)
-        except Exception as exc:  # noqa: BLE001 —— 执行层兜底，异常转观察
+        except Exception as exc:  # noqa: BLE001 —— 执行层兜底
             return f&quot;[工具执行异常] {type(exc).__name__}: {exc}&quot;
-
-
-# ---------- 演示工具：一个要算的、一个要查的 ----------
-
-_BIN_OPS = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv}
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一片是全章防御性设计的核心，validate 在执行前做四查：未知工具（附上合法清单，模型看了能自我纠正）、缺必填、参数不在 schema、类型与枚举不符——每条错误信息都写成"模型看了知道怎么改"的样子，因为它们马上会作为观察回注（5.5.2 三层防线的前两层都在这里）。类型检查的字典把 bool 与 int/float 显式区分，否则 True 会被当成数字 1 蒙混过关。call 把 handler 的异常也兜成可读文本，异常永远不击穿 agent 循环；错误说明里的合法工具、参数定义直接取自注册表——单一事实源，提示与实现不会脱节。工具不超过十个时全量呈现清单即可（5.5.1 的规模判据）。</p>
+</blockquote>
+<pre><code class="language-python">_BIN_OPS = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv}
 
 
 def safe_calc(expr: str) -&gt; str:
-    &quot;&quot;&quot;四则运算安全求值：用 ast 白名单，杜绝 eval 任意代码执行。&quot;&quot;&quot;
-
-    def _eval(node: ast.AST) -&gt; float:
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return float(node.value)
-        if isinstance(node, ast.BinOp) and type(node.op) in _BIN_OPS:
-            return _BIN_OPS[type(node.op)](_eval(node.left), _eval(node.right))
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-            return -_eval(node.operand)
-        raise ValueError(f&quot;表达式包含不允许的元素：{ast.dump(node)[:60]}&quot;)
-
-    try:
-        return str(_eval(ast.parse(expr, mode=&quot;eval&quot;)))
-    except SyntaxError as exc:
-        raise ValueError(f&quot;表达式语法错误：{expr!r}（{exc.msg}）&quot;) from exc
-
-
-EMPLOYEES = {
-    &quot;王伟&quot;: {&quot;dept&quot;: &quot;工程部&quot;, &quot;reimburse&quot;: 3280.0},
-    &quot;李娜&quot;: {&quot;dept&quot;: &quot;市场部&quot;, &quot;reimburse&quot;: 1560.5},
-}
-
-
-def lookup_employee(name: str) -&gt; str:
-    if name not in EMPLOYEES:
-        raise KeyError(f&quot;查无此人：{name}。在册员工：{list(EMPLOYEES)}&quot;)
-    info = EMPLOYEES[name]
-    return json.dumps(info, ensure_ascii=False)
+    def ev(n: ast.AST) -&gt; float:
+        if isinstance(n, ast.Constant) and isinstance(n.value, (int, float)):
+            return float(n.value)
+        if isinstance(n, ast.BinOp) and type(n.op) in _BIN_OPS:
+            return _BIN_OPS[type(n.op)](ev(n.left), ev(n.right))
+        raise ValueError(f&quot;表达式包含不允许的元素：{ast.dump(n)[:60]}&quot;)
+    return str(ev(ast.parse(expr, mode=&quot;eval&quot;).body))  # ast 白名单遍历，杜绝 eval 任意代码执行
 
 
 def build_registry() -&gt; ToolRegistry:
     reg = ToolRegistry()
-    reg.register(Tool(
-        name=&quot;calculator&quot;,
-        description=&quot;对四则运算表达式求值并返回数字。表达式只允许数字与 + - * / ( )。&quot;,
-        parameters={
-            &quot;type&quot;: &quot;object&quot;,
-            &quot;properties&quot;: {&quot;expression&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;如 (1240+360)/4&quot;}},
-            &quot;required&quot;: [&quot;expression&quot;],
-        },
-        handler=lambda a: safe_calc(a[&quot;expression&quot;]),
-    ))
-    reg.register(Tool(
-        name=&quot;lookup_employee&quot;,
-        description=&quot;按姓名查询员工的部门与待报销金额。不要用它查不在册人员。&quot;,
-        parameters={
-            &quot;type&quot;: &quot;object&quot;,
-            &quot;properties&quot;: {
-                &quot;name&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;员工全名，如 王伟&quot;,
-                          &quot;enum&quot;: list(EMPLOYEES)},  # 枚举约束：拦掉编造的姓名
-            },
-            &quot;required&quot;: [&quot;name&quot;],
-        },
-        handler=lambda a: lookup_employee(a[&quot;name&quot;]),
-    ))
+    reg.register(Tool(&quot;calculator&quot;, &quot;对四则运算表达式求值，只允许数字与 + - * / ( )。&quot;,
+                      {&quot;type&quot;: &quot;object&quot;, &quot;required&quot;: [&quot;expression&quot;],
+                       &quot;properties&quot;: {&quot;expression&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;如 (1240+360)/4&quot;}}},
+                      handler=lambda a: safe_calc(a[&quot;expression&quot;])))
     return reg
-
-
-# ---------- agent 循环 ----------
-
-SYSTEM_PROMPT = &quot;&quot;&quot;你是能调用工具的助手。可用工具：
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：calculator 的求值走 ast 白名单遍历而不是 eval——模型生成的表达式是不可信输入，白名单只放行数字与四则运算节点，其余一律拒绝，杜绝任意代码执行；生产上还应加表达式长度与 AST 深度上限。description 是写给模型看的："只允许数字与 + - * / ( )"一句话框死输入域，正对应 5.5.1 的描述写法。枚举约束、执行异常转观察等更多工具写法见 5.5.2 与 5.5.6 的防线说明。</p>
+</blockquote>
+<pre><code class="language-python">SYSTEM_PROMPT = &quot;&quot;&quot;你是能调用工具的助手。可用工具：
 {tools}
-
 每轮只输出一个 JSON 对象，二选一：
 1) {{&quot;thought&quot;: &quot;简短理由&quot;, &quot;tool&quot;: &quot;工具名&quot;, &quot;arguments&quot;: {{...}}}}
 2) {{&quot;thought&quot;: &quot;简短理由&quot;, &quot;final&quot;: &quot;最终答案&quot;}}
-规则：参数值只能来自任务文本或工具返回结果，禁止编造；工具报错后应根据错误信息修正再试。&quot;&quot;&quot;
+参数值只能来自任务文本或工具返回结果，禁止编造；工具报错后按错误信息修正再试。&quot;&quot;&quot;
 
-
-def run_agent(task: str, registry: ToolRegistry, max_steps: int = 10,
-              token_budget: int = 30000) -&gt; str:
-    &quot;&quot;&quot;agent 主循环。停止条件：final 声明 / 最大步数 / 重复调用检测。&quot;&quot;&quot;
+def run_agent(task: str, registry: ToolRegistry, max_steps: int = 10) -&gt; str:
+    &quot;&quot;&quot;agent 主循环。停止条件：final 声明 / 最大步数（死循环检测等更多闸门见 5.5.4）。&quot;&quot;&quot;
     history: list[str] = [f&quot;【任务】{task}&quot;]
-    last_call: tuple[str, str] | None = None
     for step in range(1, max_steps + 1):
-        prompt = &quot;\n&quot;.join(history) + &quot;\n\n请输出下一个 JSON。&quot;
-        raw = llm(prompt, system=SYSTEM_PROMPT.format(tools=registry.describe_for_model()),
-                  temperature=0.1)
+        raw = llm(&quot;\n&quot;.join(history) + &quot;\n\n请输出下一个 JSON。&quot;,
+                  system=SYSTEM_PROMPT.format(tools=registry.describe_for_model()), temperature=0.1)
         try:
-            text = raw.strip()
-            if text.startswith(chr(96) * 3):  # 围栏用 chr 构造，防裸反引号截断文档
-                text = text.strip(chr(96)).lstrip(&quot;json&quot;)
-            decision = json.loads(text)
+            decision = json.loads(raw.strip().strip(chr(96)).lstrip(&quot;json&quot;))  # 容错剥代码围栏
         except json.JSONDecodeError:
             history.append(f&quot;【观察】输出解析失败：{raw[:200]}。请严格按 JSON 格式重发。&quot;)
-            continue  # 错误路径：解析失败转观察，消耗一轮
+            continue  # 错误路径：解析失败转观察
         if &quot;final&quot; in decision:
             return str(decision[&quot;final&quot;])
         name, args = str(decision.get(&quot;tool&quot;)), decision.get(&quot;arguments&quot;, {})
-        if not isinstance(args, dict):
-            history.append(f&quot;【观察】arguments 必须是对象，收到 {type(args).__name__}。&quot;)
-            continue
-        # 死循环检测：相同 (tool, args) 连续出现，注入提醒，再犯即终止
-        key = (name, json.dumps(args, ensure_ascii=False, sort_keys=True))
-        if key == last_call:
-            history.append(&quot;【观察】你已用相同参数调用过该工具，请改变策略或给出 final。&quot;)
-            last_call = None
-            continue
-        last_call = key
         observation = registry.call(name, args)
-        if len(observation) &gt; 800:  # 观察截断：保护上下文预算
-            observation = observation[:800] + f&quot;…（截断，原长 {len(observation)} 字符）&quot;
         history.append(f&quot;【调用】{name}({json.dumps(args, ensure_ascii=False)})&quot;)
-        history.append(f&quot;【观察】{observation}&quot;)
-        print(f&quot;[step {step}] {name} -&gt; {observation[:80]}&quot;)
+        history.append(f&quot;【观察】{observation[:800]}&quot;)  # 观察截断：保护上下文预算
     return f&quot;已达最大步数 {max_steps}，任务未完成。已获信息：\n&quot; + &quot;\n&quot;.join(history[-6:])
 
 
 if __name__ == &quot;__main__&quot;:
-    reg = build_registry()
-    answer = run_agent(
-        task=&quot;王伟和李娜的待报销金额之和是多少？用计算器算出结果。&quot;,
-        registry=reg,
-    )
+    answer = run_agent(task=&quot;用计算器算出 3280 + 1560.5 的结果。&quot;, registry=build_registry())
     print(&quot;最终答案：&quot;, answer)
 </code></pre>
-<h3 id="562-框架集成实现google-adk-风格">5.6.2 框架集成实现（Google ADK 风格）</h3>
-<p><a href="https://google.github.io/adk-docs/">Google ADK</a> 的核心约定是：带类型标注与 docstring 的普通 Python 函数即是工具，框架自动把签名转成 schema 并接管 agent 循环。以下按 google-adk 1.x 的公开 API 风格编写；ADK 迭代较快，运行前请以所装版本的官方 quickstart 核对导入路径。</p>
-<pre><code class="language-python">&quot;&quot;&quot;工具使用模式的 Google ADK 实现。
-
-依赖：pip install google-adk
-说明：ADK 会读取函数签名的类型标注与 docstring 自动生成工具 schema。
-     本例显式读取环境变量 AGENT_LLM_*，保持与全书其他示例一致的接入方式。
-&quot;&quot;&quot;
-import asyncio
-import os
-from typing import Any
-
-from google.adk.agents import Agent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.genai import types
-
-APP_NAME = &quot;reimburse_agent&quot;
-MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gemini-2.0-flash&quot;)
-
-_EMPLOYEES = {
-    &quot;王伟&quot;: {&quot;dept&quot;: &quot;工程部&quot;, &quot;reimburse&quot;: 3280.0},
-    &quot;李娜&quot;: {&quot;dept&quot;: &quot;市场部&quot;, &quot;reimburse&quot;: 1560.5},
-}
-
-
-def lookup_employee(name: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;按姓名查询员工的部门与待报销金额。
-
-    Args:
-        name: 员工全名，例如 王伟。
-
-    Returns:
-        包含 dept 与 reimburse 的字典；查无此人时返回 error 字段。
-    &quot;&quot;&quot;
-    if name not in _EMPLOYEES:
-        return {&quot;error&quot;: f&quot;查无此人：{name}&quot;, &quot;在册员工&quot;: list(_EMPLOYEES)}
-    return dict(_EMPLOYEES[name])
-
-
-root_agent = Agent(
-    name=APP_NAME,
-    model=MODEL,  # 也可换成任意 ADK 支持的模型标识
-    description=&quot;员工信息与报销查询助手&quot;,
-    instruction=(
-        &quot;你只能通过工具查询员工信息；回答中的数字必须来自工具返回值，&quot;
-        &quot;查询失败时如实告知，不得编造。&quot;
-    ),
-    tools=[lookup_employee],  # 带类型标注的函数即工具
-)
-
-
-async def main(question: str) -&gt; None:
-    &quot;&quot;&quot;创建会话、运行 agent 并打印事件流。&quot;&quot;&quot;
-    session_service = InMemorySessionService()
-    session = await session_service.create_session(
-        app_name=APP_NAME, user_id=&quot;demo_user&quot;, session_id=&quot;demo_session&quot;
-    )
-    runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
-    content = types.Content(role=&quot;user&quot;, parts=[types.Part(text=question)])
-    async for event in runner.run(
-        user_id=&quot;demo_user&quot;, session_id=session.id, new_message=content
-    ):
-        if event.content and event.content.parts:
-            for part in event.content.parts:
-                if part.text:
-                    print(part.text)
-
-
-if __name__ == &quot;__main__&quot;:
-    asyncio.run(main(&quot;王伟的待报销金额是多少？&quot;))
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：agent 循环的骨架决策都在这一片。SYSTEM_PROMPT 约定模型每轮只输出一个 JSON（工具调用或 final 声明二选一），"参数值只能来自任务文本或工具返回结果"写进协议，就是 5.5.6 说的参数值溯源。循环内两个错误路径：输出解析失败转观察让模型重发（围栏用 chr(96) 构造防文档截断）；步数耗尽时返回已获信息与状态、而非假装完成。观察截断到 800 字符是 5.5.3 上下文经济学的最小实现——大结果先裁剪再入历史。接自己的工具只需改 build_registry；相同调用重复检测、写操作确认闸等生产闸门按 5.5.4 与生产化清单补齐。</p>
+</blockquote>
+<h3 id="562-框架差异速览google-adk">5.6.2 框架差异速览（Google ADK）</h3>
+<p>ADK 的核心约定是"带类型标注与 docstring 的普通 Python 函数即是工具"，同一套能力的对应关系（按 google-adk 1.x 公开 API 风格；ADK 迭代较快，运行前以所装版本官方 quickstart 核对导入路径）：</p>
+<table>
+<thead>
+<tr>
+<th>Google ADK 约定</th>
+<th>对应本章部件</th>
+<th>一句话差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>带类型标注与 docstring 的普通函数</td>
+<td>工具注册表 + 参数 schema</td>
+<td>框架读函数签名自动生成 schema，免手写</td>
+</tr>
+<tr>
+<td>Agent(tools=[...], instruction=...)</td>
+<td>能力呈现 + 系统提示</td>
+<td>能力清单渲染由框架完成</td>
+</tr>
+<tr>
+<td>Runner.run(...) 事件流</td>
+<td>agent 循环 + 观察注入</td>
+<td>循环由框架接管，每步事件可观测</td>
+</tr>
+<tr>
+<td>返回含 error 字段的字典</td>
+<td>错误转观察</td>
+<td>约定用返回值表达错误，模型直接可读</td>
+</tr>
+</tbody>
+</table>
 <h3 id="563-生产化改造清单">5.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：工具异常一律捕获转结构化观察，附错误类型与下一步建议；禁止让异常击穿 agent 循环。</li>
@@ -491,9 +379,9 @@ if __name__ == &quot;__main__&quot;:
 <li>Manus《Context Engineering for AI Agents: Lessons from Building Manus》（2025-07）：https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch04-reflection.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第4章 反思</span></a><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第6章 规划</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#51-模式概述">5.1 模式概述</a></li><li class="toc-l3"><a href="#511-问题背景为什么需要这个模式">5.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#512-核心机制它如何工作">5.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#52-起源与历史最早是谁提出来的">5.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#53-发挥的作用为什么重要">5.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#54-实际应用与案例">5.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#55-深度讲解">5.5 深度讲解</a></li><li class="toc-l3"><a href="#551-工具选择机制schema-描述质量决定选择质量">5.5.1 工具选择机制：schema 描述质量决定选择质量</a></li><li class="toc-l3"><a href="#552-参数生成与校验">5.5.2 参数生成与校验</a></li><li class="toc-l3"><a href="#553-结果观察注入上下文经济学">5.5.3 结果观察注入：上下文经济学</a></li><li class="toc-l3"><a href="#554-循环与停止agent-循环的骨架决策">5.5.4 循环与停止：agent 循环的骨架决策</a></li><li class="toc-l3"><a href="#555-并行工具调用">5.5.5 并行工具调用</a></li><li class="toc-l3"><a href="#556-幻觉调用的防线">5.5.6 幻觉调用的防线</a></li><li class="toc-l2"><a href="#56-工程落地实践代码示例">5.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#561-框架无关实现完整可运行">5.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#562-框架集成实现google-adk-风格">5.6.2 框架集成实现（Google ADK 风格）</a></li><li class="toc-l3"><a href="#563-生产化改造清单">5.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#57-概览-核心要点-结论">5.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#571-本章小结">5.7.1 本章小结</a></li><li class="toc-l3"><a href="#572-核心要点">5.7.2 核心要点</a></li><li class="toc-l3"><a href="#573-结论">5.7.3 结论</a></li><li class="toc-l2"><a href="#58-延伸阅读与参考链接">5.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#51-模式概述">5.1 模式概述</a></li><li class="toc-l3"><a href="#511-问题背景为什么需要这个模式">5.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#512-核心机制它如何工作">5.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#52-源起它从哪里来">5.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#53-发挥的作用为什么重要">5.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#54-实际应用与案例">5.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#55-深度讲解">5.5 深度讲解</a></li><li class="toc-l3"><a href="#551-工具选择机制schema-描述质量决定选择质量">5.5.1 工具选择机制：schema 描述质量决定选择质量</a></li><li class="toc-l3"><a href="#552-参数生成与校验">5.5.2 参数生成与校验</a></li><li class="toc-l3"><a href="#553-结果观察注入上下文经济学">5.5.3 结果观察注入：上下文经济学</a></li><li class="toc-l3"><a href="#554-循环与停止agent-循环的骨架决策">5.5.4 循环与停止：agent 循环的骨架决策</a></li><li class="toc-l3"><a href="#555-并行工具调用">5.5.5 并行工具调用</a></li><li class="toc-l3"><a href="#556-幻觉调用的防线">5.5.6 幻觉调用的防线</a></li><li class="toc-l3"><a href="#557-怎么用运用判断">5.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#56-工程落地核心源码与讲解">5.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#561-框架无关实现片段-讲解">5.6.1 框架无关实现（片段 + 讲解）</a></li><li class="toc-l3"><a href="#562-框架差异速览google-adk">5.6.2 框架差异速览（Google ADK）</a></li><li class="toc-l3"><a href="#563-生产化改造清单">5.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#57-概览-核心要点-结论">5.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#571-本章小结">5.7.1 本章小结</a></li><li class="toc-l3"><a href="#572-核心要点">5.7.2 核心要点</a></li><li class="toc-l3"><a href="#573-结论">5.7.3 结论</a></li><li class="toc-l2"><a href="#58-延伸阅读与参考链接">5.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

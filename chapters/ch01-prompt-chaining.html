@@ -61,9 +61,8 @@
 <div class="fig-caption" id="fig-1-1">图 1-1：提示链的执行结构——每个步骤单一职责，步骤之间隔着结构校验门；校验失败带错误反馈重试，重试预算耗尽即走 fail-fast 失败路径，绝不把未校验的中间结果传给下游。</div>
 <h3 id="113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</h3>
 <p>提示链是多数其他模式的骨架。路由（<a href="../chapters/ch02-routing.html">第 2 章</a>）决定"进哪条链"或在链中选择分支；并行化（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）让链的某些环节扇出并发再汇合；反思（<a href="../chapters/ch04-reflection.html">第 4 章</a>）本质上是在链尾追加"自查并修订"的步骤；规划（<a href="../chapters/ch06-planning.html">第 6 章</a>）生成的计划，落实时往往就是一条动态生成的链；异常处理（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）给链上每个步骤加装重试与回滚。反过来说，当你发现自己在链外写大量 if-else 决定"下一步跑不跑、跑哪个"，那是路由或规划的职责范围到了，不该再往链里硬塞。<a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic 的分类法</a>把提示链列为最基础的工作流模式，其他工作流几乎都是它的组合与变奏。</p>
-<h2 id="12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</h2>
-<p>提示链的学术源头是 2022 年谷歌研究团队的两篇工作。思维链（Chain-of-Thought, CoT）证明：让模型在给出答案前显式写出中间推理步骤，可以大幅提升复杂推理任务的可靠性——这确立了"把一个大问题摊开成多个中间步骤"的价值。同年五月的 Least-to-Most Prompting 则更进一步：先把问题分解为一系列由简到繁的子问题，再按顺序逐个求解，后一个子问题可以使用前面子问题的答案。它就是"分解 + 顺序求解 + 中间结果传递"这一结构的直接原型，与本章的模式只差"由程序编排"这一层工程外皮。</p>
-<p>工程化发生在 2022 年 10 月 <a href="https://docs.langchain.com">LangChain</a> 开源发布之后。LangChain 把 chain 做成一等公民——顺序组合、管道传递、可插拔的组件，让"链"从一个论文里的实验设置变成了每个工程师信手可得的构件。2023 年 6 月 OpenAI 上线 function calling、8 月上线 JSON mode，解决了链条最疼的接口问题：模型可以按 schema 稳定输出结构化数据，步骤间的数据契约第一次有了工程保障。2024 年 12 月 <a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic《Building Effective Agents》</a>把 Prompt Chaining 正式列为最基础的工作流模式，完成了从论文技巧到行业共识的定名。</p>
+<h2 id="12-源起它从哪里来">1.2 源起：它从哪里来</h2>
+<p>提示链的源头是 2022 年谷歌研究部的两篇论文。当时大模型多步推理屡屡"一步错、满盘输"，思维链（CoT，Wei 等）先证明：把推理摊开成显式中间步骤，复杂推理可靠性大幅提升。同年五月的 Least-to-Most（Zhou 等）再进一步：先分解为由简到繁的子问题，再顺序求解、后步复用前步答案——这正是"分解＋顺序求解＋中间传递"的直接原型，与本章只差"由程序编排"这层工程外皮。此后 LangChain 把链变成工程对象，结构化输出补上接口短板，Anthropic 在 2024 年底把它定名为最基础的工作流模式。演化细节并入 1.5 节。</p>
 <table>
 <thead>
 <tr>
@@ -76,43 +75,36 @@
 <tbody>
 <tr>
 <td>2022-01</td>
-<td>思维链（CoT）：写出中间推理步骤，复杂推理可靠性显著提升</td>
+<td>思维链（CoT）：显式中间步骤大幅提升复杂推理可靠性</td>
 <td>Wei 等，Google Research</td>
 <td><a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a>，NeurIPS 2022</td>
 </tr>
 <tr>
 <td>2022-05</td>
-<td>Least-to-Most Prompting：分解为子问题、由简到繁依次求解</td>
+<td>Least-to-Most：分解为子问题、由简到繁依次求解</td>
 <td>Zhou 等，Google Research</td>
 <td><a href="https://arxiv.org/abs/2205.10625">arXiv:2205.10625</a>，ICLR 2023</td>
 </tr>
 <tr>
 <td>2022-10</td>
-<td>LangChain 开源发布，把 chain 做成可组合的工程对象</td>
+<td>LangChain 开源发布，chain 成为可组合的工程对象</td>
 <td>Harrison Chase，LangChain</td>
-<td><a href="https://docs.langchain.com">GitHub 开源项目 / 官方文档</a></td>
+<td><a href="https://docs.langchain.com">官方文档</a></td>
 </tr>
 <tr>
-<td>2023-06</td>
-<td>OpenAI 上线 function calling，模型按 schema 输出结构化调用参数</td>
+<td>2023-06/08</td>
+<td>OpenAI 上线 function calling 与 JSON mode，结构化接口成型</td>
 <td>OpenAI</td>
-<td><a href="https://platform.openai.com/docs/guides/function-calling">官方 API 指南</a></td>
-</tr>
-<tr>
-<td>2023-08</td>
-<td>OpenAI 上线 JSON mode，可强制输出合法 JSON</td>
-<td>OpenAI</td>
-<td>官方 API 公告</td>
+<td><a href="https://platform.openai.com/docs/guides/function-calling">function calling 指南</a></td>
 </tr>
 <tr>
 <td>2024-12</td>
-<td>《Building Effective Agents》将 Prompt Chaining 列为最基础的工作流模式</td>
+<td>《Building Effective Agents》将 Prompt Chaining 定名为最基础工作流模式</td>
 <td>Anthropic</td>
 <td><a href="https://www.anthropic.com/engineering/building-effective-agents">官方工程博客</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络可以概括为三次接力：学术期（2022）证明了顺序分解对可靠性的价值，但没有回答"中间结果怎么在工程上传递"；框架期（2022 末至 2023）把链变成程序结构，结构化输出能力补上了接口短板；共识期（2024 末起）行业形成统一术语与适用边界——提示链是工作流不是智能体，是最该先用、也最常被跳过的基础模式。</p>
 <h2 id="13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</h2>
 <p>提示链的价值可以归结为四个工程属性的提升。<strong>可靠性</strong>：每一步的任务复杂度降低了，模型在单一职责上的表现远好于多任务混跑，这是 CoT 与 Least-to-Most 在论文里反复验证过的规律在工程上的延续。<strong>可调试性</strong>：错误被局部化到具体步骤——抽取错了改抽取的提示，评估错了改评估的提示，而单条巨提示的失败只能整体重跑碰运气。<strong>可测试性</strong>：每个步骤都可以用固定输入做单元测试，提示的任何修改都能跑回归用例，这在"提示即代码"的实践里是 CI 的基础。<strong>上下文经济</strong>：每步只注入该步需要的原文片段与中间字段，50 页的合同不必全程驻留上下文，成本与遗漏率同时下降。</p>
 <p>还有一个容易被低估的作用：链是成本与延迟的可预估结构。三个步骤、每步输入输出规模可估，整条链的 token 花销与耗时就能提前算清、按步骤归因。这种确定性是后续一切优化（缓存哪步、并行哪步、哪步换便宜模型）的前提。</p>
@@ -133,29 +125,56 @@
 <p><strong>机制细节：步骤边界的划分。</strong> 划分步骤有一条可操作的经验法则：如果一个提示里需要向模型解释两类彼此独立的质量标准，就该拆。比如"抽取金额并判断该条款是否对己方不利"，抽取的正确标准是"与原文一致"，判断的标准是"商业语义"，两套标准塞在一个提示里，模型就会顾此失彼。拆开的反向检验是中间数据的体积：如果步骤 A 传给步骤 B 的中间 JSON 比 A 的最终输出还长，说明拆得过碎，接口成本已经吃掉收益，应该合并。步骤接口应当先于提示设计——先写清楚每步输入输出的 schema，再写提示正文，顺序反了很容易滑向"每步都在即兴发挥"。</p>
 <p><strong>机制细节：中间表示与上下文裁剪。</strong> 步骤间传递什么，比步骤怎么写更重要。默认原则是最小传递：只传下游需要的字段，不传整个中间结果，更不传原始全文。但有两个例外。一是溯源需要：当下游输出需要引用原文位置（如"第 7 条第 2 款"），上游就必须保留引用锚点字段，否则下游只能编造引用。二是语义完整性：抽取"风险条款"时如果只传风险条款本身，评估步骤就失去了上下文对比的对象（同一个条款，在没有免责条款保护时是高风险，有保护时是中风险），此时应传"风险条款 + 关联条款"。上下文裁剪的本质是在成本与信息完整性之间逐字段权衡，没有普适答案，只有可辩护的取舍。</p>
 <p><strong>变体谱系：静态链、动态链与带分支的链。</strong> 静态链的步骤在开发期固定，是最基本形态，优点是成本可预估、可整体缓存、可画成一张流程图给非工程师审。动态链的步骤序列在运行时决定：某步的输出触发条件步骤——典型如风险检查发现"高风险"才追加"法条引用核查"步骤，或长文按章节数动态生成撰写步骤数。动态链的纪律是：分支逻辑写在代码里而不是写在提示里，且动态性必须可枚举可测试，否则你已经在不知不觉中需要一个规划模式了。第三种是带并行分支的链：主干保持顺序，局部环节扇出为多路并发（如同一份摘要同时送两个独立的事实核查器），归并后在下一节点汇合——这是<a href="../chapters/ch03-parallelization.html">第 3 章</a>的主题，此处只需知道它是链的自然扩展而非替代。</p>
+<p><strong>演化对照：从论文技巧到工程共识的三次接力。</strong> 学术期（2022）证明了顺序分解对可靠性的价值，但论文里的"传递"发生在同一次生成内部，没有回答中间结果怎么跨调用传递；框架期（2022 末至 2023）把链变成程序结构——LangChain 的 chain 抽象加上 function calling 与 JSON mode 的结构化输出，接口短板补齐；共识期（2024 末起）以 Anthropic 的分类法为代表，行业统一术语与边界——提示链是工作流不是智能体，检查门（gate）与"延迟换准确率"的交易边界都写进了官方指南。对照这条线能看清本章每个部件的来历：步骤分解来自 CoT/LtM，数据契约来自结构化输出能力，校验与失败路径来自工程实践的反推。</p>
 <p><strong>机制细节：错误传播与检查点。</strong> 链的错误传播有放大效应：上游漏抽一个字段，下游风险检查会基于残缺信息给出"无风险"的错误安心，错误在链条后段才显现，且表现为"看起来合理的错误答案"而非显式异常。对抗传播有三条纪律。第一，fail-fast：链内任何结构校验失败且重试耗尽后立即终止并报警，适用于内部流水线——宁可没有结果，不要错误结果。第二，隔离降级：失败步骤填入保守默认值并在状态里标记 degraded，链继续跑，适用于面向用户的实时链——用户宁可看到"风险评估暂不可用"也不愿看到 500。第三，重试预算：每步最多 N 次带错误反馈的重试，整链设全局 token 与时间预算，防止"每步都重试三次"的雪崩组合。检查点（checkpoint）是配套机制：每步结果落盘，链条可从任意断点恢复，这既是异常处理的物资基础，也让"改了第二步的提示后只重跑第二、三步"成为日常开发体验。</p>
+<p><strong>定量视角：链式可靠性算术——检查点与 fail-fast 不是风格，是数学。</strong> 设每步一次通过的可靠率为 r，n 步链若不做任何校验直接串联，端到端成功率是 r 的 n 次方：0.95 的五步链只剩约 77%（0.95^5≈0.774），0.90 的五步链只剩约 59%——哪怕每步都"相当可靠"，整体仍有两到四成的概率产出某处出错的"成功结果"，而且错误藏在链条后段才显形。由此回看"检查点 + fail-fast + 带反馈重试"三件事：重试把单步有效可靠率从 r 提到 1−(1−r)^(k+1)（k 为重试次数，r=0.9、k=2 时约 0.999），fail-fast 保证坏中间结果不被乘进下游。算术同时划出了<strong>拆分的边界</strong>：单步可靠率 0.8 的链拉到 7 步，端到端已不足 21%（0.8^7≈0.21）——此时该修的是单步质量，不是继续加步骤。</p>
+<p><strong>定量证据：分解的可靠性红利与结构化契约的可重试性。</strong> 学术侧的硬数字：CoT 论文在 GSM8K 上把 PaLM 540B 从标准提示的 17.9% 提到 56.9%（+39 个百分点，<a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a> 表 2）；Least-to-Most 在 SCAN 组合泛化任务上只用 14 个示例就达到约 99% 的准确率，而同一任务上思维链提示只有 16%（<a href="https://arxiv.org/abs/2205.10625">arXiv:2205.10625</a>）——"分解 + 顺序传递"的可靠性红利有据可查。工程侧：OpenAI 2024 年 8 月推出的 Structured Outputs（strict 模式）在复杂 JSON schema 遵循评测中拿到 100%，同一评测里 gpt-4-0613 靠提示词只有不到 40%（<a href="https://openai.com/index/introducing-structured-outputs-in-the-api/">官方公告</a>）。这组数字解释了结构化输出契约的真正价值：它保证的是"结构合法"，把 schema 违规从静默的数据污染变成一个必然被解析层捕获的异常——本节 <code>run_step</code> 里 <code>except ValueError</code> 的带反馈重试才有确定的着力点。但契约管不住"值"层面的错误（枚举选了合法却错误的项、引用了不存在的条款），社区实测中 strict 模式也有被"带偏"破格的案例，所以校验与降级仍然不可省。</p>
+<p><strong>反直觉：可靠性来自校验与重试，不是来自步骤数量。</strong> 直觉上"拆得越细、每步越简单，整体就越稳"。链式可靠性算术给出的工程事实相反：在无校验的串联里，每多一步都是给端到端成功率再乘一次 r，碎链比粗链更脆弱；拆分对可靠性的真实贡献只有一条——单一职责把每步的 r 本身抬高了。同理，别把"模型没有报格式错误"当成"这步对了"：结构合法与语义正确是两层，语义校验（枚举合法性、引用锚点存在性）必须独立于生成者自己报告。</p>
+<h3 id="151-怎么用运用判断">1.5.1 怎么用：运用判断</h3>
+<p>出现以下信号时，提示链大概率是正确的第一选择：任务能被枚举为三个以上固定阶段，且每个阶段的输入输出都能写出 schema；不同阶段的提示需要彼此冲突的质量标准（又要忠实原文、又要商业判断）；错误定位成本高到"整条重跑"不可接受；流程需要给非工程师审计（链是可画在一张图上的）。反过来的信号也明确：单次调用已能稳定完成、步骤边界因输入类型而漂移、或任务需要强整体一致性——分别对应"别用""换规划""慎拆"。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>提示链（本章）</th>
+<th>单条长提示 + CoT</th>
+<th>规划模式（动态分解）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>步骤从哪来</td>
+<td>开发期固定、人工设计</td>
+<td>全在一次生成里隐式展开</td>
+<td>运行时由模型生成计划</td>
+</tr>
+<tr>
+<td>错误能否定位</td>
+<td>精确到步，可断点重跑</td>
+<td>不可归因，只能整体重试</td>
+<td>可归因到子任务，但计划本身可能错</td>
+</tr>
+<tr>
+<td>适合</td>
+<td>流程稳定、接口可枚举</td>
+<td>一次能装下、无需复用中间结果</td>
+<td>步骤因输入而变、无法预先枚举</td>
+</tr>
+</tbody>
+</table>
+<p>落地三步：第一，写下每步的输入输出 schema（这一步比写提示重要），确认每步单一职责；第二，实现"调用 → 结构校验 → 失败带反馈重试 → 预算耗尽 fail-fast"的最小骨架（可直接抄本节片段二），每步加检查点落盘；第三，跑真实样本测出每步的 r，用 r^n 算一遍端到端成功率——低于业务要求就先修最弱的一步，而不是加步骤。</p>
 <p><strong>失效模式与反模式。</strong> 第一个反模式是碎链：步骤多到每个提示都要花一半篇幅重建背景，接口开销超过收益，典型症状是链里出现了"格式整理"这种不涉及语义的步骤——那是代码该干的事，永远不要用模型调用做字符串拼接。第二个是把链当万能药：任务需要根据中间结果选择不同路径，开发者硬写成线性链，再用一层 if-else 在外面补分支，结果分支逻辑散落在提示与代码两处，无人能完整说清执行路径——这是路由或规划模式的领地。第三是格式漂移：模型在第 200 次调用时悄悄把 <code>"risks"</code> 写成 <code>"risk_items"</code>，或者把字符串数组写成逗号拼接字符串。漂移是概率系统的本性，唯一可靠的对策是每步校验，并且把校验失败率做成监控指标——漂移率突增通常意味着上游模型被悄悄换了版本。第四是隐式上下文依赖：第三步的提示里出现"如上所述"，但步骤之间并不共享对话历史，模型只能靠幻觉补全。链条中的每个提示都必须自包含，review 时可以专门搜"如上""同前"这类词。</p>
 <p><strong>何时不要用。</strong> 任务单步就能可靠完成时，链是纯粹的过度工程——两步链的延迟、成本与失败面都是单步的两倍以上。步骤边界无法稳定枚举时（每类输入都会走出不同的流程），提示链会退化成一堆特判，此时应使用规划模式让模型自己分解。强创造性的整体任务（一篇有统一声音的长文）也要慎拆：链式分解天然打断全局一致性，若必须拆，需要在末步安排全文性的统一润色来回收整体感。</p>
-<h2 id="16-工程落地实践代码示例">1.6 工程落地：实践代码示例</h2>
-<h3 id="161-框架无关实现完整可运行">1.6.1 框架无关实现（完整可运行）</h3>
-<p>以下实现一条三步合同审阅链（抽取→风险检查→摘要），完整演示结构化输出校验、带错误反馈的重试、fail-fast 与检查点落盘。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第1章 提示链：框架无关实现——合同审阅流水线。
-
-流水线：字段抽取 -&gt; 风险检查 -&gt; 摘要生成。
-演示要点：结构化输出校验、携带错误反馈的重试、fail-fast 错误路径、
-检查点落盘（每步结果写入 JSON 文件，支持断点排查）。
-
-运行前设置环境变量：
-  AGENT_LLM_API_KEY  （必填）
-  AGENT_LLM_BASE_URL （可选，默认 OpenAI 官方）
-  AGENT_LLM_MODEL    （可选，默认 gpt-4o-mini）
+<h2 id="16-工程落地核心源码与讲解">1.6 工程落地：核心源码与讲解</h2>
+<h3 id="161-框架无关实现按序拼接即完整可运行">1.6.1 框架无关实现（按序拼接即完整可运行）</h3>
+<p>下面把一条三步合同审阅链（抽取 → 风险检查 → 摘要）的主程序拆为 4 个片段：环境接入 → 校验与重试引擎 → 步骤定义 → 编排与入口。<strong>按序拼接即完整可运行程序</strong>；错误路径（结构校验失败带反馈重试、重试预算耗尽 fail-fast、检查点落盘）完整保留。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第1章 提示链：合同审阅流水线（字段抽取 -&gt; 风险检查 -&gt; 摘要生成）。
+本节 4 个片段按序拼接即完整可运行程序。环境变量：AGENT_LLM_API_KEY（必填）、
+AGENT_LLM_BASE_URL / AGENT_LLM_MODEL（可选）。
 &quot;&quot;&quot;
 from __future__ import annotations
 
-import json
-import os
-import sys
-from typing import Any, Callable
+import json, os, sys
 
 from openai import OpenAI
 
@@ -168,163 +187,105 @@ MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
     &quot;&quot;&quot;调用大模型，返回补全文本。&quot;&quot;&quot;
-    messages: list[dict[str, str]] = []
-    if system:
-        messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
+    messages = [{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []
     messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        temperature=temperature,
-    )
+    resp = client.chat.completions.create(model=MODEL, messages=messages, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这个片段只做"模型接入"，与链逻辑零耦合。<code>OpenAI(...)</code> 只读环境变量、不硬编码 key，所以同一份代码能指到任何 OpenAI 兼容网关（改 <code>AGENT_LLM_BASE_URL</code> 即可）。<code>llm()</code> 的 <code>temperature</code> 默认 0.3 是个折中：链的中间步骤要稳定（建议各步骤显式传 0.0~0.2），只有创意性末步才值得调高——复制这个函数到自己的项目时，第一个该改的就是把温度做成按步骤配置。<code>from __future__ import annotations</code> 必须留在片段一首行，它让整个拼接文件的类型注解变成惰性求值。</p>
+</blockquote>
+<pre><code class="language-python">class ChainStepError(RuntimeError):
+    &quot;&quot;&quot;重试预算耗尽仍未通过校验，链条 fail-fast 终止。&quot;&quot;&quot;
 
 
-class ChainStepError(RuntimeError):
-    &quot;&quot;&quot;某一步骤在重试预算内始终未通过校验，链条 fail-fast 终止。&quot;&quot;&quot;
-
-
-FENCE = &quot;`&quot; * 3  # Markdown 围栏常量：避免源码中直接出现三连反引号
-
-
-def strip_code_fence(text: str) -&gt; str:
-    &quot;&quot;&quot;剥掉模型输出外层的 Markdown 代码围栏（若有）。&quot;&quot;&quot;
+def extract_json(text: str) -&gt; dict:
+    &quot;&quot;&quot;从模型输出提取 JSON 对象；失败抛 ValueError（JSONDecodeError 是其子类），成为可重试异常。&quot;&quot;&quot;
     text = text.strip()
-    if text.startswith(FENCE):
-        text = text.lstrip(&quot;`&quot;)
-        if text.startswith(&quot;json&quot;):
-            text = text[4:]
-    return text.strip()
-
-
-def extract_json(text: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;从模型输出提取 JSON 对象；失败抛 ValueError 作为重试信号。&quot;&quot;&quot;
-    text = strip_code_fence(text)
+    if text.startswith(&quot;`&quot; * 3):  # 剥掉模型输出外层的 Markdown 代码围栏（若有）
+        text = text.lstrip(&quot;`&quot;).removeprefix(&quot;json&quot;)
     start, end = text.find(&quot;{&quot;), text.rfind(&quot;}&quot;)
     if start == -1 or end &lt;= start:
         raise ValueError(&quot;输出中未找到 JSON 对象&quot;)
-    try:
-        data = json.loads(text[start : end + 1])
-    except json.JSONDecodeError as exc:
-        raise ValueError(f&quot;JSON 解析失败：{exc}&quot;) from exc
-    if not isinstance(data, dict):
+    return json.loads(text[start : end + 1])
+
+
+def parse_checked(text: str, keys: tuple) -&gt; dict:
+    &quot;&quot;&quot;extract_json + 必需字段校验：非 JSON 对象、字段缺失或为空都抛 ValueError。&quot;&quot;&quot;
+    if not isinstance(data := extract_json(text), dict):
         raise ValueError(&quot;输出不是 JSON 对象&quot;)
-    return data
-
-
-def require_keys(data: dict[str, Any], keys: tuple[str, ...]) -&gt; None:
-    &quot;&quot;&quot;校验必需字段存在且非空；缺失抛 ValueError。&quot;&quot;&quot;
     missing = [k for k in keys if k not in data or data[k] in (None, &quot;&quot;, [])]
     if missing:
         raise ValueError(f&quot;缺少必需字段：{', '.join(missing)}&quot;)
+    return data
 
 
-def run_step(
-    name: str,
-    build_prompt: Callable[[dict[str, Any]], str],
-    validate: Callable[[str], dict[str, Any]],
-    state: dict[str, Any],
-    max_retries: int = 2,
-) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;执行链条中的一步：构造提示 -&gt; 调用 -&gt; 校验 -&gt; 通过则写入 state。
-
-    校验失败时把错误信息拼进下一轮提示（带反馈重试）；
-    重试预算耗尽抛 ChainStepError，由上层决定 fail-fast 还是降级。
-    &quot;&quot;&quot;
+def run_step(name, build_prompt, validate, state: dict, max_retries: int = 2) -&gt; dict:
+    &quot;&quot;&quot;执行链条中的一步：提示 -&gt; 调用 -&gt; 校验 -&gt; 写入 state；失败带反馈重试，预算耗尽抛错。&quot;&quot;&quot;
     last_error = &quot;&quot;
     for attempt in range(1, max_retries + 2):
-        feedback = (
-            f&quot;\n\n注意：你上一次的输出未通过校验，错误为：{last_error}。&quot;
-            &quot;请修正后重新输出，仍须遵守输出格式要求。&quot;
-            if last_error
-            else &quot;&quot;
-        )
-        raw = llm(build_prompt(state) + feedback)
+        note = f&quot;\n\n上次输出未通过校验：{last_error}，请修正后按格式重新输出。&quot; if last_error else &quot;&quot;
         try:
-            result = validate(raw)
-        except ValueError as exc:
+            state[name] = validate(llm(build_prompt(state) + note))
+        except ValueError as exc:  # JSONDecodeError 是 ValueError 子类，同样在此被重试
             last_error = str(exc)
             print(f&quot;[{name}] 第 {attempt} 次尝试校验失败：{last_error}&quot;)
             continue
-        state[name] = result
-        # 检查点落盘：任何一步都可单独人工检查、支持断点重跑
         with open(f&quot;checkpoint_{name}.json&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
-            json.dump(result, fh, ensure_ascii=False, indent=2)
+            json.dump(state[name], fh, ensure_ascii=False, indent=2)  # 检查点落盘，可断点重跑
         return state
     raise ChainStepError(f&quot;步骤 {name} 在 {max_retries + 1} 次尝试后仍未通过校验&quot;)
-
-
-# ---------- 第 1 步：字段抽取 ----------
-
-def step_extract(contract: str) -&gt; tuple[Callable[[dict], str], Callable[[str], dict]]:
-    def build_prompt(_: dict[str, Any]) -&gt; str:
-        return (
-            &quot;从下述合同文本中抽取关键信息，只输出 JSON，字段：\n&quot;
-            'parties: 字符串数组（合同双方全称）；\n'
-            'amount: 字符串（合同总金额，含币种）；\n'
-            'term_years: 字符串（服务期限年数）；\n'
-            'termination_clause: 字符串（与单方终止相关的原文条款）。\n\n'
-            f&quot;合同文本：\n{contract}&quot;
-        )
-
-    def validate(raw: str) -&gt; dict[str, Any]:
-        data = extract_json(raw)
-        require_keys(data, (&quot;parties&quot;, &quot;amount&quot;, &quot;term_years&quot;, &quot;termination_clause&quot;))
-        return data
-
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这是全链的心脏——校验、重试、fail-fast、检查点四个机制全部压在这三个函数里。<code>extract_json</code> 故意只抛 <code>ValueError</code> 一种异常：<code>json.JSONDecodeError</code> 本身是它的子类，所以 <code>run_step</code> 里一个 <code>except ValueError</code> 就能同时接住"根本没输出 JSON"和"JSON 语法坏了"两类失败，这是结构化契约把静默错误变成可重试异常的关键一笔（见 1.5 节定量证据）。<code>max_retries=2</code> 即最多 3 次尝试：按 r=0.9 算，3 次后单步有效可靠率约 0.999，再加重试只是花延迟买小数点后第三位。<code>note</code> 变量把上一轮的具体错误拼回提示，让重试是"带反馈的修正"而不是"原样再抽一次"。<code>checkpoint_{name}.json</code> 以步骤名落盘——改了第二步提示后，第一、二步的 checkpoint 还在，可以只重跑受影响的步骤。接入 Pydantic 时，把 <code>parse_checked</code> 换成 <code>Model.model_validate_json</code> 并捕获 <code>ValidationError</code> 即可，其余不动。</p>
+</blockquote>
+<pre><code class="language-python">def step_extract(contract: str):
+    &quot;&quot;&quot;第 1 步 字段抽取：提示构造与校验函数成对返回，契约同源。&quot;&quot;&quot;
+    def build_prompt(_):
+        return (&quot;从合同文本抽取关键信息，只输出 JSON：parties（双方全称数组）、amount（总金额含币种）、&quot;
+                &quot;term_years（年数）、termination_clause（单方终止条款原文）。\n\n合同文本：\n{contract}&quot;)
+    def validate(raw: str) -&gt; dict:
+        return parse_checked(raw, (&quot;parties&quot;, &quot;amount&quot;, &quot;term_years&quot;, &quot;termination_clause&quot;))
     return build_prompt, validate
 
 
-# ---------- 第 2 步：风险检查 ----------
-
-def step_risk(state: dict[str, Any]) -&gt; tuple[Callable[[dict], str], Callable[[str], dict]]:
-    def build_prompt(s: dict[str, Any]) -&gt; str:
-        return (
-            &quot;你是合同风险审查员。基于抽取出的关键字段评估风险，只输出 JSON：\n&quot;
-            'risks: 对象数组，每项含 clause（条款要点）、level（&quot;高&quot;/&quot;中&quot;/&quot;低&quot;）、reason（理由）；\n'
-            'overall: 整体风险等级，取值限定为 &quot;高&quot;、&quot;中&quot;、&quot;低&quot; 之一。\n'
-            &quot;重点检查：单方终止权、违约责任是否对等、争议解决方式。\n\n&quot;
-            f&quot;关键字段：{json.dumps(s['extract'], ensure_ascii=False)}&quot;
-        )
-
-    def validate(raw: str) -&gt; dict[str, Any]:
-        data = extract_json(raw)
-        require_keys(data, (&quot;risks&quot;, &quot;overall&quot;))
-        if data[&quot;overall&quot;] not in (&quot;高&quot;, &quot;中&quot;, &quot;低&quot;):
+def step_risk(state):
+    &quot;&quot;&quot;第 2 步 风险检查：overall 枚举校验是防格式漂移的关键。&quot;&quot;&quot;
+    def build_prompt(s):
+        return (&quot;基于关键字段评估合同风险，只输出 JSON：risks（数组，每项含 clause/level/reason）、&quot;
+                'overall（取值限定 &quot;高&quot;/&quot;中&quot;/&quot;低&quot;）。重点：单方终止权、违约对等性、争议解决。\n'
+                f&quot;关键字段：{json.dumps(s['extract'], ensure_ascii=False)}&quot;)
+    def validate(raw: str) -&gt; dict:
+        data = parse_checked(raw, (&quot;risks&quot;, &quot;overall&quot;))
+        if data[&quot;overall&quot;] not in (&quot;高&quot;, &quot;中&quot;, &quot;低&quot;):  # 枚举非法 -&gt; ValueError -&gt; 触发带反馈重试
             raise ValueError(f&quot;overall 取值非法：{data['overall']}&quot;)
         return data
-
     return build_prompt, validate
 
 
-# ---------- 第 3 步：摘要生成 ----------
-
-def step_summary(state: dict[str, Any]) -&gt; tuple[Callable[[dict], str], Callable[[str], dict]]:
-    def build_prompt(s: dict[str, Any]) -&gt; str:
-        return (
-            &quot;基于合同关键字段与风险检查结果，写一份不超过 150 字的审阅摘要，&quot;
-            '只输出 JSON，字段 summary（字符串），须点名最高风险项。\n\n'
-            f&quot;关键字段：{json.dumps(s['extract'], ensure_ascii=False)}\n&quot;
-            f&quot;风险检查：{json.dumps(s['risk'], ensure_ascii=False)}&quot;
-        )
-
-    def validate(raw: str) -&gt; dict[str, Any]:
-        data = extract_json(raw)
-        require_keys(data, (&quot;summary&quot;,))
-        return data
-
+def step_summary(state):
+    &quot;&quot;&quot;第 3 步 摘要生成：只消费上游结构化字段，不回读全文。&quot;&quot;&quot;
+    def build_prompt(s):
+        return (&quot;基于关键字段与风险检查结果，写不超过 150 字的审阅摘要，&quot;
+                &quot;只输出 JSON（字段 summary），须点名最高风险项。\n&quot;
+                f&quot;关键字段：{json.dumps(s['extract'], ensure_ascii=False)}\n&quot;
+                f&quot;风险检查：{json.dumps(s['risk'], ensure_ascii=False)}&quot;)
+    def validate(raw: str) -&gt; dict:
+        return parse_checked(raw, (&quot;summary&quot;,))
     return build_prompt, validate
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：三个步骤工厂都返回 <code>(build_prompt, validate)</code> 二元组——提示与校验器放在同一个闭包里定义，保证"要求什么格式"和"验什么格式"永远同源，这是接口先于实现的最小实践。注意每个提示的自包含性：第 2、3 步只通过 <code>s['extract']</code>、<code>s['risk']</code> 注入上游的结构化字段，不共享对话历史，所以任何一步的输入都能单独打印出来人工检查。<code>overall not in ("高","中","低")</code> 这行枚举校验是防漂移的样板：模型在第 500 次调用时把"高"写成"高风险"，就在这里被拦下并重试，而不是流进下游。要加第 4 步（比如"法条核查"），照抄一个 <code>step_x</code> 工厂并注册进片段四的 <code>steps</code> 元组即可，<code>run_step</code> 引擎一行不改。</p>
+</blockquote>
+<pre><code class="language-python">import json, sys  # 运行时依赖；与片段一重复的导入在拼接时幂等
 
 
-def run_chain(contract: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;整条链的编排：顺序执行三步，任何一步失败即 fail-fast。&quot;&quot;&quot;
-    state: dict[str, Any] = {&quot;contract&quot;: contract}
-    for name, maker in (
-        (&quot;extract&quot;, lambda: step_extract(contract)),
-        (&quot;risk&quot;, lambda: step_risk(state)),
-        (&quot;summary&quot;, lambda: step_summary(state)),
-    ):
-        build_prompt, validate = maker()
+def run_chain(contract: str) -&gt; dict:
+    &quot;&quot;&quot;整链编排：顺序执行三步，任何一步重试耗尽即抛 ChainStepError（fail-fast）。&quot;&quot;&quot;
+    state: dict = {&quot;contract&quot;: contract}
+    steps = ((&quot;extract&quot;, step_extract(contract)), (&quot;risk&quot;, step_risk(state)),
+             (&quot;summary&quot;, step_summary(state)))
+    for name, (build_prompt, validate) in steps:
         state = run_step(name, build_prompt, validate, state)
     return state
 
@@ -332,151 +293,61 @@ def run_chain(contract: str) -&gt; dict[str, Any]:
 if __name__ == &quot;__main__&quot;:
     contract_text = (
         &quot;甲方：星野科技有限公司；乙方：云帆数据服务有限责任公司。&quot;
-        &quot;本合同总金额为人民币 120 万元，服务期限 3 年，自 2026 年 1 月 1 日起。&quot;
-        &quot;乙方有权在提前 30 天书面通知甲方后单方终止本合同，且无需承担违约责任。&quot;
-        &quot;因本合同发生的一切争议，提交甲方所在地仲裁委员会仲裁。&quot;
+        &quot;合同总金额人民币 120 万元，服务期限 3 年，自 2026 年 1 月 1 日起。&quot;
+        &quot;乙方有权提前 30 天书面通知甲方后单方终止本合同且无需承担违约责任，一切争议提交甲方所在地仲裁委员会仲裁。&quot;
     )
     try:
-        final_state = run_chain(contract_text)
-        print(json.dumps(final_state, ensure_ascii=False, indent=2))
-    except ChainStepError as exc:
-        print(f&quot;链条终止：{exc}&quot;, file=sys.stderr)
-        sys.exit(1)
+        print(json.dumps(run_chain(contract_text), ensure_ascii=False, indent=2))
+    except ChainStepError as exc:  # fail-fast：宁可没有结果，不要未经校验的错误结果
+        sys.exit(f&quot;链条终止：{exc}&quot;)  # 传字符串时打印到 stderr 并以退出码 1 结束
 </code></pre>
-<h3 id="162-框架集成实现langchain-lcel">1.6.2 框架集成实现（LangChain LCEL）</h3>
-<p>以下基于 langchain-core 0.3.x 与 langchain-openai 0.2.x 的 API 编写（API 若有变动，以所用版本官方文档为准）。LCEL 用 <code>RunnablePassthrough.assign</code> 让每一步把结果追加进同一个状态字典，天然形成"状态逐步增长"的链；校验节点抛异常即整链 fail-fast，<code>.with_retry</code> 提供带重试的步骤，<code>.with_fallbacks</code> 演示摘要步的模型级降级。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第1章 提示链：LangChain LCEL 实现（状态逐步增长的三步链）。
-
-基于 langchain-core 0.3.x / langchain-openai 0.2.x 编写。
-演示要点：assign 构造增长状态；校验抛 ValueError -&gt; with_retry 重试 -&gt;
-预算耗尽整链 fail-fast；摘要步挂 with_fallbacks 做降级兜底。
-
-依赖：pip install &quot;langchain-core&gt;=0.3&quot; &quot;langchain-openai&gt;=0.2&quot;
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import json
-import os
-import sys
-from typing import Any
-
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-from langchain_openai import ChatOpenAI
-
-model = ChatOpenAI(
-    model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;),
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    temperature=0.2,
-)
-
-
-FENCE = &quot;`&quot; * 3  # Markdown 围栏常量：避免源码中直接出现三连反引号
-
-
-def extract_json(text: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;从模型输出提取 JSON 对象；失败抛 ValueError。&quot;&quot;&quot;
-    text = text.strip()
-    if text.startswith(FENCE):
-        text = text.lstrip(&quot;`&quot;)
-        if text.startswith(&quot;json&quot;):
-            text = text[4:]
-    start, end = text.find(&quot;{&quot;), text.rfind(&quot;}&quot;)
-    if start == -1 or end &lt;= start:
-        raise ValueError(&quot;输出中未找到 JSON 对象&quot;)
-    data = json.loads(text[start : end + 1])
-    if not isinstance(data, dict):
-        raise ValueError(&quot;输出不是 JSON 对象&quot;)
-    return data
-
-
-def validate_extract(text: str) -&gt; str:
-    &quot;&quot;&quot;抽取步校验：字段缺失抛 ValueError，触发 with_retry 带重试。&quot;&quot;&quot;
-    data = extract_json(text)
-    missing = [k for k in (&quot;parties&quot;, &quot;amount&quot;, &quot;term_years&quot;) if not data.get(k)]
-    if missing:
-        raise ValueError(f&quot;缺少必需字段：{', '.join(missing)}&quot;)
-    return json.dumps(data, ensure_ascii=False)
-
-
-def validate_risk(text: str) -&gt; str:
-    &quot;&quot;&quot;风险步校验：overall 枚举非法即重试，预算耗尽则整链抛错终止。&quot;&quot;&quot;
-    data = extract_json(text)
-    if data.get(&quot;overall&quot;) not in (&quot;高&quot;, &quot;中&quot;, &quot;低&quot;) or &quot;risks&quot; not in data:
-        raise ValueError(f&quot;风险步输出非法：{text[:80]}&quot;)
-    return json.dumps(data, ensure_ascii=False)
-
-
-extract_step = (
-    ChatPromptTemplate.from_messages(
-        [
-            (&quot;system&quot;, &quot;你是合同信息抽取器，只输出 JSON，不要解释。&quot;),
-            (
-                &quot;user&quot;,
-                &quot;从合同文本抽取字段 parties（双方全称数组）、amount（总金额）、&quot;
-                &quot;term_years（年数）。合同：\n{contract}&quot;,
-            ),
-        ]
-    )
-    | model
-    | RunnableLambda(validate_extract)
-).with_retry(stop_after_attempt=3, retry_if_exception_type=(ValueError,))
-
-risk_step = (
-    ChatPromptTemplate.from_messages(
-        [
-            (&quot;system&quot;, &quot;你是合同风险审查员，只输出 JSON。&quot;),
-            (
-                &quot;user&quot;,
-                &quot;基于关键字段评估风险，输出 risks 数组与 overall（高/中/低）。\n&quot;
-                &quot;关键字段：{fields}\n原合同：\n{contract}&quot;,
-            ),
-        ]
-    )
-    | model
-    | RunnableLambda(validate_risk)
-).with_retry(stop_after_attempt=3, retry_if_exception_type=(ValueError,))
-
-summary_prompt = ChatPromptTemplate.from_messages(
-    [
-        (&quot;system&quot;, &quot;你是合同审阅助理，用中文输出不超过 150 字的审阅摘要。&quot;),
-        (&quot;user&quot;, &quot;关键字段：{fields}\n风险检查：{risk}\n请写审阅摘要。&quot;),
-    ]
-)
-summary_model = ChatOpenAI(
-    model=os.environ.get(&quot;AGENT_LLM_MODEL_FALLBACK&quot;, &quot;gpt-4o&quot;),
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    temperature=0.2,
-)
-# 主模型生成摘要，失败时降级到备用模型
-summary_step = (summary_prompt | model | StrOutputParser()).with_fallbacks(
-    [summary_prompt | summary_model | StrOutputParser()]
-)
-
-# assign 让每一步把输出追加进同一个状态字典：contract -&gt; +fields -&gt; +risk -&gt; +summary
-review_chain = (
-    RunnablePassthrough.assign(fields=extract_step)
-    .assign(risk=risk_step)
-    .assign(summary=summary_step)
-)
-
-if __name__ == &quot;__main__&quot;:
-    CONTRACT = (
-        &quot;甲方：星野科技有限公司；乙方：云帆数据服务有限责任公司。&quot;
-        &quot;本合同总金额为人民币 120 万元，服务期限 3 年。&quot;
-        &quot;乙方有权提前 30 天书面通知后单方终止合同且不承担违约责任。&quot;
-    )
-    try:
-        result = review_chain.invoke({&quot;contract&quot;: CONTRACT})
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-    except ValueError as exc:
-        # fail-fast：校验重试预算耗尽，链条在此终止而非带着脏数据继续
-        print(f&quot;链条终止：{exc}&quot;, file=sys.stderr)
-        sys.exit(1)
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>steps</code> 元组的顺序就是执行顺序，<code>run_chain</code> 自身只有 6 行——编排层薄，是链可维护的标志。这里选了 fail-fast 而不是降级，因为合同审阅是内部流水线：宁可不产出，也不能让"risk 步校验失败后拿默认值"的审阅结论流进决策；若你的链是面向用户的实时服务，把 <code>except ChainStepError</code> 分支换成填保守默认值并在响应里标注 degraded（对应 1.5 节"隔离降级"）。<code>state</code> 是唯一贯穿全链的对象，<code>run_step</code> 原地写入后返回它——三步跑完，<code>json.dumps(state)</code> 打出来的就是一次审阅的完整轨迹，也是排查时最该先看的东西。</p>
+</blockquote>
+<h3 id="162-框架差异速览langchain-lcel">1.6.2 框架差异速览（LangChain LCEL）</h3>
+<p>从本版起，原 LangChain LCEL 完整程序收敛为速览表：框架在这里只做两件事——把"状态逐步增长"与"声明式重试/降级"表达得更短，骨架判断与 1.6.1 完全一致。基于 langchain-core 0.3.x / langchain-openai 0.2.x（API 以所用版本官方文档为准，见 <a href="https://docs.langchain.com">LangChain 官方文档</a>）：</p>
+<table>
+<thead>
+<tr>
+<th>本章概念</th>
+<th>LangChain（LCEL）对应</th>
+<th>一句话差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>顺序串联三步</td>
+<td><code>prompt \| model \| parser</code> 管道</td>
+<td>用 <code>\|</code> 运算符组合 Runnable，链对象本身可复用、可缓存</td>
+</tr>
+<tr>
+<td>状态逐步增长</td>
+<td><code>RunnablePassthrough.assign(fields=…).assign(risk=…)</code></td>
+<td>每步把输出并入状态字典，替代手写 <code>state[name] = result</code></td>
+</tr>
+<tr>
+<td>单步重试</td>
+<td><code>.with_retry(stop_after_attempt=3, retry_if_exception_type=(ValueError,))</code></td>
+<td>声明式重试；校验函数抛 ValueError 即触发，但不回注错误信息</td>
+</tr>
+<tr>
+<td>摘要步降级</td>
+<td><code>.with_fallbacks([备用模型链])</code></td>
+<td>主模型失败自动切备用链，对应本章"隔离降级"语义</td>
+</tr>
+<tr>
+<td>fail-fast</td>
+<td>校验 RunnableLambda 抛异常</td>
+<td>异常穿透整链终止，等价于片段二的 <code>ChainStepError</code></td>
+</tr>
+<tr>
+<td>模型接入</td>
+<td><code>ChatOpenAI(base_url=…, api_key=…)</code></td>
+<td>同样只读环境变量，与片段一的 <code>llm()</code> 等价</td>
+</tr>
+</tbody>
+</table>
+<p>需要特别说明的差异：LCEL 的 <code>with_retry</code> 与 <code>with_fallbacks</code> 比手写循环短得多，但"带错误反馈的重试"（把校验错误拼回下一轮提示）框架没有现成原语，仍需自定义 RunnableLambda——这正是 1.6.1 片段二保留手写引擎的价值。若流程会动态生长（条件步骤、循环修订），从 LCEL 迁到 <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a>（状态图）比继续叠管道更顺。</p>
 <h3 id="163-生产化改造清单">1.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：把 <code>ChainStepError</code> 分类为可重试（限流、超时）与不可重试（schema 漂移、内容违规），分别接指数退避重试与人工介入队列。</li>
@@ -523,9 +394,9 @@ if __name__ == &quot;__main__&quot;:
 <li>扣子（Coze）工作流官方文档（大模型节点 JSON 输出与异常分支）：<a href="https://www.coze.cn/open/docs/guides/agent_workflow">https://www.coze.cn/open/docs/guides/agent_workflow</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch00-preface.html"><span class="pager-dir">← 上一章</span><span class="pager-title">前言</span></a><a class="pager" href="../chapters/ch02-routing.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第2章 路由</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#11-模式概述">1.1 模式概述</a></li><li class="toc-l3"><a href="#111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#112-核心机制它如何工作">1.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#14-实际应用与案例">1.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#15-深度讲解">1.5 深度讲解</a></li><li class="toc-l2"><a href="#16-工程落地实践代码示例">1.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#161-框架无关实现完整可运行">1.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#162-框架集成实现langchain-lcel">1.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#163-生产化改造清单">1.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#171-本章小结">1.7.1 本章小结</a></li><li class="toc-l3"><a href="#172-核心要点">1.7.2 核心要点</a></li><li class="toc-l3"><a href="#173-结论">1.7.3 结论</a></li><li class="toc-l2"><a href="#18-延伸阅读与参考链接">1.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#11-模式概述">1.1 模式概述</a></li><li class="toc-l3"><a href="#111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#112-核心机制它如何工作">1.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#12-源起它从哪里来">1.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#14-实际应用与案例">1.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#15-深度讲解">1.5 深度讲解</a></li><li class="toc-l3"><a href="#151-怎么用运用判断">1.5.1 怎么用：运用判断</a></li><li class="toc-l2"><a href="#16-工程落地核心源码与讲解">1.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#161-框架无关实现按序拼接即完整可运行">1.6.1 框架无关实现（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#162-框架差异速览langchain-lcel">1.6.2 框架差异速览（LangChain LCEL）</a></li><li class="toc-l3"><a href="#163-生产化改造清单">1.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#171-本章小结">1.7.1 本章小结</a></li><li class="toc-l3"><a href="#172-核心要点">1.7.2 核心要点</a></li><li class="toc-l3"><a href="#173-结论">1.7.3 结论</a></li><li class="toc-l2"><a href="#18-延伸阅读与参考链接">1.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

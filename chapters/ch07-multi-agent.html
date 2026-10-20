@@ -63,13 +63,12 @@
 <div class="fig-caption" id="fig-7-1">图 7-1：星型协调器-专家拓扑：TASK/RESULT/ESCALATE 结构化消息流与独立评审闭环。</div>
 <h3 id="713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</h3>
 <p>多智能体协作与多个模式存在亲缘关系。提示链（串行提示接力）可以看作它的退化形态：角色固定、顺序固定、每环只有一次调用。路由与编排模式对应它的星型拓扑：协调器本质上是一个会说话的路由器。反思模式常以"独立评审智能体"的身份嵌入多智能体系统——写作者与批评者分属两个上下文，制衡才真实成立。记忆管理提供多智能体的共享工作区（黑板），让协作不依赖消息全文转发。工具使用模式则为每个角色配置专属工具箱。生产中最常见的组合形态是：星型协调器 + 各专家 + 一个独立评审者 + 共享状态存储。</p>
-<h2 id="72-起源与历史最早是谁提出来的">7.2 起源与历史：最早是谁提出来的</h2>
-<p>多智能体协作的学术源头比 LLM 早了半个世纪。1973 年，MIT 人工智能实验室的 Carl Hewitt、Peter Bishop 与 Richard Steiger 在 IJCAI 上提出 Actor 模型，把并发计算抽象为一个个带邮箱、异步收发消息的自治"actor"——这是"以消息传递定义计算单元"思想的起点。1980 年出现了两个影响至今的协调机制：Reid G. Smith 提出合同网协议（Contract Net），用"招标—投标—中标"完成分布式任务分配；Erman、Hayes-Roth、Lesser 与 Reddy 总结的 Hearsay-II 语音理解系统确立了黑板架构——多个知识源不直接对话，而是共同读写一块共享黑板。90 年代，智能体通信语言走向标准化：KQML 在 90 年代初给出了一套言语行为式的消息原语，FIPA 组织则在 2000 年批准了语义更严格的 FIPA-ACL。1995 年，Wooldridge 与 Jennings 在《Knowledge Engineering Review》发表《Intelligent Agents: Theory and Practice》，为整个智能体研究领域的概念体系奠基。</p>
-<p>LLM 时代让这一领域以工程形态复兴。2023 年 3 月，KAUST 的 Li 等人发布 <a href="https://www.camel-ai.org">CAMEL</a>，用"角色扮演双智能体对话"展示了两只智能体自己聊着完成任务的可能；同年 8 月，微软的 Wu 等人发布 <a href="https://microsoft.github.io/autogen/">AutoGen</a>，把"可对话智能体"抽象成可编排对象，Hong 等人的 <a href="https://github.com/FoundationAgents/MetaGPT">MetaGPT</a> 则按软件公司的标准作业程序（SOP）编排产品经理、架构师、工程师角色（后中稿 ICLR 2024 oral），清华等机构的 Qian 等人发布 <a href="https://github.com/OpenBMB/ChatDev">ChatDev</a> 虚拟软件公司；11 月，João Moura 开源了面向角色化团队的 <a href="https://docs.crewai.com">CrewAI</a>。2024 年 10 月，OpenAI 发布实验性的轻量编排库 <a href="https://github.com/openai/swarm">Swarm</a>；2025 年 4 月，Google 发布官方开发套件 <a href="https://google.github.io/adk-docs/">Agent Development Kit（ADK）</a>，把多智能体编排列为一等公民。</p>
+<h2 id="72-源起它从哪里来">7.2 源起：它从哪里来</h2>
+<p>多智能体协作的根比 LLM 早半个世纪。1973 年，MIT 的 Hewitt 等人提出 Actor 模型，首次把计算单元定义为“带邮箱、收发消息的自治实体”——今天“智能体不共享脑子、只传消息”的约定正是它的后代。1980 年出现两类协调原语：Smith 的合同网协议用“招标—投标—中标”分配任务，Hearsay-II 确立了黑板架构。三十年间缓慢演进，直到 LLM 把约定协作的成本降到一句提示：CAMEL 证明两只智能体能自主对话完成任务，AutoGen 把可对话智能体抽象为可编排对象，MetaGPT 与 ChatDev 把团队 SOP 编译成流水线，CrewAI、OpenAI Swarm 与 Google ADK 把编排推进为生产套件。</p>
 <table>
 <thead>
 <tr>
-<th>年份月</th>
+<th>年份</th>
 <th>事件</th>
 <th>提出者/机构</th>
 <th>出处</th>
@@ -78,27 +77,15 @@
 <tbody>
 <tr>
 <td>1973</td>
-<td>Actor 模型：带邮箱、异步消息的自治计算单元</td>
+<td>Actor 模型：以消息传递定义计算单元</td>
 <td>Hewitt、Bishop、Steiger（MIT AI Lab）</td>
 <td>IJCAI 1973</td>
 </tr>
 <tr>
 <td>1980</td>
-<td>合同网协议：招标-投标-中标的分布式任务分配</td>
-<td>Reid G. Smith</td>
-<td>IEEE Trans. on Computers, C-29(12)</td>
-</tr>
-<tr>
-<td>1980</td>
-<td>Hearsay-II 黑板系统：知识源经共享黑板协作</td>
-<td>Erman、Hayes-Roth、Lesser、Reddy</td>
-<td>ACM Computing Surveys, 12(2)</td>
-</tr>
-<tr>
-<td>1995</td>
-<td>《Intelligent Agents: Theory and Practice》奠基综述</td>
-<td>Wooldridge、Jennings</td>
-<td>Knowledge Engineering Review, 10(2)</td>
+<td>合同网协议 + Hearsay-II 黑板：任务拍卖与共享状态两类协调原语</td>
+<td>R. G. Smith；Erman 等</td>
+<td>IEEE Trans. Computers C-29(12)；ACM Computing Surveys 12(2)</td>
 </tr>
 <tr>
 <td>2023.3</td>
@@ -108,43 +95,18 @@
 </tr>
 <tr>
 <td>2023.8</td>
-<td>AutoGen：可对话智能体编排框架</td>
-<td>Qingyun Wu 等（Microsoft）</td>
-<td><a href="https://arxiv.org/abs/2308.08155">arXiv:2308.08155</a></td>
+<td>AutoGen / MetaGPT / ChatDev：可编排智能体框架集中爆发</td>
+<td>Microsoft；Hong 等；Qian 等</td>
+<td><a href="https://arxiv.org/abs/2308.08155">arXiv:2308.08155</a>、<a href="https://arxiv.org/abs/2308.00352">arXiv:2308.00352</a>、<a href="https://arxiv.org/abs/2307.07824">arXiv:2307.07824</a></td>
 </tr>
 <tr>
-<td>2023.8</td>
-<td>MetaGPT：软件公司 SOP 式多智能体流水线</td>
-<td>Sirui Hong 等</td>
-<td><a href="https://arxiv.org/abs/2308.00352">arXiv:2308.00352</a>；ICLR 2024 oral</td>
-</tr>
-<tr>
-<td>2023.8</td>
-<td>ChatDev：虚拟软件公司中的通信智能体</td>
-<td>Chen Qian 等（清华大学等）</td>
-<td><a href="https://arxiv.org/abs/2307.07824">arXiv:2307.07824</a>（7 月首发、8 月修订）</td>
-</tr>
-<tr>
-<td>2023.11</td>
-<td>CrewAI：角色化团队编排框架开源</td>
-<td>João Moura</td>
-<td>GitHub 开源</td>
-</tr>
-<tr>
-<td>2024.10</td>
-<td>Swarm：实验性轻量多智能体编排库</td>
-<td>OpenAI</td>
-<td>GitHub 开源（官方标注实验性质）</td>
-</tr>
-<tr>
-<td>2025.4</td>
-<td>Google ADK：官方多智能体开发套件</td>
-<td>Google</td>
-<td>官方发布</td>
+<td>2024–2025</td>
+<td>OpenAI Swarm → Google ADK：编排进入官方生产套件</td>
+<td>OpenAI；Google</td>
+<td><a href="https://github.com/openai/swarm">GitHub</a>；<a href="https://google.github.io/adk-docs/">ADK 文档</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络可以概括为三个阶段：古典期（1973–1995）解决"机器之间如何分工与通信"，遗产是消息传递、任务拍卖与黑板这三类协调原语；理论期（1995 前后）把"智能体"确立为可形式化的研究单元；LLM 期（2023 至今）把协调成本骤降——过去要写形式化协议才能完成的协作，如今用自然语言提示即可约定，于是"组织设计"取代"通信实现"成为新的工程难题。</p>
 <h2 id="73-发挥的作用为什么重要">7.3 发挥的作用：为什么重要</h2>
 <p>第一，上下文隔离带来的质量提升。每个角色只携带自己需要的指令与材料，模型注意力不再被无关职责稀释；角色提示可以写得更专、更深，相当于把一位通才换成一个专家团队。第二，真实制衡。写作与评审分属两个上下文后，评审者没有"辩护自己产出"的动机偏置，交叉验证才有效。第三，并行与扩展。相互独立的子任务可以并发执行，长尾任务可以按层委托，系统的吞吐随智能体数量伸缩。第四，组织知识的编码载体。SOP 不再是文档而是可执行的角色定义与任务描述——MetaGPT 的核心洞察正在于此：把人类团队的工作程序直接翻译成多智能体流水线。第五，权限与风险的分层。不同角色授予不同工具与数据访问，高危操作收敛到少数受控角色，审计边界清晰。</p>
 <h2 id="74-实际应用与案例">7.4 实际应用与案例</h2>
@@ -236,73 +198,90 @@
 <p>历史在此处值得回望：合同网协议 1980 年提出的"招标—投标—中标"，本质就是让具备不同能力的智能体先声明能力，再按任务匹配。今天协调器用 LLM 做路由，等于把"投标"换成了"模型读角色描述做选择"——当路由准确率不足时，老办法依然有效：让各智能体对子任务做可行性自评（自评即投标），协调器按自评与历史成功率分配。</p>
 <h3 id="753-上下文经济学">7.5.3 上下文经济学</h3>
 <p>多智能体的多数成本问题可以归结为一句话：<strong>传结论，不传过程</strong>。协调器向写手交付分析结果时，应传分析员的结论要点而非其完整推理记录；层次式组织中子协调器向上汇报摘要而非流水账。群聊拓扑的平方成本，正是因为它默认"人人看全部过程"。与之相对的设计是共享工作区（黑板）：把大块中间产物写到状态存储里，消息里只带指针与摘要，需要时按需读取——这也是黑板架构在 LLM 时代重新流行的原因。协调器另一项隐性价值是上下文裁剪：工作者拿到的提示由协调器定制，天然短于"把所有历史都给每个人"。</p>
+<p>这笔账有官方数字可对。Anthropic 公开其多智能体研究系统的实测：协调器-工作者架构在内部研究评测中比单智能体 Claude Opus 4 高出 90.2%，但多智能体系统的 token 消耗约为普通聊天的 15 倍（单智能体约 4 倍），且在 BrowseComp 评测上 token 用量一项就解释了 80% 的性能方差（<a href="https://www.anthropic.com/engineering/multi-agent-research-system">Anthropic 工程博客</a>，2025-06）。两个数字放在一起读，结论相当冷静：<strong>收益的大头不是"更多脑子"，而是"更多 token 预算"</strong>——多智能体之所以赢，很大程度上是因为它买得起并行探索；并行工具调用确实能把复杂查询的研究时间最多缩短 90%，但那是吞吐收益，不是推理质量收益。另一组实验同样指向"收益来自多样性而非智力"：《More Agents Is All You Need》（<a href="https://arxiv.org/abs/2402.05120">arXiv:2402.05120</a>，TMLR）用最朴素的采样-投票让 LLaMA-2-70B 在 GSM8K 上从 54% 升到 74%（40 个智能体）、HumanEval 从 24% 升到 33%，且任务越难相对增益越大（MATH 上 70B 相对增益 120%）——但这套机制单智能体多次采样自投票同样能近似。因此，多数业务问题的第一方案应当是<strong>单智能体 + 好工具</strong>：便宜一个数量级、延迟更低、行为可复现。多智能体不可替代的收益只剩两项：<strong>上下文隔离</strong>（真制衡与专业深度）与<strong>视角多样性</strong>（独立上下文里的真分歧，而非同一上下文里的自我附和）。任务的价值密度（每 token 产出的价值）撑不起 15 倍预算时，协调器写得再漂亮也是亏损架构。</p>
+<p>协调开销本身可以量化到调用次数：星型拓扑下一次三子任务运行至少要 1 次拆解 + 3 次路由 + 3 次专家执行 + 1 次聚合 = <strong>8 次 LLM 调用</strong>，是单智能体直答的 8 倍起，其中 7 次是纯协调、不直接产出价值；串行链路每多一层协调就多一次往返延迟；错误沿链路放大——每环 95% 准确，五环之后整体约 77%（见 7.5.4）。消息协议、状态同步与错误传播链这三件协调基建在单智能体里根本不存在，拆分前先确认任务值得付这笔"组织税"。演化地看，税的构成也变了：Actor 模型与合同网时代（1973–1995）的工程难题是消息实现本身，LLM 把它降成一句提示词，于是预算控制、路由质量与防幻觉路由这些<strong>组织设计</strong>问题成了新的成本主体。</p>
 <h3 id="754-失效模式与反模式">7.5.4 失效模式与反模式</h3>
 <p><strong>礼貌死循环</strong>：两个智能体互相感谢、互相转交，轮次耗尽却毫无进展。AutoGen 早期演示中这是高频现象。对策：轮次预算 + 每轮必须产出实质内容的提示约束 + 主持人强裁。<strong>责任稀释</strong>：多角色都以为别人做了校验，最终报告"完成"但无人真正负责。对策：每个子任务显式指定唯一责任人，验收环节点名列出各角色的交付与缺口。<strong>错误串联放大</strong>：流水线每环 95% 准确，五环之后整体约 77%。对策：环节之间加廉价校验点（格式断言、抽样复核），把错误就地拦截而不是顺流而下。<strong>上下文污染与串话</strong>：群聊里一个角色的错误结论被其他角色当成事实引用并扩散。对策：重要结论带"来源角色+置信度"标记，主持人定期做事实小结。<strong>角色漂移</strong>：多轮之后评审者开始替写手着想，立场失效。对策：每轮调用都重新注入完整角色提示，不要依赖历史保持人设。<strong>协调器幻觉路由</strong>：把任务派给不相关的专家后得到看似流畅的错误结果。对策：路由输出强约束为白名单之一，并保留关键词兜底与"无人可派即升级"的路径。</p>
 <h3 id="755-何时不要用">7.5.5 何时不要用</h3>
-<p>满足以下任一条件，请保持单智能体：任务能在一条精心设计的提示加几个工具内解决；对延迟极度敏感（每加一个智能体至少多一次串行 LLM 调用）；要求行为完全确定可复现（多角色交互天然带随机性）；任务量小到协调成本永远收不回。从单智能体升级到多智能体的四个信号是：上下文装不下、职责互相冲突、存在可并行的独立子任务、需要不共享上下文的独立制衡。出现其中两个以上，再开始拆分，且<strong>先拆"评审"角色</strong>——这是收益最高、风险最低的第一刀。</p>
-<h2 id="76-工程落地实践代码示例">7.6 工程落地：实践代码示例</h2>
-<h3 id="761-框架无关实现完整可运行">7.6.1 框架无关实现（完整可运行）</h3>
-<p>下面的实现展示星型拓扑的完整骨架：显式消息协议、LLM 路由加关键词兜底、专家侧失败升级、拆解失败降级为单智能体直答、轮次预算与聚合失败兜底。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 7 章 框架无关实现：星型协调器 + 专家智能体 + 显式消息协议。
-
-运行前设置环境变量：
-  export AGENT_LLM_API_KEY=...        # 必填
-  export AGENT_LLM_BASE_URL=...       # 可选，默认 OpenAI 官方
-  export AGENT_LLM_MODEL=...          # 可选，默认 gpt-4o-mini
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import json
-import os
-import uuid
+<p>满足以下任一条件，请保持单智能体：任务能在一条精心设计的提示加几个工具内解决；对延迟极度敏感（每加一个智能体至少多一次串行 LLM 调用）；要求行为完全确定可复现（多角色交互天然带随机性）；任务量小到协调成本永远收不回。从单智能体升级到多智能体的四个信号是：上下文装不下、职责互相冲突、存在可并行的独立子任务、需要不共享上下文的独立制衡。出现其中两个以上，再开始拆分，且<strong>先拆"评审"角色</strong>——这是收益最高、风险最低的第一刀。
+边界条件可以定量化。经验法则：单次任务的产出价值低于约 50 次基础模型调用成本（星型拓扑最小调用数乘安全系数）时不值得拆；端到端延迟预算紧（实时对话、秒级响应）时，每多一层协调就多一次串行往返，直接出局；任务输入输出都能装进单个 128K 窗口、且不需要独立制衡时，拆分只增加出错面。反之，四个拆分信号（上下文装不下、职责冲突、可并行、需制衡）出现两个以上、且单次任务价值密度高（深度研究、审计、大规模生成）时，15 倍 token 的投资才可能收回。</p>
+<h3 id="756-怎么用运用判断">7.5.6 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：出现以下任一特征，再考虑拆分——①系统提示里的角色职责开始互相踩（超过两三千字还在加"另外你还负责……"）；②需要不共享上下文的独立评审（自审必然宽松）；③存在可并行的独立子任务、且单次任务价值高；④需要按角色切分权限与审计边界。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>星型多智能体</th>
+<th>单智能体 + 采样自投票</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>成本</td>
+<td>约 15 倍 token，8 次调用起步</td>
+<td>3~5 次采样即有增益</td>
+</tr>
+<tr>
+<td>收益来源</td>
+<td>上下文隔离、真制衡、并行</td>
+<td>采样多样性（统计聚合）</td>
+</tr>
+<tr>
+<td>典型失效</td>
+<td>幻觉路由、责任稀释、错误串联</td>
+<td>多数票盲区（系统性偏见一致时全错）</td>
+</tr>
+<tr>
+<td>选它当</td>
+<td>子任务异构、需独立评审/权限分层</td>
+<td>任务同构、只需提升单点质量</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：①先写单智能体版并跑通一个固定评测集，拿到质量与成本基线；②只拆"独立评审"一个角色（收益风险比最高的一刀），对比基线看质量提升是否配得上成本翻倍；③确认收益真实后，再按星型拓扑补协调器与消息协议，轮次与费用预算硬编码，ESCALATE 路径写进第一版。</p>
+<h2 id="76-工程落地核心源码与讲解">7.6 工程落地：核心源码与讲解</h2>
+<h3 id="761-框架无关核心源码按序拼接即完整可运行">7.6.1 框架无关核心源码（按序拼接即完整可运行）</h3>
+<p><strong>片段 1／4：模块基座与消息协议。</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;第 7 章 核心源码：星型协调器 + 专家 + 显式消息协议（按序拼接 4 片段即可运行）。&quot;&quot;&quot;
+import json, os, uuid
 from dataclasses import dataclass
-from typing import Optional
-
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
-
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;调用 OpenAI 兼容接口，返回模型文本回复。失败时抛异常，由调用方决定降级策略。&quot;&quot;&quot;
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
+    &quot;&quot;&quot;调用 OpenAI 兼容接口；失败只抛异常，降级决策权交给调用方。&quot;&quot;&quot;
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else [])
+    msgs.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
     resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+        model=MODEL, messages=msgs, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
-
-
-# ---------- 消息协议：跨智能体通信走结构化消息，而非裸字符串 ----------
 
 TASK, RESULT, ESCALATE = &quot;TASK&quot;, &quot;RESULT&quot;, &quot;ESCALATE&quot;
 
-
 @dataclass
 class Message:
-    &quot;&quot;&quot;最小消息信封：发送者/接收者/类型/正文/关联 ID。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;最小消息信封：结构化消息让失败与审计成为一等公民。&quot;&quot;&quot;
     sender: str
     recipient: str
     msg_type: str  # TASK | RESULT | ESCALATE
     content: str
-    correlation_id: str  # 串起同一次协作的全部消息，便于审计
-
-
-@dataclass
+    correlation_id: str  # 串起同一次协作的全部消息，审计的钥匙
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：基座只立一条规矩——失败不吞。llm() 的任何异常都向上抛，降级决策权永远在调用方，这是全书错误处理的统一约定。Message 信封里最关键的是 msg_type 与 correlation_id：前者让失败成为一等公民（TASK/RESULT/ESCALATE 三种类型显式流转），后者把一次协作的全部消息串成可审计的链路，事后才能回答“这个错误结论是谁给的”。要扩展就增加消息类型或字段，不要退回用裸字符串传语义。</p>
+</blockquote>
+<p><strong>片段 2／4：专家智能体与 LLM 路由。</strong></p>
+<pre><code class="language-python">@dataclass
 class Agent:
     &quot;&quot;&quot;专家智能体：固定角色提示 + 单一职责，不做路由也不看全局。&quot;&quot;&quot;
-
     name: str
     role_prompt: str
 
     def handle(self, task: str) -&gt; str:
-        &quot;&quot;&quot;执行子任务。LLM 失败时返回 ESCALATE 前缀文本，绝不静默丢弃。&quot;&quot;&quot;
+        &quot;&quot;&quot;执行子任务；LLM 失败时返回 ESCALATE 前缀文本，绝不静默丢弃。&quot;&quot;&quot;
         try:
             return llm(task, system=self.role_prompt, temperature=0.2)
         except Exception as exc:  # 网络抖动/限流等
@@ -310,191 +289,122 @@ class Agent:
 
 
 class Coordinator:
-    &quot;&quot;&quot;星型协调器：负责拆解、路由、预算控制与聚合。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;星型协调器：负责路由与委派；拆解与聚合见片段 3 的模块级函数。&quot;&quot;&quot;
     def __init__(self, specialists: dict[str, Agent], max_turns: int = 5):
-        self.specialists = specialists
-        self.max_turns = max_turns
+        self.specialists, self.max_turns = specialists, max_turns
         self.log: list[Message] = []
 
-    def _send(self, msg: Message) -&gt; None:
-        self.log.append(msg)
-        preview = msg.content[:50].replace(&quot;\n&quot;, &quot; &quot;)
-        print(f&quot;[{msg.msg_type}] {msg.sender} -&gt; {msg.recipient} :: {preview}&quot;)
-
-    def _route(self, subtask: str) -&gt; Optional[Agent]:
-        &quot;&quot;&quot;LLM 路由，解析失败时退化为关键词匹配，仍失败返回 None（升级）。&quot;&quot;&quot;
+    def _route(self, subtask: str) -&gt; Agent | None:
+        &quot;&quot;&quot;LLM 精路由 -&gt; 关键词兜底 -&gt; None 升级；temperature=0 求稳。&quot;&quot;&quot;
         roster = &quot;、&quot;.join(self.specialists)
         try:
-            raw = llm(
-                f&quot;子任务：{subtask}\n可选专家：{roster}\n只回答一个专家名字。&quot;,
-                system=&quot;你是任务路由器，只输出专家名字本身。&quot;,
-                temperature=0.0,
-            )
-            for name, agent in self.specialists.items():
-                if name in raw:
-                    return agent
+            raw = llm(f&quot;子任务：{subtask}\n可选专家：{roster}\n只回答一个专家名字。&quot;,
+                      system=&quot;你是任务路由器，只输出专家名字本身。&quot;, temperature=0.0)
+            return next((a for n, a in self.specialists.items() if n in raw), None) \
+                or self._keyword_route(subtask)
         except Exception:
-            pass  # 路由 LLM 失败：落入关键词兜底
-        for name, agent in self.specialists.items():
-            if name in subtask:
-                return agent
-        return None
+            return self._keyword_route(subtask)  # 路由 LLM 失败：关键词兜底
 
-    def delegate(self, subtask: str, correlation_id: str) -&gt; str:
-        &quot;&quot;&quot;委派单个子任务给最合适的专家，返回其结果文本（可能带 ESCALATE 前缀）。&quot;&quot;&quot;
-        expert = self._route(subtask)
-        if expert is None:
-            reason = f&quot;{ESCALATE}: 无匹配专家，子任务挂起：{subtask[:40]}&quot;
-            self._send(Message(&quot;coordinator&quot;, &quot;none&quot;, ESCALATE, reason, correlation_id))
-            return reason
-        self._send(Message(&quot;coordinator&quot;, expert.name, TASK, subtask, correlation_id))
-        answer = expert.handle(subtask)
-        mtype = ESCALATE if answer.startswith(ESCALATE) else RESULT
-        self._send(Message(expert.name, &quot;coordinator&quot;, mtype, answer, correlation_id))
-        return answer
-
-    def _decompose(self, user_task: str, max_subtasks: int) -&gt; Optional[list[str]]:
-        &quot;&quot;&quot;把总任务拆为子任务列表；解析失败返回 None，交由上层降级。&quot;&quot;&quot;
-        try:
-            raw = llm(
-                f&quot;把总任务拆成不超过 {max_subtasks} 个可独立完成的子任务，&quot;
-                f&quot;输出 JSON 字符串数组，不要其他文字。总任务：{user_task}&quot;,
-                system=&quot;只输出 JSON 数组。&quot;,
-                temperature=0.1,
-            )
-            subtasks = json.loads(raw)
-            if not isinstance(subtasks, list) or not subtasks:
-                raise ValueError(&quot;拆解结果不是非空数组&quot;)
-            return [str(s) for s in subtasks]
-        except Exception:
-            return None
-
-    def run(self, user_task: str, max_subtasks: int = 3) -&gt; str:
-        &quot;&quot;&quot;主入口：拆解 -&gt; 逐个委派 -&gt; 聚合。任何一步失败都有诚实降级路径。&quot;&quot;&quot;
-        cid = uuid.uuid4().hex[:8]
-        subtasks = self._decompose(user_task, max_subtasks)
-        if subtasks is None:
-            # 拆解失败：降级为&quot;通用直答&quot;，并明确告知降级事实
-            try:
-                direct = llm(user_task, system=&quot;你是通用助理，尽力直接完成任务。&quot;)
-            except Exception as exc:
-                return f&quot;{ESCALATE}: 拆解失败且直答失败（{exc}）&quot;
-            return f&quot;（任务拆解失败，已降级为单智能体直答）\n{direct}&quot;
-
-        results: list[str] = []
-        escalations = 0
-        for i, sub in enumerate(subtasks):
-            if i &gt;= self.max_turns:  # 轮次预算：宁可少做，不可失控
-                results.append(f&quot;轮次预算用尽，{len(subtasks) - i} 个子任务未执行&quot;)
-                break
-            r = self.delegate(sub, cid)
-            if r.startswith(ESCALATE):
-                escalations += 1
-            results.append(f&quot;[子任务{i + 1}] {sub}\n{r}&quot;)
-
-        try:
-            final = llm(
-                &quot;把以下子任务结果整合成一份完整交付物，保留未解决项：\n\n&quot;
-                + &quot;\n\n&quot;.join(results),
-                system=&quot;你是主编，只整合不新增事实。&quot;,
-            )
-        except Exception as exc:
-            # 聚合失败：如实返回原始子任务结果，而不是编一个&quot;总结&quot;
-            final = f&quot;（聚合失败：{exc}）\n原始子任务结果：\n&quot; + &quot;\n\n&quot;.join(results)
-        if escalations:
-            final += f&quot;\n\n[预警] {escalations} 个子任务升级未解决，请人工介入。&quot;
-        return final
-
-
-if __name__ == &quot;__main__&quot;:
-    experts = {
-        &quot;资料检索员&quot;: Agent(&quot;资料检索员&quot;, &quot;你是资料检索专家：列出要点与已知公开事实，不虚构来源。&quot;),
-        &quot;分析师&quot;: Agent(&quot;分析师&quot;, &quot;你是分析专家：对给定材料做结构与利弊分析，指出假设与不确定性。&quot;),
-        &quot;技术写手&quot;: Agent(&quot;技术写手&quot;, &quot;你是技术写手：把材料改写成结构清晰、面向工程师的中文说明。&quot;),
-    }
-    coordinator = Coordinator(experts)
-    report = coordinator.run(&quot;调研：为日均百万请求的 API 网关设计限流方案，给出要点&quot;)
-    print(&quot;\n===== 最终交付 =====\n&quot;, report)
+    def _keyword_route(self, subtask: str) -&gt; Agent | None:
+        return next((a for n, a in self.specialists.items() if n in subtask), None)
 </code></pre>
-<h3 id="762-框架集成实现crewai">7.6.2 框架集成实现（CrewAI）</h3>
-<p>CrewAI 用"角色（role）—目标（goal）—背景（backstory）"定义智能体，用任务（Task）显式声明产出与依赖（<code>context</code>），编排方式分 <code>sequential</code>（流水线）与 <code>hierarchical</code>（内置管理者分层委派）。以下按 crewai 0.7x（2024 底至 2025）API 编写；框架迭代较快，字段名请以所用版本的官方文档为准。模型与密钥同样只从环境变量读取。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 7 章 框架集成实现：CrewAI 版&quot;检索-写作-审稿&quot;三人小队（顺序流水线）。
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：Agent.handle 把 LLM 异常转成带 ESCALATE 前缀的文本而不是抛异常对象——因为失败必须能像正常消息一样在智能体之间流转与留痕，抛异常会把降级决策绑死在本函数里。_route 是三层降级链：LLM 精路由 → 关键词粗匹配 → None 上交升级，对应 7.5.4 的“幻觉路由”对策：路由输出只做专家白名单匹配，匹配不上绝不硬派。temperature=0.0 是路由的硬要求——路由要的是稳定，不是创意。</p>
+</blockquote>
+<p><strong>片段 3／4：委派与任务拆解。</strong></p>
+<pre><code class="language-python">def delegate(coord: Coordinator, subtask: str, cid: str) -&gt; str:
+    &quot;&quot;&quot;委派子任务：无专家可派即 ESCALATE；消息全程留日志可审计。&quot;&quot;&quot;
+    expert = coord._route(subtask)
+    if expert is None:
+        reason = f&quot;{ESCALATE}: 无匹配专家，子任务挂起：{subtask[:40]}&quot;
+        coord.log.append(Message(&quot;coordinator&quot;, &quot;none&quot;, ESCALATE, reason, cid))
+        return reason
+    coord.log.append(Message(&quot;coordinator&quot;, expert.name, TASK, subtask, cid))
+    answer = expert.handle(subtask)
+    mtype = ESCALATE if answer.startswith(ESCALATE) else RESULT
+    coord.log.append(Message(expert.name, &quot;coordinator&quot;, mtype, answer, cid))
+    return answer
 
-安装：pip install &quot;crewai&gt;=0.76&quot;
-运行前：export AGENT_LLM_API_KEY=... 等三个环境变量（见上例）。
-注：按 crewai 0.7x API 编写，未覆盖的版本差异请对照官方文档核对。
-&quot;&quot;&quot;
-import os
 
-# CrewAI 经由 litellm 读取 OPENAI_* 环境变量，这里做一次透传映射
-os.environ.setdefault(
-    &quot;OPENAI_API_KEY&quot;, os.environ.get(&quot;AGENT_LLM_API_KEY&quot;, &quot;&quot;)
-)
-os.environ.setdefault(
-    &quot;OPENAI_API_BASE&quot;,
-    os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-)
-os.environ.setdefault(
-    &quot;OPENAI_MODEL_NAME&quot;, os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
-)
-
-from crewai import Agent, Crew, Process, Task
-
-researcher = Agent(
-    role=&quot;资料检索员&quot;,
-    goal=&quot;为给定主题收集准确、可核查的要点&quot;,
-    backstory=&quot;十年行业分析师，只陈述有依据的事实，不编造来源。&quot;,
-    allow_delegation=False,
-    verbose=True,
-)
-writer = Agent(
-    role=&quot;技术写手&quot;,
-    goal=&quot;把研究要点改写成面向工程师的中文短文&quot;,
-    backstory=&quot;技术博客作者，重视结构清晰与可执行性。&quot;,
-    allow_delegation=False,
-    verbose=True,
-)
-reviewer = Agent(
-    role=&quot;审稿人&quot;,
-    goal=&quot;挑出事实错误、夸张表述与结构问题并给出修订&quot;,
-    backstory=&quot;严谨的编辑，宁可退稿也不放水。&quot;,
-    allow_delegation=False,
-    verbose=True,
-)
-
-t1 = Task(
-    description=&quot;围绕主题「{topic}」列出 5 个关键要点，每条注明依据类型（常识/公开报告/工程实践）。&quot;,
-    expected_output=&quot;Markdown 列表，5 条，每条不超过 40 字。&quot;,
-    agent=researcher,
-)
-t2 = Task(
-    description=&quot;基于检索员的要点，写一篇 300 字以内的工程师短文。&quot;,
-    expected_output=&quot;Markdown 正文，首句为结论。&quot;,
-    agent=writer,
-    context=[t1],  # 显式声明：写作依赖检索产物，而不是把全部历史塞给写手
-)
-t3 = Task(
-    description=&quot;审阅短文：指出至多 3 个最重要的问题，并给出修订版全文。&quot;,
-    expected_output=&quot;「问题」小节 + 「修订版」小节。&quot;,
-    agent=reviewer,
-    context=[t2],
-)
-
-crew = Crew(
-    agents=[researcher, writer, reviewer],
-    tasks=[t1, t2, t3],
-    process=Process.sequential,  # 流水线；hierarchical 会引入管理者角色自动分层委派
-    verbose=True,
-)
-
-if __name__ == &quot;__main__&quot;:
+def decompose(user_task: str, max_n: int = 3) -&gt; list[str] | None:
+    &quot;&quot;&quot;把总任务拆为子任务列表；解析失败返回 None，交上层降级直答。&quot;&quot;&quot;
     try:
-        result = crew.kickoff(inputs={&quot;topic&quot;: &quot;API 网关限流&quot;})
-    except Exception as exc:
-        raise SystemExit(f&quot;crew 运行失败：{exc}&quot;)  # 失败显式退出，不带病输出
-    print(&quot;\n===== 最终产物 =====\n&quot;, result)
+        raw = llm(f&quot;把总任务拆成不超过 {max_n} 个可独立完成的子任务，输出 JSON 字符串数组。总任务：{user_task}&quot;,
+                  system=&quot;只输出 JSON 数组。&quot;, temperature=0.1)
+        parsed = json.loads(raw)
+        return [str(s) for s in parsed] if isinstance(parsed, list) and parsed else None
+    except Exception:
+        return None  # 拆解失败是一等状态，交给上层降级
 </code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：delegate 的约定是“永不抛异常”：无专家可派、专家失败，都返回带 ESCALATE 前缀的文本，让上层能统一处理“部分成功”的局面。decompose 把 JSON 解析失败收敛为 None——把“拆不动”变成一等状态而不是崩溃，上层据此降级直答；max_n=3 是给拆解上的第一道预算闸，子任务越多协调调用线性膨胀。读者最先该改的是 specialists 字典：角色越正交，路由越稳。</p>
+</blockquote>
+<p><strong>片段 4／4：主循环与三条降级路径。</strong></p>
+<pre><code class="language-python">def execute(coord: Coordinator, user_task: str, max_subtasks: int = 3) -&gt; str:
+    &quot;&quot;&quot;主入口：拆解 -&gt; 委派 -&gt; 聚合；三处失败均有诚实降级路径。&quot;&quot;&quot;
+    cid = uuid.uuid4().hex[:8]
+    subtasks = decompose(user_task, max_subtasks)
+    if subtasks is None:  # 拆解失败：降级为单智能体直答，并明示降级事实
+        try:
+            return &quot;（拆解失败，已降级为单智能体直答）\n&quot; + llm(user_task)
+        except Exception as exc:
+            return f&quot;{ESCALATE}: 拆解失败且直答失败（{exc}）&quot;
+    results, escalations = [], 0
+    for i, sub in enumerate(subtasks):
+        if i &gt;= coord.max_turns:  # 轮次预算：宁可少做，不可失控
+            results.append(f&quot;预算用尽，{len(subtasks) - i} 个子任务未执行&quot;)
+            break
+        r = delegate(coord, sub, cid)
+        escalations += r.startswith(ESCALATE)
+        results.append(f&quot;[子任务{i + 1}] {r}&quot;)
+    try:  # 聚合失败：如实返回原始结果，不编造总结
+        final = llm(&quot;整合子任务结果为完整交付物，保留未解决项：\n\n&quot;
+                    + &quot;\n\n&quot;.join(results), system=&quot;你是主编，只整合不新增事实。&quot;)
+    except Exception as exc:
+        final = f&quot;（聚合失败：{exc}）\n&quot; + &quot;\n\n&quot;.join(results)
+    return final + (f&quot;\n\n[预警] {escalations} 个子任务未解决，请人工介入。&quot;
+                    if escalations else &quot;&quot;)
+
+if __name__ == &quot;__main__&quot;:
+    team = {&quot;资料检索员&quot;: Agent(&quot;资料检索员&quot;, &quot;列出要点与公开事实，不虚构来源。&quot;), &quot;分析师&quot;: Agent(&quot;分析师&quot;, &quot;做结构与利弊分析，指出假设与不确定性。&quot;)}
+    print(execute(Coordinator(team), &quot;为日均百万请求的 API 网关设计限流方案，给出要点&quot;))
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：execute 集中了全部错误路径：拆解失败 → 单智能体直答（并明示降级事实，不假装多智能体跑过）；专家失败 → 按 ESCALATE 计数并在交付物尾部预警；聚合失败 → 如实返回原始子结果而不编造总结。轮次预算 i &gt;= coord.max_turns 宁可少做不可失控，直指 7.5.4 的礼貌死循环。聚合放在最后一步是因为它最贵——只有全部子结果就绪才值得花这一次调用。</p>
+</blockquote>
+<h3 id="762-框架差异速览">7.6.2 框架差异速览</h3>
+<p>同一"协调器-专家"能力在主流框架中的对应物（版本迭代快，类名以官方文档为准）：</p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>编排入口</th>
+<th>与本章骨架的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.crewai.com">CrewAI</a></td>
+<td><code>Crew</code> + <code>Agent</code>/<code>Task</code></td>
+<td>以 role/goal/backstory 定义角色；<code>Process.hierarchical</code> 内置管理者分层委派</td>
+</tr>
+<tr>
+<td><a href="https://www.langchain.com/langgraph">LangGraph</a></td>
+<td><code>StateGraph</code> + supervisor 模式</td>
+<td>图与共享状态显式建模，条件边控制路由，检查点回放调试能力强</td>
+</tr>
+<tr>
+<td><a href="https://google.github.io/adk-docs/">Google ADK</a></td>
+<td><code>LlmAgent.sub_agents</code></td>
+<td>编排即智能体树，<code>transfer_to_agent</code> 由模型自主移交</td>
+</tr>
+<tr>
+<td><a href="https://microsoft.github.io/autogen/">AutoGen</a></td>
+<td><code>GroupChat</code> / <code>SelectorGroupChat</code></td>
+<td>对话即编排，选择器决定下一位发言者，贴近群聊拓扑</td>
+</tr>
+</tbody>
+</table>
 <h3 id="763-生产化改造清单">7.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：每类失败（路由失败、专家失败、聚合失败）都定义显式降级路径与 ESCALATE 上报，禁止静默吞异常。</li>
@@ -544,9 +454,9 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://github.com/openai/swarm">OpenAI Swarm 实验性轻量编排库</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第6章 规划</span></a><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第8章 记忆管理</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#71-模式概述">7.1 模式概述</a></li><li class="toc-l3"><a href="#711-问题背景为什么需要这个模式">7.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#712-核心机制它如何工作">7.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#72-起源与历史最早是谁提出来的">7.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#73-发挥的作用为什么重要">7.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#74-实际应用与案例">7.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#75-深度讲解">7.5 深度讲解</a></li><li class="toc-l3"><a href="#751-四种通信拓扑及适用性">7.5.1 四种通信拓扑及适用性</a></li><li class="toc-l3"><a href="#752-消息协议设计">7.5.2 消息协议设计</a></li><li class="toc-l3"><a href="#753-上下文经济学">7.5.3 上下文经济学</a></li><li class="toc-l3"><a href="#754-失效模式与反模式">7.5.4 失效模式与反模式</a></li><li class="toc-l3"><a href="#755-何时不要用">7.5.5 何时不要用</a></li><li class="toc-l2"><a href="#76-工程落地实践代码示例">7.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#761-框架无关实现完整可运行">7.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#762-框架集成实现crewai">7.6.2 框架集成实现（CrewAI）</a></li><li class="toc-l3"><a href="#763-生产化改造清单">7.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#77-概览-核心要点-结论">7.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#78-延伸阅读与参考链接">7.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#71-模式概述">7.1 模式概述</a></li><li class="toc-l3"><a href="#711-问题背景为什么需要这个模式">7.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#712-核心机制它如何工作">7.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#72-源起它从哪里来">7.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#73-发挥的作用为什么重要">7.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#74-实际应用与案例">7.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#75-深度讲解">7.5 深度讲解</a></li><li class="toc-l3"><a href="#751-四种通信拓扑及适用性">7.5.1 四种通信拓扑及适用性</a></li><li class="toc-l3"><a href="#752-消息协议设计">7.5.2 消息协议设计</a></li><li class="toc-l3"><a href="#753-上下文经济学">7.5.3 上下文经济学</a></li><li class="toc-l3"><a href="#754-失效模式与反模式">7.5.4 失效模式与反模式</a></li><li class="toc-l3"><a href="#755-何时不要用">7.5.5 何时不要用</a></li><li class="toc-l3"><a href="#756-怎么用运用判断">7.5.6 怎么用：运用判断</a></li><li class="toc-l2"><a href="#76-工程落地核心源码与讲解">7.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#761-框架无关核心源码按序拼接即完整可运行">7.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#762-框架差异速览">7.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#763-生产化改造清单">7.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#77-概览-核心要点-结论">7.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#78-延伸阅读与参考链接">7.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

@@ -61,13 +61,12 @@
 <div class="fig-caption" id="fig-8-1">图 8-1：三层记忆的写入路径（对话→短窗→摘要→长期库）与读取路径（检索→拼装→注入）。</div>
 <h3 id="813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</h3>
 <p>记忆管理与检索增强生成共享"检索后注入"的机制，区别在数据源：RAG 检索外部静态语料，记忆检索的是智能体自身经历中沉淀的条目。记忆是反思模式的落点——反思产生的洞见若不写入记忆，反思就只是一次性的。多智能体协作中的黑板/共享状态本质上是"会话内的共享记忆"。工具使用模式则常把记忆库封装为工具（<code>remember</code>/<code>recall</code>），让模型自己决定存取时机。在实际系统中，记忆管理几乎总是与这几者组合出现：一个长期运行的助手 = 分层记忆 + 会话末反思写入 + 记忆读写以工具形式暴露。</p>
-<h2 id="82-起源与历史最早是谁提出来的">8.2 起源与历史：最早是谁提出来的</h2>
-<p>认知科学的源头是两座里程碑。1968 年，斯坦福的 Richard Atkinson 与 Richard Shiffrin 提出多重存储模型，把记忆分为感觉记忆、短时记忆与长时记忆三级，信息经注意与复述从上一级进入下一级，这几乎逐字预示了今天"窗口—摘要—长期库"的分层设计。1972 年，多伦多大学的 Endel Tulving 在《Organization of Memory》文集中区分了情景记忆（对具体经历的记忆）与语义记忆（对抽象事实与知识的记忆）——今天"对话原文/经历记录"与"提取出的用户事实/知识条目"的分野正是这一区分的工程投影。</p>
-<p>LLM 时代，2023 年 4 月斯坦福与 Google 的 Park 等人发表 Generative Agents，为每个智能体维护一条记忆流，用"新近性、重要性、相关性"三因子加权检索，并周期性把低层记忆合成为反思写入——这是记忆流 + 检索打分 + 反思固化的完整原型。2023 年 10 月 UC Berkeley 的 Packer 等人发表 MemGPT，用操作系统的虚拟内存隐喻管理上下文：主上下文（模型窗口内）与外部上下文（窗口外存储）之间由模型自主分页，长对话与文档分析的窗口溢出问题第一次得到系统性解法。同期 <a href="https://www.langchain.com">LangChain</a> 的 Memory 模块把"对话缓冲、摘要记忆、实体记忆"等部件工程化普及。此后记忆层走向产品化与专业化：2024 年 5 月俄亥俄州立大学的 Gutiérrez 等人发表 HippoRAG（NeurIPS 2024），受海马体索引理论启发用个性化 PageRank 在知识图谱上做多跳检索记忆；2024 年 7 月 <a href="https://mem0.ai">Mem0</a> 开源（其论文于 2025 年 4 月发布于 arXiv:2504.19413），提出用户级/会话级/智能体级的多级记忆即服务；2025 年 1 月 <a href="https://www.getzep.com">Zep</a> 团队的 Rasmussen 等人发表 Graphiti（arXiv:2501.13956），用时序知识图谱维护随时间演化的实体关系记忆。平台侧，Google 2025 年 4 月发布的 <a href="https://google.github.io/adk-docs/">Agent Development Kit（ADK）</a>把 Session（会话线程）、State（会话内工作区）、Memory（跨会话长期知识）定为三层标准模型并配套 MemoryService 检索注入；同年 Vertex AI Memory Bank 将托管化长期记忆服务推向生产。</p>
+<h2 id="82-源起它从哪里来">8.2 源起：它从哪里来</h2>
+<p>记忆管理源自认知科学与工程痛点的交汇。1968 年 Atkinson 与 Shiffrin 提出多重存储模型，把记忆分为感觉、短时、长时三级——预示了“窗口—摘要—长期库”的分层；1972 年 Tulving 区分情景记忆与语义记忆，对应“对话原文”与“事实条目”两类存储。工程线从“窗口不够用”出发：2023 年 4 月的 Generative Agents 做出记忆流+检索打分+反思固化的原型；同年 10 月 Berkeley 的 MemGPT 以虚拟内存隐喻让模型自主分页；此后 HippoRAG 引入图谱检索，Mem0 做成记忆服务，Zep 用时序图谱维护演化关系，Google ADK 又把它推向托管服务——记忆从应用逻辑变成平台基础设施。</p>
 <table>
 <thead>
 <tr>
-<th>年份月</th>
+<th>年份</th>
 <th>事件</th>
 <th>提出者/机构</th>
 <th>出处</th>
@@ -81,62 +80,31 @@
 <td>The Psychology of Learning and Motivation 第 2 卷</td>
 </tr>
 <tr>
-<td>1972</td>
-<td>情景记忆与语义记忆之分</td>
-<td>Endel Tulving（多伦多大学）</td>
-<td>Organization of Memory（Tulving &amp; Donaldson 编）</td>
-</tr>
-<tr>
 <td>2023.4</td>
-<td>Generative Agents：记忆流+三因子检索+反思固化</td>
-<td>Joon Sung Park 等（斯坦福/Google）</td>
-<td><a href="https://arxiv.org/abs/2304.03442">arXiv:2304.03442</a>；UIST 2023</td>
+<td>Generative Agents：记忆流 + 三因子检索 + 反思固化</td>
+<td>Park 等（斯坦福/Google）</td>
+<td><a href="https://arxiv.org/abs/2304.03442">arXiv:2304.03442</a></td>
 </tr>
 <tr>
 <td>2023.10</td>
-<td>MemGPT：操作系统式虚拟上下文与自主分页</td>
-<td>Charles Packer 等（UC Berkeley）</td>
+<td>MemGPT：虚拟上下文与自主分页</td>
+<td>Packer 等（UC Berkeley）</td>
 <td><a href="https://arxiv.org/abs/2310.08560">arXiv:2310.08560</a></td>
 </tr>
 <tr>
-<td>2023</td>
-<td>LangChain Memory：对话记忆模块工程化普及</td>
-<td>LangChain</td>
-<td>官方文档/开源</td>
-</tr>
-<tr>
-<td>2024.5</td>
-<td>HippoRAG：海马体索引理论启发的图谱检索</td>
-<td>B. J. Gutiérrez 等（俄亥俄州立）</td>
-<td><a href="https://arxiv.org/abs/2405.14831">arXiv:2405.14831</a>；NeurIPS 2024</td>
-</tr>
-<tr>
-<td>2024.7</td>
-<td>Mem0 开源：多级记忆即服务（论文 2025.4）</td>
+<td>2025.4</td>
+<td>Mem0 论文：多级记忆即服务与生产化</td>
 <td>Mem0 团队</td>
-<td>GitHub 开源；<a href="https://arxiv.org/abs/2504.19413">arXiv:2504.19413</a></td>
-</tr>
-<tr>
-<td>2025.1</td>
-<td>Zep/Graphiti：时序知识图谱记忆</td>
-<td>Preston Rasmussen 等（Zep AI）</td>
-<td><a href="https://arxiv.org/abs/2501.13956">arXiv:2501.13956</a></td>
+<td><a href="https://arxiv.org/abs/2504.19413">arXiv:2504.19413</a></td>
 </tr>
 <tr>
 <td>2025.4</td>
 <td>Google ADK：Session/State/Memory 三层模型</td>
 <td>Google</td>
-<td>官方发布</td>
-</tr>
-<tr>
-<td>2025</td>
-<td>Vertex AI Memory Bank：托管长期记忆服务</td>
-<td>Google Cloud</td>
-<td>官方发布</td>
+<td><a href="https://google.github.io/adk-docs/">官方文档</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络呈两条线交汇：认知科学线提供了分层与分类的概念骨架（多级存储、情景/语义之分），工程线则从"对话窗口不够用"这一具体痛点出发，先做出记忆流与虚拟上下文的原型，再沉淀为开源记忆层与云托管服务。趋势是记忆从"应用代码里的一段逻辑"变成"平台提供的基础设施"。</p>
 <h2 id="83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</h2>
 <p>记忆是把"聊天机器人"变成"助理"的分界线。第一，连续性：用户不用再自我介绍——偏好、约束、历史决定都还在，这在客服（用户档案）、编程助手（项目约定）与陪伴类产品（关系延续）里直接决定体验下限。第二，长任务的连贯性：多日推进的复杂任务中，记忆让智能体记得自己做过什么决定、为什么放弃某方案，避免循环重复劳动。第三，成本结构改善：有了摘要与检索，应用不再需要每轮携带全部历史，token 成本从平方级回到近似常数加检索开销。第四，个性化与复利：用户级记忆随使用积累，产品对老用户越来越"懂"，这是记忆带来的产品护城河。第五，它是其他模式的前提——反思需要落点，多智能体需要共享黑板，学习进化（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）需要经验库，全都依赖本章的存储与检索机制。</p>
 <h2 id="84-实际应用与案例">8.4 实际应用与案例</h2>
@@ -197,7 +165,8 @@
 </tr>
 </tbody>
 </table>
-<p>实践中四条线是叠加而非互斥：短窗 + 摘要 + 向量库是性价比最高的默认组合（见 7.6.1 式的实现），图谱在实体关系成为主要查询需求时再引入。</p>
+<p>实践中四条线是叠加而非互斥：短窗 + 摘要 + 向量库是性价比最高的默认组合（见 8.6.1 式的实现），图谱在实体关系成为主要查询需求时再引入。</p>
+<p>这笔账可以算成具体数字。<strong>成本曲线</strong>：全历史注入的输入 token 随轮次累加——20 轮对话、每轮平均 1,000 token，末轮输入约 20,000 token，全程累计约 210,000 token；检索注入则是“常数 + top-k”的近似平线，同规模约 16,000 token，相差一个数量级。按 gpt-4o-mini 官方定价每百万输入 token 0.15 美元（<a href="https://platform.openai.com/docs/models/gpt-4o-mini">OpenAI 定价页</a>）折算，单会话约 3.2 美分对 0.24 美分，乘以每月百万级会话就是每月数千美元的差价——这也是 Mem0 团队把“相对全上下文 p95 延迟降 91%、token 节省超 90%”作为核心卖点的原因（<a href="https://arxiv.org/abs/2504.19413">arXiv:2504.19413</a>），该论文同时报告在 LOCOMO 基准上比 OpenAI 官方记忆方案的准确率相对提升 26%。<strong>利用率曲线</strong>更反直觉：Liu 等人的《Lost in the Middle》（<a href="https://arxiv.org/abs/2307.03172">arXiv:2307.03172</a>，TACL）在 20 文档多文档问答上测得，GPT-3.5-Turbo 对关键文档位于<strong>开头</strong>时准确率 75.8%，位于<strong>中段</strong>时跌到 53.8%——掉了 22 个百分点，甚至<strong>低于完全不给文档的闭卷基线 56.1%</strong>：中段信息不只是被忽略，还会把模型带偏。<strong>塞得下不等于用得上</strong>——把窗口塞满全部历史是成本与质量的双输方案，分层记忆不是优化项，是正确性项。</p>
 <h3 id="852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</h3>
 <p>写入策略决定记忆库的长期质量，<strong>比检索算法更能决定成败</strong>。优先级从高到低：<strong>用户显式指令</strong>（"记住……"）必记，且标注来源为用户，检索时享受最高信任；<strong>稳定事实</strong>（身份、偏好、约束、长期项目语境）由抽取器识别后记入，条目要写成独立、自包含、可单独过期的短句（"用户主数据库为 PostgreSQL 15"），而不是带上下文的长段；<strong>一次性的过程性内容</strong>（寒暄、临时计算）不记。Generative Agents 的三因子（新近性、重要性、相关性）同样适用于写入端的 importance 打分：重要性评分可以由模型在抽取时一并给出，低分条目直接丢弃，控制库膨胀。</p>
 <p>两个工程要点。一是写入时机：即时写入（对话中识别即入库）响应快但打断主流程、错误率高；会话末批量写入质量更高，代价是会话中途崩溃会丢记忆。折中做法是重要意图即时记、其余批量。二是去重与合并：同主题新条目到达时应更新或覆盖旧条目并保留时间线，否则库会被同一事实的十种说法填满，检索噪声随之上升。</p>
@@ -209,282 +178,210 @@
 <p>多重存储模型与情景/语义之分给了本章极好的设计直觉：短窗≈短时记忆，摘要≈经复述固化的内容，长期库≈长时记忆，条目式事实≈语义记忆，原文对话≈情景记忆。但边界必须讲清楚：生物记忆的固化是神经机制，而机器记忆的固化只是一次 LLM 抽取调用；人不会把幻觉记成事实（大体上），而智能体会——抽取器抽错了，错误就获得与真记忆同等的地位。因此工程上的记忆系统比认知模型更需要"元信息"：来源、置信度、时间、信任等级。<strong>凡是不带元信息的记忆条目，都无法参与遗忘、冲突解决与信任分级</strong>，等于给自己埋雷。</p>
 <h3 id="856-何时不要用">8.5.6 何时不要用</h3>
 <p>一次性任务型应用（翻译、单轮问答、代码片段生成）不需要记忆——加记忆只增加成本与出错面。数据高度敏感且用户明确不希望留存的应用，无记忆反而是卖点。另外，如果业务本身已有权威的用户画像库（CRM），先检索 CRM 再考虑自建记忆：自建记忆层的价值在于沉淀"对话中产生、库里没有"的知识，重复建设只会造成两套真相。</p>
-<h2 id="86-工程落地实践代码示例">8.6 工程落地：实践代码示例</h2>
-<h3 id="861-框架无关实现完整可运行">8.6.1 框架无关实现（完整可运行）</h3>
-<p>实现"短窗 + 滚动摘要 + 向量长期库"三层记忆，含写入策略（显式优先、自动抽取）、相关性阈值检索、向量化失败的降级路径。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 8 章 框架无关实现：短窗 + 摘要 + 向量记忆的三层记忆。
-
-运行前设置环境变量：
-  export AGENT_LLM_API_KEY=...        # 必填
-  export AGENT_LLM_BASE_URL=...       # 可选
-  export AGENT_LLM_MODEL=...          # 可选，默认 gpt-4o-mini
-  export AGENT_LLM_EMBED_MODEL=...    # 可选，默认 text-embedding-3-small
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import json
-import os
-import time
+<h3 id="857-怎么用运用判断">8.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：①同一用户或项目会跨会话回来（客服、助理、编程助手）；②对话长度开始让早期信息失效或成本曲线抬头（约十几轮以上）；③业务能写出“什么值得记”的稳定标准（偏好、约束、决策）。三条都不满足时，短窗加摘要即可，不要建长期库。</p>
+<p><strong>边界条件</strong>：记忆条目到几万条以上、或单用户高频写入时，朴素向量库会出现相似度漂移与召回不稳，需要元数据过滤加重排兜底；抽取器错误率超过约一成时，错误条目会侵蚀整库信任——先治理写入端，再谈检索调优。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>全历史注入</th>
+<th>检索注入（本章）</th>
+<th>外部权威库（CRM/RAG）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>成本</td>
+<td>随轮次近似平方增长</td>
+<td>近似常数 + 检索开销</td>
+<td>复用现成系统，自建成本为零</td>
+</tr>
+<tr>
+<td>质量</td>
+<td>中段信息利用率骤降</td>
+<td>相关才注入，阈值兜底</td>
+<td>权威事实的首选来源</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>十轮内的短会话</td>
+<td>跨会话、对话中沉淀的知识</td>
+<td>库里已有的事实不重复建</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：①先用“短窗 + 滚动摘要”跑两周，收集“它忘了什么”的真实案例，按案例定写入标准；②加长期库与相关性阈值（0.35 起调），条目强制带时间戳与来源；③每月用“该记/不该记/该召回/不该召回”四类小评测集做回归，遗忘与隔离机制上线前必须有评测兜底。</p>
+<h2 id="86-工程落地核心源码与讲解">8.6 工程落地：核心源码与讲解</h2>
+<h3 id="861-框架无关核心源码按序拼接即完整可运行">8.6.1 框架无关核心源码（按序拼接即完整可运行）</h3>
+<p>以下四个片段按原文件顺序实现“短窗 + 滚动摘要 + 向量长期库”三层记忆：写入策略（显式优先、自动抽取限流）、相关性阈值检索、向量化失败的降级路径。<strong>按序拼接（片段 1→4）即完整可运行程序</strong>。</p>
+<p><strong>片段 1／4：基座与统一接口。</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;第 8 章 核心源码：短窗 + 滚动摘要 + 向量长期库的三层记忆（按序拼接 4 片段可运行）。&quot;&quot;&quot;
+import json, os, time
 from collections import deque
 from dataclasses import dataclass
-from typing import Optional
-
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 EMBED_MODEL = os.environ.get(&quot;AGENT_LLM_EMBED_MODEL&quot;, &quot;text-embedding-3-small&quot;)
-
 WINDOW_SIZE = 6       # 短窗保留最近 6 轮
-RELEVANCE_MIN = 0.35  # 长期记忆召回的相关性阈值：宁缺毋滥
-
+RELEVANCE_MIN = 0.35  # 长期记忆召回阈值：宁缺毋滥
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;调用 OpenAI 兼容接口。失败抛异常，由调用方降级。&quot;&quot;&quot;
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
+    &quot;&quot;&quot;调用 OpenAI 兼容接口；失败只抛异常，由调用方降级。&quot;&quot;&quot;
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else [])
+    msgs.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
     resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+        model=MODEL, messages=msgs, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
-
-
-def embed(text: str) -&gt; Optional[list[float]]:
-    &quot;&quot;&quot;向量化。失败返回 None，调用方降级为时间序召回。&quot;&quot;&quot;
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：基座只立一条规矩——失败不吞。llm() 的任何异常都向上抛，降级决策权在调用方。RELEVANCE_MIN=0.35 是“宁缺毋滥”阈值的起点：text-embedding-3-small 上不相关条目的相似度大多低于 0.2，0.35 能滤掉大部分噪声；读者应拿自己的嵌入模型在评测集上重调，不要照抄这个数。WINDOW_SIZE=6 与摘要 150 字同理，都是按“短窗保真、摘要省钱”的预算比例定的经验起点。</p>
+</blockquote>
+<p><strong>片段 2／4：向量化与记忆条目。</strong></p>
+<pre><code class="language-python">def embed(text: str) -&gt; list[float] | None:
+    &quot;&quot;&quot;向量化；失败返回 None，调用方降级为时间序召回。&quot;&quot;&quot;
     try:
         resp = client.embeddings.create(model=EMBED_MODEL, input=[text])
         return list(resp.data[0].embedding)
     except Exception:
         return None
 
-
 def cosine(a: list[float], b: list[float]) -&gt; float:
-    &quot;&quot;&quot;纯 Python 余弦相似度（演示规模够用；生产请换向量库）。&quot;&quot;&quot;
-    dot = sum(x * y for x, y in zip(a, b))
-    na = sum(x * x for x in a) ** 0.5
-    nb = sum(y * y for y in b) ** 0.5
-    return dot / (na * nb) if na and nb else 0.0
-
+    &quot;&quot;&quot;余弦相似度；演示规模够用，生产请换向量库。&quot;&quot;&quot;
+    na, nb = sum(x * x for x in a) ** 0.5, sum(y * y for y in b) ** 0.5
+    return sum(x * y for x, y in zip(a, b)) / (na * nb) if na and nb else 0.0
 
 @dataclass
 class MemoryItem:
-    &quot;&quot;&quot;一条长期记忆：必须带来源与时间，否则无法参与过期与信任分级。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;一条长期记忆：独立短句 + 来源 + 时间戳，否则无法过期与分级。&quot;&quot;&quot;
     text: str
-    embedding: Optional[list[float]]
+    embedding: list[float] | None
     ts: float
     source: str = &quot;auto&quot;  # auto=模型抽取 | user=用户显式要求记住
-
-
-class LayeredMemory:
-    &quot;&quot;&quot;三层记忆：短窗（工作层）-&gt; 滚动摘要（压缩层）-&gt; 向量条目（长期层）。&quot;&quot;&quot;
-
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：embed() 失败返回 None 而不是抛异常——向量化是外部依赖，挂掉不该拖垮记忆主流程，调用方拿到 None 就走时间序降级。MemoryItem 的元数据是硬约束：text 必须是独立自包含的短句（“用户主库是 PostgreSQL 15”，而非“他说的那个数据库”），否则脱离上下文就不可用；ts 与 source 支撑 8.5.3 的过期机制与 8.5.4 的信任分级——这些原则直接落在类型定义上，而不是靠自觉。cosine 用纯 Python 只为演示可读，生产请换向量库。</p>
+</blockquote>
+<p><strong>片段 3／4：写入路径（短窗 → 摘要 → 长期层）。</strong></p>
+<pre><code class="language-python">class LayeredMemory:
+    &quot;&quot;&quot;写入路径：短窗（工作层）-&gt; 滚动摘要（压缩层）-&gt; 向量条目（长期层）。&quot;&quot;&quot;
     def __init__(self) -&gt; None:
         self.window: deque[tuple[str, str]] = deque(maxlen=WINDOW_SIZE)
         self.summary: str = &quot;&quot;
         self.long_term: list[MemoryItem] = []
 
-    # ---------- 写入路径 ----------
-
     def add_exchange(self, user: str, assistant: str) -&gt; None:
-        &quot;&quot;&quot;记录一轮对话；窗口满时把最旧一半升入摘要层。&quot;&quot;&quot;
+        &quot;&quot;&quot;记录一轮对话；窗口满即触发最旧一半升入摘要层。&quot;&quot;&quot;
         self.window.append((user, assistant))
         if len(self.window) == self.window.maxlen:
             self._condense()
 
     def _condense(self) -&gt; None:
-        &quot;&quot;&quot;窗口满：逐出最旧一半 -&gt; 合并摘要 -&gt; 从原文抽取事实入长期层。&quot;&quot;&quot;
+        &quot;&quot;&quot;逐出最旧一半 -&gt; 合并进滚动摘要 -&gt; 从原文抽取事实入长期层。&quot;&quot;&quot;
         evicted = [self.window.popleft() for _ in range(WINDOW_SIZE // 2)]
         transcript = &quot;\n&quot;.join(f&quot;用户：{u}\n助手：{a}&quot; for u, a in evicted)
         try:
-            merged = llm(
-                &quot;把旧摘要与新对话合并成不超过 150 字的摘要，只保留事实、决定与未完成事项。\n&quot;
-                f&quot;旧摘要：{self.summary or '（空）'}\n新对话：\n{transcript}&quot;,
-                temperature=0.0,
-            ).strip()
+            self.summary = llm(&quot;把旧摘要与新对话合并成不超过 150 字的摘要，只保留事实、&quot;
+                               &quot;决定与未完成事项。\n旧摘要：&quot; + (self.summary or &quot;（空）&quot;)
+                               + &quot;\n新对话：\n&quot; + transcript, temperature=0.0).strip()
         except Exception:
-            # 摘要调用失败：截断保底，绝不静默丢弃整段历史
-            merged = (self.summary + &quot;\n&quot; + transcript)[-150:]
-        self.summary = merged
+            self.summary = (self.summary + &quot;\n&quot; + transcript)[-150:]  # 摘要失败截断保底
         self._extract_facts(transcript)
 
     def _extract_facts(self, transcript: str) -&gt; None:
-        &quot;&quot;&quot;写入策略：只把值得跨会话记住的稳定事实写入长期层。&quot;&quot;&quot;
+        &quot;&quot;&quot;写入策略：只沉淀值得跨会话记住的稳定事实（宁缺毋滥）。&quot;&quot;&quot;
         try:
-            raw = llm(
-                &quot;从对话中提取 0~3 条值得长期记住的用户事实（身份/偏好/约束），&quot;
-                &quot;每条写成独立短句；没有就输出 []。只输出 JSON 字符串数组。\n对话：\n&quot;
-                + transcript,
-                system=&quot;只输出 JSON 数组。&quot;,
-                temperature=0.0,
-            )
+            raw = llm(&quot;从对话中提取 0~3 条值得长期记住的用户事实（身份/偏好/约束），&quot;
+                      &quot;每条独立成句；没有就输出 []。只输出 JSON 数组。\n&quot; + transcript,
+                      system=&quot;只输出 JSON 数组。&quot;, temperature=0.0)
             facts = json.loads(raw)
         except Exception:
-            facts = []  # 抽取失败：本轮不记，比记错安全
+            return  # 抽取失败：本轮不记，比记错安全
         for fact in facts if isinstance(facts, list) else []:
-            text = str(fact).strip()
-            if text:
-                self.long_term.append(
-                    MemoryItem(text=text, embedding=embed(text), ts=time.time())
-                )
-
-    def remember(self, text: str) -&gt; None:
-        &quot;&quot;&quot;用户显式要求记住：最高优先级，绕过抽取器直接入库。&quot;&quot;&quot;
-        self.long_term.append(
-            MemoryItem(text=text, embedding=embed(text), ts=time.time(), source=&quot;user&quot;)
-        )
-
-    # ---------- 读取路径 ----------
-
+            if text := str(fact).strip():
+                self.long_term.append(MemoryItem(text, embed(text), time.time()))
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：写入路径是个小状态机：短窗满（6 轮）→ 逐出最旧一半 → 合并进 150 字滚动摘要 → 从原文抽取 0~3 条稳定事实入长期层。摘要调用失败时截断保底——丢精度好过丢历史；抽取失败直接放弃本轮——宁可不记，不可记错；上限 3 条是给库膨胀上的第一道闸。150 字与 3 条都是经验起点：摘要过长会挤占每轮窗口预算，抽取过滥会把过程性内容记进长期层。</p>
+</blockquote>
+<p><strong>片段 4／4：读取路径与注入拼装。</strong></p>
+<pre><code class="language-python">class LayeredReader(LayeredMemory):
+    &quot;&quot;&quot;读取路径：长期检索命中 -&gt; 滚动摘要 -&gt; 近期原文，按此优先级拼装注入。&quot;&quot;&quot;
     def recall(self, query: str, k: int = 3) -&gt; list[str]:
-        &quot;&quot;&quot;检索长期记忆：相似度阈值过滤；向量化失败降级为按时间取最近。&quot;&quot;&quot;
+        &quot;&quot;&quot;检索长期记忆：阈值过滤；向量化失败降级为按时间取最近。&quot;&quot;&quot;
         q = embed(query)
         if q is None:
             return [m.text for m in sorted(self.long_term, key=lambda m: -m.ts)[:k]]
-        scored: list[tuple[float, str]] = []
-        for m in self.long_term:
-            if m.embedding is None:
-                continue
-            sim = cosine(q, m.embedding)
-            if sim &gt;= RELEVANCE_MIN:
-                scored.append((sim, m.text))
+        scored = [(s, m.text) for m in self.long_term
+                  if m.embedding is not None
+                  and (s := cosine(q, m.embedding)) &gt;= RELEVANCE_MIN]
         scored.sort(reverse=True)
         return [t for _, t in scored[:k]]
 
     def build_context(self, query: str) -&gt; str:
-        &quot;&quot;&quot;拼装注入提示的记忆块：长期命中 -&gt; 滚动摘要 -&gt; 近期原文。&quot;&quot;&quot;
+        &quot;&quot;&quot;拼装注入提示的记忆块：长期命中最具体所以放最前，近期原文保底。&quot;&quot;&quot;
         parts: list[str] = []
-        hits = self.recall(query)
-        if hits:
+        if hits := self.recall(query):
             parts.append(&quot;【相关长期记忆】\n&quot; + &quot;\n&quot;.join(f&quot;- {t}&quot; for t in hits))
         if self.summary:
             parts.append(&quot;【更早对话摘要】\n&quot; + self.summary)
         if self.window:
-            recent = &quot;\n\n&quot;.join(f&quot;用户：{u}\n助手：{a}&quot; for u, a in self.window)
-            parts.append(&quot;【最近对话】\n&quot; + recent)
+            parts.append(&quot;【最近对话】\n&quot; + &quot;\n\n&quot;.join(
+                f&quot;用户：{u}\n助手：{a}&quot; for u, a in self.window))
         return &quot;\n\n&quot;.join(parts) or &quot;（暂无记忆）&quot;
 
-
 if __name__ == &quot;__main__&quot;:
-    mem = LayeredMemory()
-    convos = [
-        (&quot;我叫林一，后端工程师，主要写 Go。&quot;, &quot;你好林一！&quot;),
-        (&quot;我们生产库是 PostgreSQL 15。&quot;, &quot;记下了。&quot;),
-        (&quot;帮我看一条慢 SQL。&quot;, &quot;好的，发出来。&quot;),
-        (&quot;另外我对海鲜过敏。&quot;, &quot;明白，涉及餐饮推荐时会避开。&quot;),
-        (&quot;我们团队一共 6 个人。&quot;, &quot;了解。&quot;),
-        (&quot;服务都跑在 k8s 上。&quot;, &quot;好的。&quot;),
-    ]
-    for u, a in convos:
-        mem.add_exchange(u, a)
-    mem.remember(&quot;用户要求：所有代码示例必须带中文注释。&quot;)  # 显式记忆
-    query = &quot;帮我推荐一个团建餐厅&quot;
-    context = mem.build_context(query)
-    print(&quot;===== 注入的记忆上下文 =====\n&quot;, context)
-    answer = llm(f&quot;参考以下记忆回答用户：\n{context}\n\n用户问题：{query}&quot;)
-    print(&quot;\n===== 助手回答 =====\n&quot;, answer)  # 应体现&quot;海鲜过敏&quot;与&quot;6 人团队&quot;
+    mem = LayeredReader()
+    demo = [&quot;我叫林一，写 Go。&quot;, &quot;生产库是 PostgreSQL 15。&quot;, &quot;帮我看条慢 SQL。&quot;,
+            &quot;我对海鲜过敏。&quot;, &quot;团队 6 个人。&quot;, &quot;服务跑在 k8s 上。&quot;]
+    for text in demo:
+        mem.add_exchange(text, &quot;好的。&quot;)  # 第 6 轮触发：逐出 -&gt; 摘要 -&gt; 事实抽取
+    print(mem.build_context(&quot;帮我推荐一个团建餐厅&quot;))  # 应命中“海鲜过敏”长期条目
 </code></pre>
-<h3 id="862-框架集成实现google-adk-的-session-state-memory">8.6.2 框架集成实现（Google ADK 的 Session / State / Memory）</h3>
-<p>ADK 把记忆定为三层：Session 是一次对话线程；State 是会话内可读写的键值工作区（<code>user:</code> 前缀的键跨会话共享，<code>app:</code> 全局，<code>temp:</code> 仅本会话）；Memory 是跨会话长期库，由 MemoryService 负责写入（<code>add_session_to_memory</code>）与检索（<code>search_memory</code>）。以下按 google-adk 1.x（2025）Python API 编写，ADK 迭代较快，接口签名请以所用版本官方文档为准；检索结果字段做了防御式读取。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 8 章 框架集成实现：Google ADK 三层 Session / State / Memory。
-
-安装：pip install google-adk
-模型与密钥按 ADK 文档配置环境变量（如 GOOGLE_API_KEY，或经 litellm 兼容层）。
-注：按 google-adk 1.x（2025）API 编写，方法签名以官方文档为准。
-&quot;&quot;&quot;
-import asyncio
-import os
-
-from google.adk.agents import LlmAgent
-from google.adk.memory import InMemoryMemoryService
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.genai import types
-
-APP, USER = &quot;assistant&quot;, &quot;u-001&quot;
-
-
-def build_agent() -&gt; LlmAgent:
-    return LlmAgent(
-        name=&quot;assistant&quot;,
-        model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gemini-2.0-flash&quot;),
-        instruction=(
-            &quot;你是长期助理。回答时优先使用会话状态与已召回的长期记忆，&quot;
-            &quot;记忆中没有的信息不要编造。&quot;
-        ),
-    )
-
-
-async def main() -&gt; None:
-    session_service = InMemorySessionService()
-    memory_service = InMemoryMemoryService()
-
-    # ① Session + State：一次对话线程；state 是会话内工作区（user: 前缀跨会话共享）
-    session = await session_service.create_session(
-        app_name=APP, user_id=USER, state={&quot;user:db&quot;: &quot;PostgreSQL 15&quot;}
-    )
-    runner = Runner(
-        agent=build_agent(),
-        app_name=APP,
-        session_service=session_service,
-        memory_service=memory_service,
-    )
-
-    async def chat(session_id: str, text: str) -&gt; str:
-        &quot;&quot;&quot;在指定会话里发一条消息，返回最终回复；失败如实返回错误。&quot;&quot;&quot;
-        msg = types.Content(role=&quot;user&quot;, parts=[types.Part(text=text)])
-        final = &quot;&quot;
-        try:
-            async for event in runner.run_async(
-                user_id=USER, session_id=session_id, new_message=msg
-            ):
-                if event.is_final_response() and event.content and event.content.parts:
-                    final = event.content.parts[0].text or &quot;&quot;
-        except Exception as exc:
-            final = f&quot;[调用失败：{exc}]&quot;
-        return final
-
-    print(&quot;会话1回复：&quot;, await chat(session.id, &quot;我主库是 PostgreSQL 15，慢查询变多了。&quot;))
-
-    # ② 把整段会话写入长期记忆（Memory 层，供未来会话检索）
-    finished = await session_service.get_session(
-        app_name=APP, user_id=USER, session_id=session.id
-    )
-    try:
-        await memory_service.add_session_to_memory(finished)
-    except Exception as exc:
-        print(&quot;记忆写入失败（会话可继续，但跨会话召回将不可用）：&quot;, exc)
-
-    # ③ 新会话：验证 State 的用户级持久化 + Memory 的跨会话召回
-    s3 = await session_service.create_session(app_name=APP, user_id=USER)
-    fresh = await session_service.get_session(
-        app_name=APP, user_id=USER, session_id=s3.id
-    )
-    print(&quot;跨会话 user:db =&quot;, fresh.state.get(&quot;user:db&quot;, &quot;（未记录）&quot;))
-
-    try:
-        hits = await memory_service.search_memory(
-            app_name=APP, user_id=USER, query=&quot;数据库版本 慢查询&quot;
-        )
-        texts: list[str] = []
-        for m in getattr(hits, &quot;memories&quot;, []):  # 字段名随版本有差异：防御式读取
-            content = getattr(m, &quot;content&quot;, None)
-            texts.append(content if isinstance(content, str) else str(content))
-        print(&quot;记忆召回：&quot;, texts[:3] if texts else &quot;（无命中）&quot;)
-    except Exception as exc:
-        print(&quot;记忆召回失败：&quot;, exc)
-
-    # 生产中应把召回结果拼入提示；此处直接对话验证连贯性
-    print(&quot;会话2回复：&quot;, await chat(s3.id, &quot;我的数据库是什么版本来着？&quot;))
-
-
-if __name__ == &quot;__main__&quot;:
-    asyncio.run(main())
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：读取路径三级拼装的顺序就是 8.1.2 的注入优先级——长期命中最具体所以放最前，摘要比原文轻，近期原文保底。recall 的降级序同理：向量化失败时按时间取最近，新鲜度是相关性的最好替身。LayeredReader 继承 LayeredMemory 是刻意设计：写入与读取是两条可以独立演进的技术线。主演示跑 6 轮触发逐出，查询“团建餐厅”应命中“海鲜过敏”与“6 人团队”两条事实——这就是记忆系统在工作的直接证据。</p>
+</blockquote>
+<h3 id="862-框架差异速览">8.6.2 框架差异速览</h3>
+<p>同一“三层记忆”能力在主流框架中的对应物（版本迭代快，接口名以官方文档为准）：</p>
+<table>
+<thead>
+<tr>
+<th>框架/产品</th>
+<th>核心抽象</th>
+<th>与本章骨架的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://python.langchain.com">LangChain Memory</a></td>
+<td><code>ChatMessageHistory</code> / 摘要记忆</td>
+<td>短窗、摘要、实体记忆做成可插拔组件，读写时机由应用控制</td>
+</tr>
+<tr>
+<td><a href="https://www.letta.com">MemGPT/Letta</a></td>
+<td>分页式主/外上下文</td>
+<td>模型自主决定换页时机，窗口外存储对模型可见可检索</td>
+</tr>
+<tr>
+<td><a href="https://docs.mem0.ai">Mem0</a></td>
+<td><code>add()</code> / <code>search()</code> 记忆即服务</td>
+<td>写入侧自动抽取与更新，检索侧带元数据过滤的托管 API</td>
+</tr>
+<tr>
+<td><a href="https://google.github.io/adk-docs/">Google ADK</a></td>
+<td><code>Session</code>/<code>State</code>/<code>MemoryService</code></td>
+<td>三层职责分明：会话线程、会话内工作区、跨会话库检索注入</td>
+</tr>
+<tr>
+<td><a href="https://github.com/getzep/graphiti">Zep/Graphiti</a></td>
+<td>时序知识图谱</td>
+<td>实体关系带双时间戳，支持“某时期的状态”查询与矛盾覆盖</td>
+</tr>
+</tbody>
+</table>
 <h3 id="863-生产化改造清单">8.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：向量化失败降级为时间序召回，抽取失败宁可不记，摘要失败截断保底——每层都有降级路径。</li>
@@ -536,9 +433,9 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://mem0.ai/series-a">Mem0 Series A 公告</a>（生产采用规模与 AWS Agent SDK 合作）</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch07-multi-agent.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第7章 多智能体协作</span></a><a class="pager" href="../chapters/ch09-learning-adaptation.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第9章 学习与适应</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-起源与历史最早是谁提出来的">8.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l2"><a href="#86-工程落地实践代码示例">8.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#861-框架无关实现完整可运行">8.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#862-框架集成实现google-adk-的-session-state-memory">8.6.2 框架集成实现（Google ADK 的 Session / State / Memory）</a></li><li class="toc-l3"><a href="#863-生产化改造清单">8.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-源起它从哪里来">8.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l3"><a href="#857-怎么用运用判断">8.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#86-工程落地核心源码与讲解">8.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#861-框架无关核心源码按序拼接即完整可运行">8.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#862-框架差异速览">8.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#863-生产化改造清单">8.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

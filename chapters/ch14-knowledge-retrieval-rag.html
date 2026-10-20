@@ -65,8 +65,8 @@
 <div class="fig-caption" id="fig-14-1">图 14-1：两段式 RAG 管道——离线建库与在线检索生成解耦；在线侧双路召回求全、重排求精，相关性低于阈值走拒答而非硬答。</div>
 <h3 id="1413-与相邻模式的关系与组合">14.1.3 与相邻模式的关系与组合</h3>
 <p>与工具使用的关系是特例与推广：检索本质上是"只读工具"中最常用的一类，完整 RAG 系统常常作为一组工具（搜索、取文档、翻页）暴露给会自主决策的 agent。与记忆模式的关系是外置知识记忆：记忆存的是交互历史与用户偏好，RAG 知识库存的是领域文档，两者常共用同一套向量检索基建。与提示链的关系是两段式流水线：检索段与生成段各是一次调用，中间的资料拼接是状态传递。与评估监控的关系尤其紧密：RAG 的错误可能是检索错也可能是生成错，必须分开度量（检索命中率、引用准确率、答案忠实度），<a href="https://arxiv.org/abs/2309.15217">RAGAS</a> 这类评估框架因此成为标配。与多智能体的关系是角色化：在复杂研究任务里，"检索员"是一个专职角色，用 RAG 管道武装，向协调者交付带来源的要点清单。</p>
-<h2 id="142-起源与历史最早是谁提出来的">14.2 起源与历史：最早是谁提出来的</h2>
-<p>RAG 的直接前身是信息检索半个世纪的积累。词权重思想可追溯到 1972 年 Karen Spärck Jones 提出逆文档频率（IDF）；其概率化框架由 Robertson 与 Zaragoza 2009 年的 BM25 专著系统化，BM25 至今仍是稀疏检索的事实标准与一切新检索器的对照组。神经检索方面，2013 年 word2vec 确立了"词的分布式向量表示"，此后句子与段落的语义向量逐步成熟；大规模近邻检索的工程瓶颈由 Malkov 与 Yashunin 2016 年提出的 HNSW 图索引解决（后刊于 TPAMI 2018），让"亿级向量的毫秒级检索"成为可能。2020 年是 RAG 的元年：2 月 Google 的 REALM 首次把知识库检索嵌入预训练目标，让语言模型"带着检索器训练"；4 月 Facebook AI 的 DPR 用对比学习训出可用的稠密段落检索器，证明双塔向量检索能大幅超越 BM25；5 月 Lewis 等人（Facebook AI/UCL/NYU）发表《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》，首次以 RAG 命名"参数化记忆 + 非参数化检索"的组合，端到端训练序列生成器与检索器。此后 RAG 从"训练时的组件"演化为"应用时的工程管道"，各环节相继专门化：2022 年底 HyDE 用"假设文档"弥合查询与文档的词汇鸿沟；2023 年 Self-RAG 让模型学会判断何时检索、检索结果是否可用；2024 年初 CRAG 引入检索质量评估与纠错回退，GraphRAG 把知识图谱结构引入社区摘要式检索；评估侧则有 2023 年的 RAGAS 提供免参考指标的评估框架。</p>
+<h2 id="142-源起它从哪里来">14.2 源起：它从哪里来</h2>
+<p>RAG 的名字诞生于 2020 年 5 月：Facebook AI 的 Lewis 等人首次把“参数化记忆 + 非参数化检索”作为可端到端训练的组合命名。它的两个部件各有更长的前史：检索侧是信息检索半个世纪的积累（IDF、BM25、HNSW 图索引），生成侧是“让模型带着检索器”的尝试——2 月 REALM 把检索嵌进预训练目标，4 月 DPR 训出超越 BM25 的稠密检索器。此后 RAG 从训练组件退火成应用层管道，HyDE、RAGAS、Self-RAG、CRAG、GraphRAG 相继专门化各环节，谱系见 14.5.7。</p>
 <table>
 <thead>
 <tr>
@@ -77,18 +77,6 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>2009</td>
-<td>BM25 概率检索框架系统化，稀疏检索事实标准</td>
-<td>Robertson、Zaragoza</td>
-<td><a href="https://doi.org/10.1561/1500000019">Foundations and Trends in IR</a></td>
-</tr>
-<tr>
-<td>2016年3月</td>
-<td>HNSW 近邻图索引，亿级向量毫秒检索</td>
-<td>Malkov、Yashunin</td>
-<td><a href="https://arxiv.org/abs/1603.09320">arXiv:1603.09320</a>（TPAMI 2018）</td>
-</tr>
 <tr>
 <td>2020年2月</td>
 <td>REALM：检索嵌入预训练，知识库即参数外置</td>
@@ -103,25 +91,13 @@
 </tr>
 <tr>
 <td>2020年5月</td>
-<td>RAG 正式命名：参数化记忆+非参数化检索端到端训练</td>
+<td>RAG 正式命名：参数化记忆+非参数化检索</td>
 <td>Lewis et al.（Facebook AI/UCL/NYU）</td>
 <td><a href="https://arxiv.org/abs/2005.11401">arXiv:2005.11401</a>（NeurIPS 2020）</td>
 </tr>
 <tr>
-<td>2022年12月</td>
-<td>HyDE：假设文档检索，弥合查询-文档词汇鸿沟</td>
-<td>Gao et al.</td>
-<td><a href="https://arxiv.org/abs/2212.10496">arXiv:2212.10496</a>（ACL 2023）</td>
-</tr>
-<tr>
-<td>2023年9月</td>
-<td>RAGAS：免参考的 RAG 评估框架</td>
-<td>Es et al.</td>
-<td><a href="https://arxiv.org/abs/2309.15217">arXiv:2309.15217</a>（EACL 2024）</td>
-</tr>
-<tr>
 <td>2023年10月</td>
-<td>Self-RAG：模型自判何时检索、检索结果可不可用</td>
+<td>Self-RAG：模型自判何时检索、结果可不可用</td>
 <td>Asai et al.</td>
 <td><a href="https://arxiv.org/abs/2310.11511">arXiv:2310.11511</a>（ICLR 2024）</td>
 </tr>
@@ -131,15 +107,8 @@
 <td>Yan et al.</td>
 <td><a href="https://arxiv.org/abs/2401.15884">arXiv:2401.15884</a></td>
 </tr>
-<tr>
-<td>2024年4月</td>
-<td>GraphRAG：知识图谱 + 社区摘要的结构化检索</td>
-<td>Edge et al.（Microsoft）</td>
-<td><a href="https://arxiv.org/abs/2404.16130">arXiv:2404.16130</a></td>
-</tr>
 </tbody>
 </table>
-<p>演化脉络可以概括为三次跳变。第一次是知识外置（2020）：REALM/DPR/RAG 三连发确立了"检索器 + 生成器"的组合范式，知识库第一次成为模型的"外挂参数"。第二次是工程管道化（2021-2023）：RAG 从端到端联合训练的模型组件，变成不训练任何东西、纯靠提示词拼接的应用层管道——正是这个降门槛让 RAG 成为企业落地的默认选项。第三次是自省化（2023 至今）：Self-RAG、CRAG 一类工作把"要不要检索、检索得好不好"变成模型自己可以判断的对象，管道开始拥有自我纠错回路。贯穿始终的底层竞争是检索表示：稀疏词面、稠密向量、图结构，三者不是替代关系而是互补关系——这正是混合检索成为生产标配的原因。</p>
 <h2 id="143-发挥的作用为什么重要">14.3 发挥的作用：为什么重要</h2>
 <p>第一，知识的即时更新能力。业务知识以天为单位变化，RAG 把知识更新从训练周期解耦成索引操作——换一份文档，答案立刻跟上，这在动态业务里<strong>不是优化项而是可用性前提</strong>。第二，可溯源带来的信任与合规。每条回答能指出"依据资料第几条"，错误可以定位到具体文档，审核者可以核对而非盲信；在受监管行业，没有溯源的生成式回答根本无法上线。第三，权限与隔离。知识库天然带权限体系——检索前按用户身份过滤元数据，比让模型"知道但不说"可靠得多：模型不掌握的知识泄不了密。第四，成本优势。相对微调，RAG 不需要训练数据工程与训练算力；相对长上下文直塞，检索只把最相关的几千字送进窗口，token 费用低一个量级，还绕开了长上下文中部的注意力衰减。第五，它是 agent 触达私有世界的标准接口：工具连接动作，RAG 连接知识，两者的组合构成了 agent 应用的基本盘。</p>
 <h2 id="144-实际应用与案例">14.4 实际应用与案例</h2>
@@ -168,154 +137,137 @@
 <p>多路召回不只是"稀疏+稠密"两路：同义改写查询、假设文档、原文查询各自成一路，RRF 一并融合。路数的边际收益递减且延迟线性叠加，生产上常见配置是"原文双路 + 一路改写"，再多就要评估延迟预算了。</p>
 <h3 id="1455-引用溯源与幻觉的两种来源">14.5.5 引用溯源与幻觉的两种来源</h3>
 <p>RAG 系统的幻觉要拆成两种来源分别治理，因为病根不同、药方不同。<strong>第一种：检索不到</strong>。知识库里根本没有答案，或检索器没找对——模型却仍要作答，于是编造。这是最常见的幻觉形态，防线有三：检索相关性下限（重排分低于阈值即判"未命中"）；显式拒答通道（提示词里明确"资料不足以回答时直说不知道"，并且把这当成正确行为而非失败）；库内自检（对关键事实性问题，要求答案中的每个事实都能在引用文本中找到出处，找不到就拒答）。<strong>第二种：检索了不用</strong>。资料明明在上下文里，模型却无视它、按参数记忆或想象自由发挥，甚至与资料矛盾。防线：提示词用强约束格式（"仅依据以下资料作答"）；要求逐句标注引用标记，答案里每个论断都挂 [n]；生成后做引用一致性校验（[n] 指向的文本是否真的支持该论断——可以用便宜模型做 NLI 级别的检查）。两种来源的度量也要分开：<strong>检索未命中率是检索侧指标（优化检索），引用不一致率是生成侧指标（优化提示与校验）</strong>，混在一起看永远不知道该改哪一环。</p>
-<p>位置效应是生成侧的隐性陷阱：Liu 等人 2023 年的"Lost in the Middle"（<a href="https://arxiv.org/abs/2307.03172">arXiv:2307.03172</a>）实验表明，模型对长上下文两端的信息利用好于中段——关键资料恰好躺在上下文中部时，被无视的概率显著上升。对策是把重排后的最相关资料放在上下文最前（或最末），而不是按相关性降序自然排布。</p>
+<p>位置效应是生成侧的隐性陷阱：Liu 等人 2023 年的"Lost in the Middle"（<a href="https://arxiv.org/abs/2307.03172">arXiv:2307.03172</a>）实验表明，模型对长上下文两端的信息利用好于中段——多文档问答实验里，把含答案的文档从上下文首尾挪到中段，多个模型家族的准确率下降超过 20 个百分点。对策是把重排后的最相关资料放在上下文最前（或最末），而不是按相关性降序自然排布。</p>
+<p>检索质量评估器的纠错收益同样可以量化。CRAG（<a href="https://arxiv.org/abs/2401.15884">arXiv:2401.15884</a>）在检索与生成之间插入一个轻量评估器，按检索质量分三路：正确（精炼后使用）、模糊（补网络检索）、错误（弃用重检）。开源复现研究（<a href="https://arxiv.org/html/2603.16169">arXiv:2603.16169</a>，PopQA 长尾子集 n=1,385）测得：评估器判为"正确"的子集准确率 78.1%，而不做评估的朴素 RAG 整体只有 51.4%；更值得警惕的是判为"模糊"的子集——不做网络补充直接生成的准确率只有 19.3%。这里藏着 RAG 最反直觉的一条工程事实：<strong>大家以为"检索到几条相关资料总比没有强"，实验与工程事实是半相关资料会主动误导生成</strong>——该复现研究引用的实验表明，往上下文塞无关或弱相关材料，效果可以差过完全不检索。这正是相关性下限与拒答通道存在的理由：拿不准的资料宁可不放，"资料不足以回答"是正确行为而非失败。</p>
 <h3 id="1456-何时不用-rag与长上下文微调的边界">14.5.6 何时不用 RAG：与长上下文、微调的边界</h3>
 <p>RAG 不是默认选项，有三个替代路径各有边界。<strong>长上下文直塞</strong>：知识总量小于窗口（比如一份 50 页的手册）且更新频率低时，整份塞进上下文比搭索引更简单、更便宜（免索引维护、免检索调优）、效果往往更好（模型看到全貌，没有召回失误）。它的边界在四点：token 费用随每次查询线性付出（百万 token 的库每次查询都是全额）、中段注意力衰减、权限无法按查询者隔离、知识量增长撞上窗口上限。经验判据：总量在数十万 token 以内、全库对每个查询都"可能相关"时，直塞优先。<strong>微调</strong>：教"能力"（风格、格式、领域推理方式）用微调，给"事实"用 RAG——微调灌输的事实更新慢、易幻觉、无法溯源，让模型背知识是拿最贵的存储干最便宜的事。<strong>参数化检索（REALM 式联合训练）</strong>：端到端训练检索器与生成器效果最好，但需要训练基建与标注数据，应用团队很少走这条路。</p>
 <p>判据汇总成四个问题：知识规模多大？（小→直塞）更新多频繁？（频繁→必须外置索引）权限要不要按人隔离？（要→检索式过滤）答案要不要可溯源？（要→必须有引用机制，RAG 或其变体）。<strong>四个问题答完，选型基本自动得出</strong>。还要警惕一个反模式：知识库本身就是垃圾场——文档过期、互相矛盾、无人维护的 RAG 系统，输出的是"带引用的胡说八道"，溯源机制反而给错误镀了金。<strong>RAG 上线前先清库，永远比先调参更有效</strong>。</p>
-<h2 id="146-工程落地实践代码示例">14.6 工程落地：实践代码示例</h2>
-<h3 id="1461-框架无关实现完整可运行">14.6.1 框架无关实现（完整可运行）</h3>
-<p>下面的实现是一个最小但完整的 RAG 管道：纯 Python 手写 BM25（词面精确性）、同源 embeddings 接口的稠密检索（语义泛化）、RRF 倒数排名融合（免调参合并两路排名）、LLM 逐点重排加相关性下限（低于阈值走拒答通道）、带引用生成。演示覆盖两条路径：能答的问题给出带引用的回答，库外问题如实回答"未找到"。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 14 章 框架无关实现：BM25+向量混合检索 + RRF 融合 + rerank + 引用生成的最小 RAG 管道。
-
-依赖：pip install openai
-环境变量：
-  AGENT_LLM_BASE_URL / AGENT_LLM_API_KEY / AGENT_LLM_MODEL   对话模型（同 llm() 约定）
-  AGENT_EMBED_MODEL   embedding 模型名（默认 text-embedding-3-small）
-&quot;&quot;&quot;
+<p>"直塞更便宜"是常见的直觉误区，这笔账用公开定价算成硬数字就清楚了。以 <a href="https://platform.openai.com/docs/pricing">OpenAI 官方定价</a>为例：gpt-4o-mini 输入 $0.15/百万 token，gpt-4o 输入 $2.50/百万 token。一份 100 页文档约 5 万 token，直塞方案<strong>每次提问都全额支付</strong>这 5 万 token 的输入费——4o-mini 约 $0.0075/次、4o 约 $0.125/次；RAG 方案只把重排后的三五块（约 1 千 token）送进窗口，输入费低约 50 倍。<strong>两者单次成本之比约等于"送进窗口的 token 量之比"，与模型单价无关</strong>：直塞成本随文档长度线性增长，RAG 的单次成本近似常数；检索侧的开销反而是一次性的——5 万 token 的索引 embedding 按百万 token 一两美分的定价，总成本不到 1 美分。查询量越大、库越长，这笔账越倒向 RAG；直塞只在"总量小且每个查询都全库相关"时才划算。</p>
+<h3 id="1457-怎么用运用判断">14.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>。出现以下特征就该上 RAG：答案主要"在文档里"而不是"在推理里"（制度问答、故障排查、法条引用）；知识以天为单位更新，微调周期追不上；答案需要给出处（合规、审计、用户信任）；不同用户可见的知识范围不同（权限隔离）；知识总量超出任何上下文窗口。反过来，教模型"怎么答"（风格、格式、领域推理）是微调的事，知识总量小到一份手册就装下是直塞的事（见 14.5.6）。</p>
+<p><strong>与最近替代方案的对比</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>RAG</th>
+<th>长上下文直塞</th>
+<th>微调</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>知识更新</td>
+<td>秒级（更新索引）</td>
+<td>快（改提示内容）</td>
+<td>慢（重训，天级起）</td>
+</tr>
+<tr>
+<td>单次成本</td>
+<td>近常数（只送命中块）</td>
+<td>随库容线性涨</td>
+<td>最低（无额外输入）</td>
+</tr>
+<tr>
+<td>可溯源</td>
+<td>强（逐条引用）</td>
+<td>弱（无结构化出处）</td>
+<td>无</td>
+</tr>
+<tr>
+<td>权限隔离</td>
+<td>检索层强制执行</td>
+<td>做不到</td>
+<td>做不到</td>
+</tr>
+<tr>
+<td>知识规模上限</td>
+<td>亿级块</td>
+<td>窗口上限</td>
+<td>参数容量（且易幻觉）</td>
+</tr>
+</tbody>
+</table>
+<p>谱系速览（演化的来路就是选型的地图）：查询与文档词汇鸿沟大，加 <a href="https://arxiv.org/abs/2212.10496">HyDE</a> 假设文档改写（14.5.4）；检索质量不稳，加 Self-RAG 式自判（<a href="https://arxiv.org/abs/2310.11511">arXiv:2310.11511</a>）或 CRAG 式纠错回退（<a href="https://arxiv.org/abs/2401.15884">arXiv:2401.15884</a>）；跨文档全局性问题（"这批文档的共同主题"）纯向量检索不够，看 GraphRAG 的社区摘要路线（<a href="https://arxiv.org/abs/2404.16130">arXiv:2404.16130</a>）；上线前先建评估集，<a href="https://arxiv.org/abs/2309.15217">RAGAS</a> 的免参考指标是起步工具。</p>
+<p><strong>落地三步</strong>。第一步，清库与分块：删过期文档、按结构切块（14.5.1），建"问题 + 标准出处"的保留问题集——库的质量决定上限，先清库再调参。第二步，搭最小管道：BM25 加向量双路召回、RRF 融合、一个重排器、相关性下限加拒答通道（14.6 的骨架可直接抄），在保留问题集上测 recall@k 与引用一致率。第三步，按短板迭代：检索未命中率高先调分块与查询改写，引用不一致率高再调生成提示与后验校验——<strong>先修检索，再修生成，顺序不能反</strong>。</p>
+<h2 id="146-工程落地核心源码与讲解">14.6 工程落地：核心源码与讲解</h2>
+<h3 id="1461-核心源码与讲解框架无关实现">14.6.1 核心源码与讲解（框架无关实现）</h3>
+<p>本节把最小 RAG 管道的主程序拆成四个片段：环境与模型接入、双路检索器、融合与重排、检索生成主流程。<strong>四个片段按序拼接即完整可运行程序</strong>（依赖 <code>pip install openai</code>，环境变量见片段一）。骨架决策与错误路径全部保留：双路召回、RRF 融合、重排失败的两级降级、相关性下限与拒答通道。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第 14 章 框架无关实现·片段 1/4（四片段按序拼接即完整可运行，依赖 pip install openai）。&quot;&quot;&quot;
 from __future__ import annotations
-
 import json
 import math
 import os
 import re
 from collections import Counter
-from dataclasses import dataclass
-
 from openai import OpenAI
 
 client = OpenAI(
     base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 EMBED_MODEL = os.environ.get(&quot;AGENT_EMBED_MODEL&quot;, &quot;text-embedding-3-small&quot;)
 
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;调用 OpenAI 兼容接口，返回模型文本回复。失败时抛异常，由调用方降级。&quot;&quot;&quot;
+    &quot;&quot;&quot;调用 OpenAI 兼容对话接口。失败抛异常，由调用方降级。&quot;&quot;&quot;
     messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
         {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
     ]
     resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+        model=MODEL, messages=messages, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
 
 
 def embed(texts: list[str]) -&gt; list[list[float]]:
-    &quot;&quot;&quot;调用同源 embeddings 接口，批量返回向量。失败时抛异常。&quot;&quot;&quot;
+    &quot;&quot;&quot;批量向量化。查询与文档必须同源（同一模型），向量空间才可比。&quot;&quot;&quot;
     resp = client.embeddings.create(model=EMBED_MODEL, input=texts)
     return [d.embedding for d in resp.data]
-
-
-def parse_json_reply(raw: str) -&gt; dict:
-    &quot;&quot;&quot;解析模型回复中的 JSON：容忍 markdown 代码围栏包裹（围栏用 chr(96) 构造，
-    避免在源码里写裸反引号字面量）。&quot;&quot;&quot;
-    fence = chr(96) * 3
-    cleaned = raw.strip().removeprefix(fence + &quot;json&quot;).removesuffix(fence).strip()
-    return json.loads(cleaned)
-
-
-def tokenize(text: str) -&gt; list[str]:
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：片段一的关键约束藏在 <code>embed()</code> 的 docstring 里——查询与文档必须出自同一个 embedding 模型：混用两个模型等于把两种坐标系的点画进同一张图，余弦值毫无意义。<code>llm()</code> 让异常向上抛而不内部吞掉，重排层与生成层各自决定怎么接（片段三会看到接法）。读者要改的：<code>EMBED_MODEL</code> 换成自己网关支持的 embedding 模型；中文场景务必确认分词器，片段二的 <code>tokenize</code> 只是演示级。</p>
+</blockquote>
+<pre><code class="language-python">def tokenize(text: str) -&gt; list[str]:
     &quot;&quot;&quot;极简中文分词：ASCII 词 + 汉字二元组。生产换 jieba 等专业分词器。&quot;&quot;&quot;
-    ascii_words = re.findall(r&quot;[A-Za-z0-9]+&quot;, text)
+    words = re.findall(r&quot;[A-Za-z0-9]+&quot;, text)
     han = re.sub(r&quot;[^\u4e00-\u9fff]&quot;, &quot;&quot;, text)
-    bigrams = [han[i:i + 2] for i in range(len(han) - 1)] or ([han] if han else [])
-    return ascii_words + bigrams
+    return words + [han[i:i + 2] for i in range(len(han) - 1)] or ([han] if han else [])
 
-
-def chunk_text(text: str, size: int = 60, overlap: int = 15) -&gt; list[str]:
-    &quot;&quot;&quot;固定窗口分块：长文本按 size 滑窗切块，块间 overlap 重叠，防边界截断关键句。&quot;&quot;&quot;
-    if len(text) &lt;= size:
-        return [text]
-    chunks = []
-    step = size - overlap
-    for i in range(0, len(text), step):
-        piece = text[i:i + size]
-        if len(piece) &gt;= overlap:  # 丢弃过短尾块
-            chunks.append(piece)
-        if i + size &gt;= len(text):
-            break
-    return chunks
-
-
-# ---------- BM25（纯 Python 实现，k1/b 为标准经验值） ----------
 
 class BM25Index:
-    &quot;&quot;&quot;Okapi BM25 稀疏检索：词频+逆文档频率+长度归一。&quot;&quot;&quot;
-
-    def __init__(self, k1: float = 1.5, b: float = 0.75) -&gt; None:
-        self.k1, self.b = k1, b
-        self.docs: dict[str, list[str]] = {}
-        self.tf: dict[str, Counter] = {}
-        self.avgdl = 0.0
-        self.df: Counter = Counter()
-
-    def add(self, doc_id: str, text: str) -&gt; None:
-        tokens = tokenize(text)
-        self.docs[doc_id] = tokens
-        self.tf[doc_id] = Counter(tokens)
-        self.df.update(set(tokens))
-        n = len(self.docs)
-        self.avgdl = sum(len(t) for t in self.docs.values()) / n
-
-    def score(self, query: str, doc_id: str) -&gt; float:
-        q_tokens = tokenize(query)
-        tf, tokens = self.tf[doc_id], self.docs[doc_id]
-        dl = len(tokens)
-        n = len(self.docs)
-        s = 0.0
-        for t in set(q_tokens):
-            if t not in tf:
-                continue
-            idf = math.log(1 + (n - self.df[t] + 0.5) / (self.df[t] + 0.5))
-            s += idf * tf[t] * (self.k1 + 1) / (
-                tf[t] + self.k1 * (1 - self.b + self.b * dl / self.avgdl))
-        return s
-
-    def search(self, query: str, k: int = 5) -&gt; list[str]:
-        ranked = sorted(self.docs, key=lambda d: self.score(query, d), reverse=True)
-        return [d for d in ranked if self.score(query, d) &gt; 0][:k]
-
-
-# ---------- 向量检索（余弦相似度，全量扫描；量大换 HNSW/FAISS） ----------
-
-class DenseIndex:
-    &quot;&quot;&quot;稠密向量检索：语义相近但字面不同的查询靠它兜住。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;Okapi BM25 稀疏检索（k1=1.5、b=0.75 经验值）：精确符号命中靠它。&quot;&quot;&quot;
     def __init__(self) -&gt; None:
-        self.ids: list[str] = []
-        self.matrix: list[list[float]] = []
+        self.tf: dict[str, Counter] = {}   # doc_id -&gt; 词频
+        self.dl: dict[str, int] = {}       # doc_id -&gt; 文档长度
+        self.df: Counter = Counter()       # 词 -&gt; 文档频率
+    def add(self, doc_id: str, text: str) -&gt; None:
+        toks = tokenize(text)
+        self.tf[doc_id], self.dl[doc_id] = Counter(toks), len(toks)
+        self.df.update(set(toks))
+    def search(self, query: str, k: int = 5) -&gt; list[str]:
+        qt, n, avgdl = set(tokenize(query)), len(self.tf), sum(self.dl.values()) / len(self.tf)
+        def score(d: str) -&gt; float:  # BM25：IDF x 词频饱和 x 长度归一
+            s = 0.0
+            for t in qt &amp; set(self.tf[d]):
+                idf = math.log(1 + (n - self.df[t] + 0.5) / (self.df[t] + 0.5))
+                tf, dl = self.tf[d][t], self.dl[d]
+                s += idf * tf * 2.5 / (tf + 1.5 * (1 - 0.75 + 0.75 * dl / avgdl))
+            return s
+        return [d for d in sorted(self.tf, key=score, reverse=True) if score(d) &gt; 0][:k]
 
-    def add(self, doc_id: str, vector: list[float]) -&gt; None:
-        self.ids.append(doc_id)
-        self.matrix.append(vector)
 
-    @staticmethod
-    def _cos(a: list[float], b: list[float]) -&gt; float:
-        dot = sum(x * y for x, y in zip(a, b))
-        na, nb = math.sqrt(sum(x * x for x in a)), math.sqrt(sum(x * x for x in b))
-        return dot / (na * nb) if na and nb else 0.0
-
-    def search(self, query_vec: list[float], k: int = 5) -&gt; list[str]:
-        scored = sorted(zip(self.ids, self.matrix),
-                        key=lambda p: self._cos(query_vec, p[1]), reverse=True)
-        return [i for i, _ in scored][:k]
-
-
-def rrf_fuse(rankings: list[list[str]], k: int = 60) -&gt; list[str]:
-    &quot;&quot;&quot;RRF 倒数排名融合（Cormack et al., SIGIR 2009）：各路排名按 1/(k+rank) 累加。
-    只用名次不用原始分，天然规避 BM25 分数与余弦相似度量纲不可比的问题。&quot;&quot;&quot;
+def dense_search(query: str, doc_vecs: dict[str, list[float]], k: int = 5) -&gt; list[str]:
+    &quot;&quot;&quot;稠密检索：查询向量与全库比余弦（演示全量算；生产预计算向量 + HNSW）。&quot;&quot;&quot;
+    q = embed([query])[0]
+    def cos(v: list[float]) -&gt; float:
+        return sum(x * y for x, y in zip(q, v)) / ((math.sqrt(sum(x * x for x in q)) * math.sqrt(sum(y * y for y in v))) or 1)
+    return sorted(doc_vecs, key=lambda d: cos(doc_vecs[d]), reverse=True)[:k]
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：BM25 的两个经验值几乎不用调——k1=1.5 控制词频饱和（一个词出现 10 次不会比 3 次相关 10 倍），b=0.75 控制长文档归一力度，这套默认值三十年没变过。<code>search</code> 末尾的 <code>score &gt; 0</code> 过滤是在丢"一个查询词都没命中"的纯噪声，别省。<code>dense_search</code> 演示为全库重算余弦，几十到几百块没问题；过万就必须预计算文档向量加 ANN 索引（HNSW/FAISS）——这是它与 BM25（可倒排加速）的工程分野。读者要改的：生产环境把 <code>doc_vecs</code> 字典换成持久向量库。</p>
+</blockquote>
+<pre><code class="language-python">def rrf_fuse(rankings: list[list[str]], k: int = 60) -&gt; list[str]:
+    &quot;&quot;&quot;RRF 倒数排名融合（Cormack et al., SIGIR 2009）：各路按 1/(k+rank) 累加名次。&quot;&quot;&quot;
     scores: dict[str, float] = {}
     for ranking in rankings:
         for rank, doc_id in enumerate(ranking, start=1):
@@ -324,181 +276,106 @@ def rrf_fuse(rankings: list[list[str]], k: int = 60) -&gt; list[str]:
 
 
 def rerank(query: str, candidates: list[str], texts: dict[str, str]) -&gt; list[tuple[str, float]]:
-    &quot;&quot;&quot;LLM 逐点重排：查询与候选拼一起打 0-10 分。单条评分失败记 0 分，整体失败时
-    调用方按 RRF 原序兜底——重排是增强项，不能成为新的单点故障。&quot;&quot;&quot;
-    scored: list[tuple[str, float]] = []
+    &quot;&quot;&quot;LLM 逐点重排打 0-10 分：单条失败记 0 分，全体失败由调用方按 RRF 原序兜底。&quot;&quot;&quot;
     system = &quot;你是搜索相关性评分器。只输出 JSON：{\&quot;score\&quot;: &lt;0到10的整数&gt;}&quot;
+    scored: list[tuple[str, float]] = []
     for doc_id in candidates:
         try:
             raw = llm(f&quot;查询：{query}\n文档：{texts[doc_id]}&quot;, system=system, temperature=0.0)
-            score = float(parse_json_reply(raw)[&quot;score&quot;])
+            fence = chr(96) * 3  # 代码围栏字面量，避免在源码里写裸三反引号
+            cleaned = raw.strip().removeprefix(fence + &quot;json&quot;).removesuffix(fence).strip()
+            score = float(json.loads(cleaned)[&quot;score&quot;])
         except Exception:
             score = 0.0
         scored.append((doc_id, score))
-    scored.sort(key=lambda p: p[1], reverse=True)
-    return scored
+    return sorted(scored, key=lambda p: p[1], reverse=True)
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：RRF 的 k=60 是原论文推荐值，作用是压平名次差异——第 1 名与第 2 名的差距（1/61 对 1/62）远小于原始分数的差距，两路权重天然均衡；BM25 的无界分数与余弦的 0-1 距离量纲不可通约，RRF 只用名次，天然免调参。<code>rerank</code> 的错误处理分两层：单条评分失败记 0 分（那一条等于放弃重排保护，可能被下限过滤掉），全体失败时由 <code>retrieve</code> 按 RRF 原序兜底——<strong>重排是增强项，绝不能成为新的单点故障</strong>。读者要改的：候选数 <code>fused[:6]</code> 与下限 4.0 是一对参数，扩候选就要相应复查下限。</p>
+</blockquote>
+<pre><code class="language-python">RELEVANCE_FLOOR = 4.0  # rerank 分数下限：低于它视为&quot;检索不到&quot;。生产在保留集上调出。
 
-
-# ---------- 演示知识库与检索-生成主流程 ----------
-
-DOCS: dict[str, str] = {
-    &quot;policy-expense&quot;: &quot;星空科技公司差旅报销制度：员工出差需提前在 OA 系统提交申请，&quot;
-                      &quot;返回后 15 个工作日内凭发票报销，单次超过 5000 元需部门总监加签。&quot;,
-    &quot;policy-leave&quot;: &quot;星空科技公司年假制度：入职满一年享有 10 天带薪年假，&quot;
-                    &quot;满五年增加到 15 天，年假当年有效，特殊情况可申请跨年结转一次。&quot;,
-    &quot;policy-remote&quot;: &quot;星空科技远程办公政策：每周可以申请最多 2 天远程办公，&quot;
-                     &quot;需提前一天在考勤系统报备，试用期员工暂不开放远程。&quot;,
-    &quot;policy-security&quot;: &quot;星空科技信息安全守则：办公电脑必须开启磁盘加密，&quot;
-                       &quot;源代码仓库禁止推送到个人账户，泄密事件须在 2 小时内上报安全组。&quot;,
-}
-
-
-@dataclass
-class Hit:
-    &quot;&quot;&quot;一条检索命中：chunk_id 形如 doc#chunk 供引用溯源，score 为 rerank 相关性分。&quot;&quot;&quot;
-
-    chunk_id: str
-    text: str
-    score: float
-
-
-RELEVANCE_FLOOR = 4.0  # rerank 分数下限：低于它视为&quot;检索不到&quot;。生产中在保留集上调出。
-
-
-def build_index() -&gt; tuple[BM25Index, DenseIndex, dict[str, str]]:
-    &quot;&quot;&quot;索引构建：分块 -&gt; 双路索引。返回 BM25 索引、向量索引与 chunk 文本表。&quot;&quot;&quot;
-    bm25, dense, chunk_texts = BM25Index(), DenseIndex(), {}
-    chunks: list[str] = []
-    for doc_id, text in DOCS.items():
-        for j, piece in enumerate(chunk_text(text, size=60, overlap=15)):
-            cid = f&quot;{doc_id}#{j}&quot;
-            chunk_texts[cid] = piece
-            chunks.append(cid)
-            bm25.add(cid, piece)
-    vectors = embed([chunk_texts[c] for c in chunks])
-    for cid, vec in zip(chunks, vectors):
-        dense.add(cid, vec)
-    return bm25, dense, chunk_texts
-
-
-def retrieve(query: str, bm25: BM25Index, dense: DenseIndex,
-             chunk_texts: dict[str, str]) -&gt; list[Hit]:
-    &quot;&quot;&quot;混合检索：稀疏+稠密双路召回 -&gt; RRF 融合 -&gt; LLM 重排 -&gt; 相关性下限过滤。&quot;&quot;&quot;
-    q_vec = embed([query])[0]
-    fused = rrf_fuse([bm25.search(query, k=5), dense.search(q_vec, k=5)])
-    if not fused:
-        return []
-    reranked = rerank(query, fused[:6], chunk_texts)
-    # 全体评分为 0（LLM 重排整体失败）时按 RRF 原序取前三兜底
-    if all(s &lt;= 0 for _, s in reranked):
+def retrieve(query: str, bm25: BM25Index, doc_vecs: dict[str, list[float]],
+             texts: dict[str, str]) -&gt; list[tuple[str, str, float]]:
+    &quot;&quot;&quot;混合检索主流程：BM25+向量双路召回 -&gt; RRF 融合 -&gt; LLM 重排 -&gt; 下限过滤。&quot;&quot;&quot;
+    fused = rrf_fuse([bm25.search(query, k=5), dense_search(query, doc_vecs, k=5)])
+    reranked = rerank(query, fused[:6], texts)
+    if all(s &lt;= 0 for _, s in reranked):  # 重排整体失败：按 RRF 原序兜底
         reranked = [(cid, 0.0) for cid in fused[:3]]
-    top = [(cid, s) for cid, s in reranked if s &gt;= RELEVANCE_FLOOR][:3]
-    return [Hit(cid, chunk_texts[cid], s) for cid, s in top]
+    return [(cid, texts[cid], s) for cid, s in reranked if s &gt;= RELEVANCE_FLOOR][:3]
 
 
-def answer(query: str, hits: list[Hit]) -&gt; str:
-    &quot;&quot;&quot;带引用生成：只允许依据资料回答并标注 [n]；资料不足时如实说检索不到。&quot;&quot;&quot;
-    if not hits:
-        return &quot;知识库中未找到与该问题相关的资料。（防幻觉：检索不到就直说，不编）&quot;
-    context = &quot;\n&quot;.join(f&quot;【资料{i + 1}】{h.text}&quot; for i, h in enumerate(hits))
-    system = (&quot;你只依据给定资料回答问题，答案中用 [1][2] 标注引用了哪条资料；&quot;
-              &quot;若资料不足以回答，明确回答「资料不足以回答」。禁止编造。&quot;)
+def answer(query: str, hits: list[tuple[str, str, float]]) -&gt; str:
+    &quot;&quot;&quot;带引用生成：只依据资料回答并标 [n]；检索不到就如实拒答——不编。&quot;&quot;&quot;
+    if not hits:  # 拒答通道：检索不到就直说，这是正确行为而非失败
+        return &quot;知识库中未找到与该问题相关的资料。&quot;
+    context = &quot;\n&quot;.join(f&quot;【资料{i + 1}】{h[1]}&quot; for i, h in enumerate(hits))
+    system = &quot;你只依据给定资料回答，用 [1][2] 标注引用；资料不足以回答就直说。禁止编造。&quot;
     return llm(f&quot;资料：\n{context}\n\n问题：{query}&quot;, system=system, temperature=0.2)
 
 
 if __name__ == &quot;__main__&quot;:
-    bm25, dense, chunk_texts = build_index()
+    DOCS = {&quot;policy-leave&quot;: &quot;星空科技年假制度：入职满一年享 10 天带薪年假，满五年增到 15 天。&quot;,
+            &quot;policy-remote&quot;: &quot;星空科技远程办公政策：每周最多申请 2 天远程办公，需提前一天报备。&quot;}
+    bm25, texts = BM25Index(), dict(DOCS)
+    for d, t in DOCS.items(): bm25.add(d, t)  # 离线索引（演示整篇一块；生产按 14.5.1 分块）
+    doc_vecs = dict(zip(DOCS, embed(list(DOCS.values()))))
     for q in [&quot;入职满一年的员工年假有几天？&quot;, &quot;公司能不能带宠物上班？&quot;]:
-        print(f&quot;\n问题：{q}&quot;)
-        hits = retrieve(q, bm25, dense, chunk_texts)
-        for h in hits:
-            print(f&quot;  [命中] {h.chunk_id}（rerank={h.score:.0f}）:: {h.text[:26]}...&quot;)
-        print(f&quot;  回答：{answer(q, hits)}&quot;)
+        hits = retrieve(q, bm25, doc_vecs, texts)
+        print(f&quot;\n问题：{q}\n  命中：&quot;, [(h[0], round(h[2])) for h in hits])
+        print(&quot;  回答：&quot;, answer(q, hits))
 </code></pre>
-<h3 id="1462-框架集成实现llamaindex索引-查询一条龙">14.6.2 框架集成实现（LlamaIndex：索引 + 查询一条龙）</h3>
-<p><a href="https://docs.llamaindex.ai">LlamaIndex</a> 把文档加载、分块、索引、检索、生成封装成一条链。下面的示例把 LLM 与 embedding 都接到 AGENT_LLM_BASE_URL 同源接口（自 <code>llama-index-core</code> 0.10 起框架默认组件全部拆分为独立包，自定义接入用 <code>Settings</code> 全局注入最直接）。在 <strong>llama-index-core==0.14.25</strong> 实测：检索排序正确（命中制度文档 0.231，无关文档 0.070），引用来源随响应返回。</p>
-<pre><code class="language-python">&quot;&quot;&quot;LlamaIndex 集成：自定义 LLM/embedding 全部走 AGENT_LLM_BASE_URL 同源接口，
-索引构建 + 查询一条龙。llama-index-core==0.14.25 实测。
-
-依赖：pip install llama-index-core openai
-环境变量：AGENT_LLM_BASE_URL / AGENT_LLM_API_KEY / AGENT_LLM_MODEL / AGENT_EMBED_MODEL
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import os
-from typing import Any
-
-from openai import OpenAI
-from llama_index.core import Document, Settings, VectorStoreIndex
-from llama_index.core.embeddings import BaseEmbedding
-from llama_index.core.llms import (
-    CompletionResponse,
-    CustomLLM,
-    LLMMetadata,
-)
-
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
-MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
-EMBED_MODEL = os.environ.get(&quot;AGENT_EMBED_MODEL&quot;, &quot;text-embedding-3-small&quot;)
-
-
-class GatewayLLM(CustomLLM):
-    &quot;&quot;&quot;把 OpenAI 兼容对话接口包装成 LlamaIndex 的 LLM。&quot;&quot;&quot;
-
-    @property
-    def metadata(self) -&gt; LLMMetadata:
-        return LLMMetadata(context_window=4096, num_output=512, model_name=MODEL)
-
-    def complete(self, prompt: str, formatted: bool = False,
-                 **kwargs: Any) -&gt; CompletionResponse:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}],
-            temperature=0.2,
-        )
-        return CompletionResponse(text=resp.choices[0].message.content or &quot;&quot;)
-
-    def stream_complete(self, prompt: str, formatted: bool = False,
-                        **kwargs: Any):  # 演示用：一次性伪流式
-        yield self.complete(prompt, **kwargs)
-
-
-class GatewayEmbedding(BaseEmbedding):
-    &quot;&quot;&quot;把同源 embeddings 接口包装成 LlamaIndex 的 embed model。&quot;&quot;&quot;
-
-    def _get_text_embedding(self, text: str) -&gt; list[float]:
-        return (client.embeddings.create(model=EMBED_MODEL, input=[text])
-                .data[0].embedding)
-
-    def _get_query_embedding(self, query: str) -&gt; list[float]:
-        return self._get_text_embedding(query)
-
-    async def _aget_query_embedding(self, query: str) -&gt; list[float]:
-        return self._get_query_embedding(query)
-
-
-DOCS = [
-    &quot;星空科技公司年假制度：入职满一年享有 10 天带薪年假，满五年增加到 15 天。&quot;,
-    &quot;星空科技公司差旅报销制度：返回后 15 个工作日内凭发票报销，超 5000 元需总监加签。&quot;,
-    &quot;星空科技信息安全守则：源代码仓库禁止推送到个人账户，泄密事件 2 小时内上报安全组。&quot;,
-]
-
-if __name__ == &quot;__main__&quot;:
-    Settings.llm = GatewayLLM()
-    Settings.embed_model = GatewayEmbedding(embed_batch_size=8)
-
-    index = VectorStoreIndex.from_documents([Document(text=t) for t in DOCS])
-    engine = index.as_query_engine(similarity_top_k=2)
-    resp = engine.query(&quot;年假有几天？&quot;)
-    print(&quot;回答：&quot;, resp)
-    print(&quot;\n引用来源：&quot;)
-    for node in resp.source_nodes:
-        print(f&quot;  score={node.score:.3f} :: {node.text[:30]}...&quot;)
-</code></pre>
-<p>生产上的第一处升级是把内存 <code>VectorStoreIndex</code> 换成持久向量库（Chroma/Milvus/pgvector，LlamaIndex 均有对应 vector store 集成，改一行 <code>vector_store=</code> 参数），第二处是加混合检索（<code>hybrid=True</code> 或 BM25 retriever + <code>QueryFusionRetriever</code> 做 RRF 融合），第三处是加 rerank 节点（<code>NodePostprocessor</code> 挂 cross-encoder）。</p>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>retrieve</code> 是管道的咽喉，注意降级顺序：重排全军覆没先落回 RRF 原序，而不是报错——检索管道的每一级都该有"降级但不中断"的出路。<code>RELEVANCE_FLOOR</code> 是防"检索不到硬答"的第一道闸：低于 4 分的块直接不进生成上下文。<code>answer</code> 的提示词把"资料不足以回答"定义为合法行为——这句是拒答通道的开关，删掉它模型就会对着弱相关资料硬编。main 的第二条查询（库外问题）专门演示拒答路径：跑一遍，对比两条查询的重排分数，看分叉点在哪里。读者要改的：<code>DOCS</code> 换成自己的文档集并按 14.5.1 分块。</p>
+</blockquote>
+<h3 id="1462-框架差异速览llamaindex">14.6.2 框架差异速览（LlamaIndex）</h3>
+<p>原 LlamaIndex 完整示例（自定义 LLM/embedding 注入 + 索引查询一条龙）压缩为下表：组件名为 llama-index-core==0.14.25 实测，细节以 <a href="https://docs.llamaindex.ai">LlamaIndex 官方文档</a>为准。</p>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>LlamaIndex 组件</th>
+<th>与本节片段的一句话差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>装载与分块</td>
+<td><code>Document</code> + 节点解析器（默认句子感知分块）</td>
+<td>框架自带结构感知分块，免手写 tokenize</td>
+</tr>
+<tr>
+<td>建索引</td>
+<td><code>VectorStoreIndex.from_documents</code></td>
+<td>一行建库；持久化换 <code>vector_store=</code> 参数</td>
+</tr>
+<tr>
+<td>检索</td>
+<td><code>index.as_retriever(similarity_top_k=k)</code></td>
+<td>默认纯向量；混合检索开 <code>hybrid=True</code></td>
+</tr>
+<tr>
+<td>融合</td>
+<td><code>QueryFusionRetriever</code></td>
+<td>多路检索器 RRF 融合，免手写 rrf_fuse</td>
+</tr>
+<tr>
+<td>重排</td>
+<td><code>NodePostprocessor</code> 挂交叉编码器</td>
+<td>后处理钩子插入，不动检索主流程</td>
+</tr>
+<tr>
+<td>生成</td>
+<td><code>index.as_query_engine()</code></td>
+<td>检索+拼提示+生成一条龙，引用在 <code>source_nodes</code></td>
+</tr>
+<tr>
+<td>自定义模型</td>
+<td><code>Settings.llm</code> / <code>Settings.embed_model</code> 注入</td>
+<td>全局注入同源接口，组件可独立替换</td>
+</tr>
+</tbody>
+</table>
 <h3 id="1463-生产化改造清单">14.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>分块与索引</strong>：结构感知分块（代码/markdown/表格各有策略）；父子块双层索引；文档入库带版本与生效时间，失效文档必须下线。</li>
@@ -551,9 +428,9 @@ if __name__ == &quot;__main__&quot;:
 <li>微软 Ignite 2024 官方博客：贝莱德 Aladdin 平台上线生成式问答 Copilot：<a href="https://blogs.microsoft.com/blog/2024/11/19/ignite-2024-why-nearly-70-of-the-fortune-500-now-use-microsoft-365-copilot/">https://blogs.microsoft.com/blog/2024/11/19/ignite-2024-why-nearly-70-of-the-fortune-500-now-use-microsoft-365-copilot/</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch13-human-in-the-loop.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第13章 人在回路</span></a><a class="pager" href="../chapters/ch15-agent-communication-a2a.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第15章 智能体间通信</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#141-模式概述">14.1 模式概述</a></li><li class="toc-l3"><a href="#1411-问题背景为什么需要这个模式">14.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1412-核心机制它如何工作">14.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1413-与相邻模式的关系与组合">14.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#142-起源与历史最早是谁提出来的">14.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#143-发挥的作用为什么重要">14.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#144-实际应用与案例">14.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#145-深度讲解">14.5 深度讲解</a></li><li class="toc-l3"><a href="#1451-分块策略谱系检索粒度的四代演进">14.5.1 分块策略谱系：检索粒度的四代演进</a></li><li class="toc-l3"><a href="#1452-混合检索与-rrf为什么-bm25-至今不可替代">14.5.2 混合检索与 RRF：为什么 BM25 至今不可替代</a></li><li class="toc-l3"><a href="#1453-重排召回求全重排求精的两段架构">14.5.3 重排：召回求全、重排求精的两段架构</a></li><li class="toc-l3"><a href="#1454-查询改写与多路召回弥合查询与文档的鸿沟">14.5.4 查询改写与多路召回：弥合查询与文档的鸿沟</a></li><li class="toc-l3"><a href="#1455-引用溯源与幻觉的两种来源">14.5.5 引用溯源与幻觉的两种来源</a></li><li class="toc-l3"><a href="#1456-何时不用-rag与长上下文微调的边界">14.5.6 何时不用 RAG：与长上下文、微调的边界</a></li><li class="toc-l2"><a href="#146-工程落地实践代码示例">14.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1461-框架无关实现完整可运行">14.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1462-框架集成实现llamaindex索引-查询一条龙">14.6.2 框架集成实现（LlamaIndex：索引 + 查询一条龙）</a></li><li class="toc-l3"><a href="#1463-生产化改造清单">14.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#147-概览-核心要点-结论">14.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#148-延伸阅读与参考链接">14.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#141-模式概述">14.1 模式概述</a></li><li class="toc-l3"><a href="#1411-问题背景为什么需要这个模式">14.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1412-核心机制它如何工作">14.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1413-与相邻模式的关系与组合">14.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#142-源起它从哪里来">14.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#143-发挥的作用为什么重要">14.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#144-实际应用与案例">14.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#145-深度讲解">14.5 深度讲解</a></li><li class="toc-l3"><a href="#1451-分块策略谱系检索粒度的四代演进">14.5.1 分块策略谱系：检索粒度的四代演进</a></li><li class="toc-l3"><a href="#1452-混合检索与-rrf为什么-bm25-至今不可替代">14.5.2 混合检索与 RRF：为什么 BM25 至今不可替代</a></li><li class="toc-l3"><a href="#1453-重排召回求全重排求精的两段架构">14.5.3 重排：召回求全、重排求精的两段架构</a></li><li class="toc-l3"><a href="#1454-查询改写与多路召回弥合查询与文档的鸿沟">14.5.4 查询改写与多路召回：弥合查询与文档的鸿沟</a></li><li class="toc-l3"><a href="#1455-引用溯源与幻觉的两种来源">14.5.5 引用溯源与幻觉的两种来源</a></li><li class="toc-l3"><a href="#1456-何时不用-rag与长上下文微调的边界">14.5.6 何时不用 RAG：与长上下文、微调的边界</a></li><li class="toc-l3"><a href="#1457-怎么用运用判断">14.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#146-工程落地核心源码与讲解">14.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1461-核心源码与讲解框架无关实现">14.6.1 核心源码与讲解（框架无关实现）</a></li><li class="toc-l3"><a href="#1462-框架差异速览llamaindex">14.6.2 框架差异速览（LlamaIndex）</a></li><li class="toc-l3"><a href="#1463-生产化改造清单">14.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#147-概览-核心要点-结论">14.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#148-延伸阅读与参考链接">14.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

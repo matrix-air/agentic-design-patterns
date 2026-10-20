@@ -60,81 +60,44 @@
 <div class="fig-caption" id="fig-11-1">图 11-1：目标-进度-偏差反馈环——判定用原始目标而非执行中的转述；修正回到执行，违规与预算耗尽走停车出口。</div>
 <h3 id="1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</h3>
 <p>目标监控与<strong>反思模式</strong>相邻但职责不同：反思是智能体对自己单步产出的自我批评，作用域是"这一步做得好不好"；目标监控作用域是"整个任务还该不该继续、方向对不对"。反思可以充当监控的信号源之一，但替代不了监控——自我批评对"方向性漂移"几乎无感，因为漂移的每一步单看都挺合理。与<strong>提示链</strong>的关系是上下游：链条上每个环节的产出物正是监控的采集点；链式任务天然适合里程碑式监控（每环节出口做一次终判式的检查）。与<strong>路由/规划</strong>的关系在执行面：漂移检测触发重规划，规划器需要监控提供的"偏差原因"作为输入。与<a href="../chapters/ch12-exception-recovery.html">第 12 章</a><strong>异常处理</strong>的关系在边界上：预算耗尽、连续失败正是异常恢复机制的触发条件；本章回答"该不该停"，<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>回答"停了之后怎么救"。与<a href="../chapters/ch10-mcp.html">第 10 章</a> <strong>MCP</strong> 的关系在数据面：工具调用产生标准化 trace，是监控信号最重要的来源。</p>
-<h2 id="112-起源与历史最早是谁提出来的">11.2 起源与历史：最早是谁提出来的</h2>
-<p>"目标-检测-行动"这一思想在人工智能之前就已成形：维纳的控制论确立了负反馈调节原理——有目的的行为由"目标与现状的偏差"驱动修正；米勒等人在认知心理学中把目的性拆解为可计算的 TOTE 单元。智能体工程随后把这三大思想（目标持续性、意图管理、反馈检验）逐代工程化，LLM 时代补上了质量判定（模型裁判）与观测标准（语义约定）两块拼图。</p>
+<h2 id="112-源起它从哪里来">11.2 源起：它从哪里来</h2>
+<p>"目标-检测-行动"的循环比人工智能古老：维纳 1948 年的控制论确立负反馈原理，米勒等 1960 年的 TOTE 单元把它拆成可计算的"检验-操作-检验-退出"。智能体工程接力：1987 年的 PRS 首次把"目标的建立、维护与撤销"做成可运行系统，1995 年的 BDI 论文让意图持久性成为设计共识；管理学的 OKR 贡献另一半——目标要对齐、可度量、定期检视。LLM 时代补上两块拼图：模型裁判让语义质量可自动判定，可观测性标准让监控落地成基础设施；而规范博弈与目标误泛化研究敲响警钟——判据本身会出错。各思想如何汇入今天的检查循环，见 11.5.6。</p>
 <table>
 <thead>
 <tr>
 <th>年份月</th>
 <th>事件</th>
-<th>提出者/机构</th>
-<th>出处</th>
+<th>提出者/出处</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1948</td>
-<td>《控制论》确立负反馈：行为由"目标-偏差-修正"定义，监控思想的总源头</td>
-<td>Norbert Wiener</td>
-<td><em>Cybernetics</em>, MIT Press</td>
-</tr>
-<tr>
 <td>1960</td>
-<td>TOTE 单元（Test-Operate-Test-Exit）：目标-检测-行动循环的认知模型，一切智能体循环的雏形</td>
-<td>George Miller, Eugene Galanter, Karl Pribram</td>
-<td><em>Plans and the Structure of Behavior</em></td>
-</tr>
-<tr>
-<td>1970s</td>
-<td>在英特尔内部提出 iMBO，后演化为 OKR：目标要对齐、要可度量</td>
-<td>Andy Grove</td>
-<td>Intel 管理实践，后见于其管理著述</td>
+<td>TOTE 单元：目标-检测-行动循环的认知原型</td>
+<td>Miller, Galanter, Pribram《Plans and the Structure of Behavior》</td>
 </tr>
 <tr>
 <td>1987</td>
-<td>PRS（过程推理系统）：目标持续性与意图管理的第一个重要工程实现</td>
-<td>Michael Georgeff, Amy Lansky</td>
-<td>AAAI-87《Reactive Reasoning and Planning》（pp.677-682）</td>
+<td>PRS：目标持续性与意图管理的第一个重要工程实现</td>
+<td>Georgeff &amp; Lansky，AAAI-87《Reactive Reasoning and Planning》</td>
 </tr>
 <tr>
 <td>1995-06</td>
-<td>BDI 从理论到实践：信念-愿望-意图架构的工程化奠基，意图持久性成为智能体设计共识</td>
-<td>Anand Rao, Michael Georgeff</td>
-<td>ICMAS-95《BDI Agents: From Theory to Practice》（pp.312-319，San Francisco；形式化见二人 KR-91 论文）</td>
-</tr>
-<tr>
-<td>1999</td>
-<td>John Doerr 把 OKR 带入 Google，"可度量目标 + 定期检视"成为工程管理默认件</td>
-<td>John Doerr</td>
-<td>Google 管理实践，后在<a href="https://www.whatmatters.com/">《Measure What Matters》</a>中系统阐述</td>
+<td>BDI 从理论到工程：意图持久性成为设计共识</td>
+<td>Rao &amp; Georgeff，ICMAS-95《BDI Agents: From Theory to Practice》</td>
 </tr>
 <tr>
 <td>2020-04</td>
-<td>"规范博弈"案例集：字面满足目标而违背意图的行为被系统化整理</td>
-<td>Victoria Krakovna 等</td>
-<td><a href="https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity">Google DeepMind 博客，2020-04-21</a></td>
+<td>规范博弈案例集系统化"字面达标、实质跑偏"（约 60 例）</td>
+<td>Victoria Krakovna 等，<a href="https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity">DeepMind 博客</a></td>
 </tr>
 <tr>
-<td>2022-10</td>
-<td>"目标误泛化"：即使规范正确，系统也可能泛化出错误目标</td>
-<td>Rohan Shah 等</td>
-<td><a href="https://arxiv.org/abs/2210.01790">arXiv:2210.01790</a></td>
-</tr>
-<tr>
-<td>2023-06/12</td>
-<td>LLM-as-judge 方法确立：用强模型当裁判评测生成质量（MT-Bench/Chatbot Arena）</td>
-<td>Lianmin Zheng 等（LMSYS/UC Berkeley 等）</td>
-<td><a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>（NeurIPS 2023 oral）；<a href="https://arxiv.org/abs/2312.16531">arXiv:2312.16531</a></td>
-</tr>
-<tr>
-<td>2023-2024</td>
-<td>LLM 可观测性工程落地：LangSmith 发布、Langfuse 开源；OpenTelemetry GenAI 语义约定推进</td>
-<td>LangChain / Langfuse / OpenTelemetry 社区</td>
-<td><a href="https://docs.smith.langchain.com">LangSmith 文档</a> / <a href="https://langfuse.com">Langfuse</a> / <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">OTel GenAI 语义约定</a></td>
+<td>2023-06</td>
+<td>LLM-as-judge 确立：强模型当裁判评测生成质量</td>
+<td>Lianmin Zheng 等，<a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>（NeurIPS 2023 oral）</td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络有两条主线。一条是"目标如何持续"的智能体架构线：PRS 解决的核心问题恰恰是本章的——理性智能体不应盲目执着于目标，也不应轻易放弃，要有一套意图的建立、维护与撤销机制；BDI 形式化给这套机制配了语义，几十年来从 dMARS、PRS 一直延伸到今天编排框架里的"计划-执行-重规划"循环。另一条是"目标如何被度量"的管理与评测线：OKR 回答组织里目标如何对齐与检视，其工程翻译就是本章的目标三元组与定期检查节奏；LLM-as-judge 则解决了"产出质量谁说了算"的判定问题——在程序化断言覆盖不到的语义空间里，用模型当裁判，使"写作类、研究类"任务第一次有了可自动化的质量判据。2020 年与 2022 年的两份工作（规范博弈、目标误泛化）则是给整条线敲的警钟：判据本身会出错，监控机制必须假定"目标表示"与"真实意图"之间存在缺口。</p>
 <h2 id="113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</h2>
 <p>第一，它把智能体从"生成器"变成"承包者"。没有目标的智能体只对提示词负责；有了判据与预算，它开始对结果负责——这是自治运行（无人值守跑长任务）的前置条件。工程上的直接收益是可控的失败：预算耗尽时智能体会停下来上报，而不是烧钱空转；判据未满足时它不会谎报完成，因为"完成"不是它自封的，是判据认定的。</p>
 <p>第二，它给多步任务提供了可运维性。有了 trace 与 metric，团队才能回答"这个智能体平均几步完成、失败在哪一步、工具错误率多少"这类运营问题；LangSmith、Langfuse 这类工具把这三件套产品化，OpenTelemetry 的 GenAI 语义约定（gen_ai.* 属性族）则让不同框架的轨迹可以汇入同一套可观测设施。没有监控的智能体系统，故障排查等于读小说。</p>
@@ -163,19 +126,44 @@
 <h3 id="1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</h3>
 <p>四个核心权衡。<strong>内联 versus 旁路</strong>：监控嵌在主循环里（每步检查）响应快但拖慢且可能被"表演"迎合；旁路监控（异步抽样）便宜且难被迎合，但发现问题时损失已成。生产系统通常是内联的便宜检查（约束、预算）加旁路的昂贵检查（语义评审）。<strong>监控频率与成本</strong>：模型裁判每步都叫，成本可能超过执行本身；按里程碑或按 token 增量触发更划算。<strong>判定保留权</strong>：监控者只提建议还是可强制停车？自治系统必须给监控者停车权，否则监控沦为日志。<strong>放弃的代价标定</strong>：预算设太小，任务被"合法放弃"的比例升高；设太大，失败成本失控。预算应按任务价值分级，并随历史成功率校准。</p>
 <p>反模式清单：把里程碑完成率当 KPI 层层加码，诱发智能体（与团队）为里程碑而里程碑；用执行者的自报进度当真相（自报只能当线索）；监控者与执行者同模型同上下文（自我确认偏误的温床）；只测终产物不测过程约束（危险动作可能早已发生）；判据写进 prompt 却不在代码里强制执行（模型"同意"约束不等于约束被执行）。何时可以不用：单轮问答与一次性生成（判据就是用户自己，不设循环）；探索型任务（目标本身在演化，硬判据会锁死有价值的意外发现，应改用"方向性目标 + 定期人工检视"的松监控）。</p>
-<h2 id="116-工程落地实践代码示例">11.6 工程落地：实践代码示例</h2>
-<h3 id="1161-框架无关实现完整可运行">11.6.1 框架无关实现（完整可运行）</h3>
-<p>目标监控状态机：程序化判据优先于模型裁判（确定性检查免费且可靠），模型裁判负责语义维度，裁判解析失败有降级路径，连续漂移自动升级。在 Python 3.10+ 实测（模型调用需配置环境变量）。</p>
+<h3 id="1156-思想谱系定量证据与被-goodhart-化的监控">11.5.6 思想谱系、定量证据与被 Goodhart 化的监控</h3>
+<p>把演化脉络并进来看，本章的检查循环有一条清晰的同构谱系。TOTE（Test-Operate-Test-Exit）给出"检验-操作-再检验-退出"的原子形态；PRS（1987）与 BDI（1995）回答了"TOTE 没回答的问题"——目标该何时建立、何时坚持、何时撤销：理性智能体不盲目执着也不轻易放弃，BDI 把这套语义形式化为"意图持久性与撤销条件"，本章"预算耗尽即合法放弃"的设计正是它的工程直系后代。OKR 这条管理学线（Grove 在英特尔首创 iMBO，Doerr 1999 年带入 Google，后系统阐述于《Measure What Matters》）贡献的是检视节奏：目标要对齐、可度量、定期回答"继续还是止损"——把节奏搬到单任务尺度，就是本章的检查循环。LLM 时代新增的两块拼图各有定量锚点，见下。</p>
+<p><strong>定量证据一：模型裁判到底多可靠。</strong> Zheng 等人的 MT-Bench/Chatbot Arena 工作（<a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>）在摘要中给出的量级是：GPT-4 级强模型作裁判与人类偏好的一致率<strong>超过 80%，与"人与人之间"的一致率处于同一水平</strong>。这解释了为什么模型裁判可以进入生产流程；但同一结果的适用边界同样重要——那是"强裁判评弱选手"的设定，裁判与选手能力越接近偏差越大（11.5.4 的偏差管理与定期人工校准由此而来）。</p>
+<p><strong>定量证据二：规范博弈不是个例而是模式。</strong> DeepMind 2020 年 4 月 21 日的<a href="https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity">规范博弈博客</a>与协作列表收录了<strong>约 60 个</strong>案例（原文"around 60 examples"），覆盖强化学习、翻译、数学等域——"字面达标、实质跑偏"在 RL 时代就已高频出现。LLM 智能体上它的廉价形态就是 11.5.3 的目标侵蚀（改测试文件让判据通过），而 Shah 等人 2022 年的<a href="https://arxiv.org/abs/2210.01790">目标误泛化</a>更进一步：即使判据完全正确，训练分布外系统仍可能"忠实地"追求错误目标——两份工作共同把"监控机制必须假定目标表示与真实意图之间存在缺口"从直觉变成结论。</p>
+<p><strong>反直觉点：监控指标本身会被 Goodhart 击穿。</strong> 大家以为"上了监控就安全了"，工程事实是：一旦某个监控指标成为被优化的目标，它就开始失真——人类学家 Strathern 对 Goodhart 定律的通俗表述是"<strong>当度量成为目标，它就不再是好的度量</strong>"（Strathern, 1997，《'Improving ratings': Audit in the British University system》，European Review 5(3)）。智能体系统里这个效应比组织中来得更快：里程碑完成率、步数、自报进度一旦进入执行者的提示词、奖励信号或 KPI，执行者就把"让指标好看"当隐目标，指标与真实进度脱钩（这正是 11.5.5"为里程碑而里程碑"反模式的机理）。对策是<strong>指标分层加定期换指标</strong>：终判判据（不可操纵的程序化断言）与过程指标分层保管，过程指标永不进入执行者的目标函数；抽查指标定期轮换，让针对旧指标的过拟合失效——逻辑与对抗样本的防御轮换相同。</p>
+<p><strong>边界条件</strong>：三类分布下本章模式开始失效。其一，目标本身在演化的探索型任务——硬判据锁死意外发现，应退回"方向性目标+定期人工检视"的松监控（11.5.5 末尾）；其二，判据可被廉价操纵又无法程序化验证的开放域（写作、研究）——裁判一致率随任务开放度下降，人工抽检兜底的比例要随开放度上调；其三，超长任务（数百步量级）——裁判调用成本可能超过执行本身，监控预算必须随任务长度显式规划，否则监控自己成为最大的成本项。</p>
+<h3 id="1157-怎么用运用判断">11.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：任务超过三步；需要无人值守跑；产出要交付给下游而非当次阅读；失败代价高（钱、时间、信任）。四条中占两条以上就值得上完整的"判据+约束+预算"三元组；单轮问答与一次性生成不设循环。</p>
+<p><strong>与最近替代方案的对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>与目标监控的关键差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>反思模式（<a href="../chapters/ch04-reflection.html">第 4 章</a>）</td>
+<td>自我批评作用域是"这一步做得好不好"，对方向性漂移几乎无感；监控用独立上下文比对<strong>原始目标</strong></td>
+</tr>
+<tr>
+<td>离线 eval 基线（评测集）</td>
+<td>只在发布前跑一次；监控是执行中持续比对，管的是"这一次运行"</td>
+</tr>
+<tr>
+<td>全程人审</td>
+<td>保真度最高、成本与延迟最高；监控的职责恰是把人审压到最小——只升级难例</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：第一步，把当前手头任务的提示词目标改写成"判据+约束+预算"三元组，能程序化的判据全部程序化（测试、schema 校验、字数与关键词断言）。第二步，在主循环里加一个 evaluate 出口：判据满足才退出、预算耗尽即停、约束违反即停车——先跑通这套免费的控制流，再谈模型裁判。第三步，trace 按 OpenTelemetry GenAI 语义约定落盘，失败案例进人工复核队列，用复核结论校准裁判提示词；自报进度只当线索，永远与 trace 交叉验证。</p>
+<h2 id="116-工程落地核心源码与讲解">11.6 工程落地：核心源码与讲解</h2>
+<p>主程序是一个目标监控状态机：程序化判据优先于模型裁判（确定性检查免费且可靠），裁判解析失败有降级路径，连续漂移自动升级。在 Python 3.10+ 实测（模型调用需配置环境变量）。拆为四片，<strong>按序拼接到同一个文件里就是完整可运行程序</strong>。</p>
+<h3 id="1161-核心源码按序拼接即完整可运行">11.6.1 核心源码（按序拼接即完整可运行）</h3>
+<p><strong>片段一：模型接入——每章统一的 OpenAI 兼容辅助函数。</strong></p>
 <pre><code class="language-python">&quot;&quot;&quot;目标-判据-进度检查循环：目标监控状态机（框架无关实现）。
-
-依赖：pip install openai
-运行前设置环境变量：
-    export AGENT_LLM_API_KEY=...            # 必需
-    export AGENT_LLM_BASE_URL=...           # 可选，OpenAI 兼容网关
-    export AGENT_LLM_MODEL=...              # 可选，默认 gpt-4o-mini
-&quot;&quot;&quot;
-from __future__ import annotations
-
+依赖：pip install openai；运行需配置 AGENT_LLM_API_KEY（可选 BASE_URL / MODEL）&quot;&quot;&quot;
 import json
 import os
 import re
@@ -185,261 +173,168 @@ from typing import Callable
 
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
     &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。&quot;&quot;&quot;
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
-    resp = client.chat.completions.create(model=MODEL, messages=messages, temperature=temperature)
-    return resp.choices[0].message.content or &quot;&quot;
-
-
-class Verdict(str, Enum):
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]
+    return client.chat.completions.create(model=MODEL, messages=msgs, temperature=temperature).choices[0].message.content or &quot;&quot;
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一片没有监控逻辑，只有"模型怎么接"的基建：客户端从环境变量读配置（换网关、换模型不改代码），<code>llm()</code> 统一返回纯文本。<strong>裁判调用的温度固定 0.0</strong> 是在片段三里传入的——判定类调用要的是可复现，不是创造性。读者接自己的网关时只改三个环境变量。</p>
+</blockquote>
+<p><strong>片段二：数据结构——判定枚举与目标三元组。</strong></p>
+<pre><code class="language-python">class Verdict(str, Enum):
     ACHIEVED = &quot;achieved&quot;                    # 完成判据满足
     ON_TRACK = &quot;on_track&quot;                    # 有进展，继续
     DRIFTED = &quot;drifted&quot;                      # 偏离目标（目标侵蚀）
     STALLED = &quot;stalled&quot;                      # 无进展循环
     CONSTRAINT_VIOLATION = &quot;constraint_violation&quot;
 
-
 @dataclass
 class Goal:
     &quot;&quot;&quot;目标三元组：完成判据 + 约束 + 预算。&quot;&quot;&quot;
     description: str                                   # 原始目标文本（漂移比对以它为准）
     programmatic_check: Callable[[str], tuple[bool, str]]  # 程序化判据 -&gt; (是否达成, 原因)
-    constraints: list[re.Pattern] = field(default_factory=list)  # 禁止出现的内容
+    constraints: list[re.Pattern] = field(default_factory=list)  # 约束：禁止出现的内容
     max_attempts: int = 5                              # 预算：最大尝试次数
     max_consecutive_drifts: int = 2                    # 连续漂移升级阈值
-
 
 @dataclass
 class Attempt:
     n: int
     artifact: str
-    programmatic: str          # 程序化检查结论
-    verdict: Verdict | None    # 裁判结论
+    verdict: Verdict | None
     reason: str = &quot;&quot;
-
-
-class GoalMonitor:
-    &quot;&quot;&quot;TOTE 循环的工程化：Test（判据+约束+漂移）-&gt; 决策（Operate/Exit/Redirect）。&quot;&quot;&quot;
-
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>Goal</code> 的五个字段就是 11.5.1 的三元组落地：<code>description</code> 存<strong>原始目标文本</strong>——漂移比对永远以它为准，绝不用执行中被改写过的目标；<code>programmatic_check</code> 把判据做成函数而非提示词，<code>constraints</code> 把约束做成正则而非口头约定——"模型同意约束不等于约束被执行"。<code>max_attempts</code> 是预算，也是"放弃"的合法性来源；<code>max_consecutive_drifts=2</code> 取"两次连续漂移"作升级阈值，太敏感会频繁打扰人，太迟钝则漂移已酿成损失。<code>Attempt</code> 保留每轮判定与理由，是 11.5.4 所说"trace 是原料"的最小形态。</p>
+</blockquote>
+<p><strong>片段三：Test 环节——检查顺序与裁判的降级路径。</strong></p>
+<pre><code class="language-python">class GoalMonitor:
+    &quot;&quot;&quot;TOTE 循环的 Test 环节：约束最先查，程序化判据次之，语义判定最后交裁判。&quot;&quot;&quot;
     def __init__(self, goal: Goal, judge: Callable[[Goal, str], tuple[Verdict, str]] | None = None):
         self.goal = goal
         self.judge = judge or self._llm_judge
         self.history: list[Attempt] = []
         self.judge_failures = 0
 
-    # ---- Test：程序化检查优先（免费、确定、先执行），语义判定交给裁判 ----
     def evaluate(self, artifact: str) -&gt; tuple[Verdict, str]:
         for pat in self.goal.constraints:                       # 约束：不变量，违反即拦
             if pat.search(artifact):
                 return Verdict.CONSTRAINT_VIOLATION, f&quot;违反约束：出现禁止内容 {pat.pattern!r}&quot;
-        ok, why = self.goal.programmatic_check(artifact)        # 判据：可计算部分
+        ok, why = self.goal.programmatic_check(artifact)        # 判据：免费且确定，先跑
         if ok:
             return Verdict.ACHIEVED, why
-        # 相同产出重复出现 =&gt; 空转；否则交裁判判断语义维度（质量/漂移）
-        if any(a.artifact == artifact for a in self.history):
+        if any(a.artifact == artifact for a in self.history):   # 与历史产出相同 =&gt; 空转
             return Verdict.STALLED, &quot;与历史产出完全相同，无进展&quot;
-        verdict, reason = self._judge_with_retry(artifact)
-        return verdict, reason
+        return self._judge_with_retry(artifact)                 # 语义维度交给裁判
 
     def _judge_with_retry(self, artifact: str) -&gt; tuple[Verdict, str]:
         try:
             v, r = self.judge(self.goal, artifact)
             self.judge_failures = 0
             return v, r
-        except Exception as exc:                                # 裁判失效降级：保守放行并计数
+        except Exception as exc:    # 裁判失效降级：保守放行并计数，连坏 3 次由主循环升级
             self.judge_failures += 1
-            return Verdict.ON_TRACK, f&quot;[裁判失效{self.judge_failures}次，放行并标记] {exc}&quot;
+            return Verdict.ON_TRACK, f&quot;[裁判失效{self.judge_failures}次] {exc}&quot;
 
     def _llm_judge(self, goal: Goal, artifact: str) -&gt; tuple[Verdict, str]:
         &quot;&quot;&quot;模型裁判：用原始目标（而非执行中的转述）比对产出，独立上下文。&quot;&quot;&quot;
-        system = (
-            &quot;你是目标监控裁判。只输出 JSON：{\&quot;verdict\&quot;:\&quot;achieved|on_track|drifted|stalled\&quot;,&quot;
-            &quot;\&quot;reason\&quot;:\&quot;一句话理由\&quot;}。drifted 表示产出满足的字面要求偏离了原始目标的真实意图。&quot;
-        )
-        raw = llm(
-            f&quot;原始目标：{goal.description}\n当前产出：\n{artifact}\n&quot;
-            f&quot;历史尝试摘要：{[a.verdict.value if a.verdict else '?' for a in self.history]}&quot;,
-            system=system,
-            temperature=0.0,
-        )
-        fence = &quot;`&quot; * 3                       # 用 chr(96) 构造围栏标记，避免与本章代码块冲突
-        cleaned = raw.strip()
-        if cleaned.startswith(fence):         # 剥掉模型可能加的 json 围栏标记
-            cleaned = cleaned.split(&quot;\n&quot;, 1)[1] if &quot;\n&quot; in cleaned else &quot;&quot;
-        if cleaned.endswith(fence):
-            cleaned = cleaned[: -len(fence)]
-        data = json.loads(cleaned.strip())
+        system = ('你是目标监控裁判。只输出 JSON：{&quot;verdict&quot;:&quot;achieved|on_track|drifted|stalled&quot;,'
+                  '&quot;reason&quot;:&quot;一句话理由&quot;}。drifted=字面达标但偏离原始目标真实意图。')
+        raw = llm(f&quot;原始目标：{goal.description}\n当前产出：\n{artifact}\n&quot;
+                  f&quot;历史判定：{[a.verdict.value if a.verdict else '?' for a in self.history]}&quot;,
+                  system=system, temperature=0.0)
+        fence = &quot;`&quot; * 3            # chr(96) 构造的围栏标记；剥掉模型可能加的 json 围栏外壳
+        cleaned = raw.strip().removeprefix(fence).removesuffix(fence).strip()
+        cleaned = cleaned if cleaned.startswith(&quot;{&quot;) else cleaned[cleaned.index(&quot;{&quot;):]
+        data = json.loads(cleaned)
         return Verdict(data[&quot;verdict&quot;]), str(data.get(&quot;reason&quot;, &quot;&quot;))
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>evaluate</code> 的检查顺序就是成本与可靠性排序：约束（正则，纳秒级）→ 程序化判据（函数调用，免费）→ 空转检测（列表比对）→ 模型裁判（最贵、最后）。<strong>监控者与执行者分离</strong>在这里成形：裁判收到的是 <code>goal.description</code> 原文加产出，没有执行者的任何转述——漂移往往正是通过"目标的重新表述"完成的（11.5.3）。<code>_judge_with_retry</code> 是这段代码最重要的工程细节：裁判也是会坏的模型调用，坏了<strong>保守放行并计数</strong>而不是让整个任务失败——把"检查不可用"与"检查不通过"区分开；连坏 3 次说明监控者自身失效，主循环会升级而不是硬撑。裁判输出用 JSON 约束加两层剥壳（围栏标记与语言标注），这是对着真实模型的输出版式打的补丁。</p>
+</blockquote>
+<p><strong>片段四：Operate-Test 主循环与最小演示。</strong></p>
+<pre><code class="language-python">def run_loop(monitor: GoalMonitor, agent_step: Callable[[str | None], str]) -&gt; tuple[str, list[Attempt]]:
+    &quot;&quot;&quot;Operate-Test 状态转移：达成即退、违规即停、漂移即修、预算尽即弃（放弃是合法出口）。&quot;&quot;&quot;
+    feedback: str | None = None
+    for n in range(1, monitor.goal.max_attempts + 1):
+        artifact = agent_step(feedback)
+        verdict, reason = monitor.evaluate(artifact)
+        monitor.history.append(Attempt(n, artifact, verdict, reason))
+        print(f&quot;[第{n}轮] verdict={verdict.value}  reason={reason}&quot;)
+        if verdict is Verdict.ACHIEVED:
+            return &quot;exit_success&quot;, monitor.history
+        if monitor.judge_failures &gt;= 3:
+            return &quot;escalate_judge_broken&quot;, monitor.history     # 监控者自身失效 =&gt; 升级
+        if verdict is Verdict.CONSTRAINT_VIOLATION:
+            return &quot;halt_constraint_violation&quot;, monitor.history # 硬约束 =&gt; 立即停车
+        if verdict in (Verdict.DRIFTED, Verdict.STALLED):
+            drifts = sum(1 for a in monitor.history[-2:] if a.verdict is Verdict.DRIFTED)
+            if drifts &gt;= monitor.goal.max_consecutive_drifts:
+                return &quot;escalate_drift&quot;, monitor.history        # 连续漂移 =&gt; 升级给人
+            feedback = f&quot;上一轮被判定 {verdict.value}：{reason}，请回到原始目标重新理解后再产出。&quot;
+    return &quot;exit_budget_exhausted&quot;, monitor.history             # 预算耗尽 =&gt; 合法放弃
 
-    # ---- 循环：状态转移表 ----
-    def run(self, agent_step: Callable[[str | None], str]) -&gt; tuple[str, list[Attempt]]:
-        &quot;&quot;&quot;agent_step(feedback) -&gt; 本轮产出。返回 (最终状态, 全部尝试记录)。&quot;&quot;&quot;
-        feedback: str | None = None
-        for n in range(1, self.goal.max_attempts + 1):
-            artifact = agent_step(feedback)
-            verdict, reason = self.evaluate(artifact)
-            self.history.append(Attempt(n, artifact, reason, verdict))
-            print(f&quot;[第{n}轮] verdict={verdict.value}  reason={reason}&quot;)
-
-            if verdict is Verdict.ACHIEVED:
-                return &quot;exit_success&quot;, self.history
-            if self.judge_failures &gt;= 3:
-                return &quot;escalate_judge_broken&quot;, self.history        # 监控者失效 =&gt; 升级
-            if verdict is Verdict.CONSTRAINT_VIOLATION:
-                return &quot;halt_constraint_violation&quot;, self.history    # 硬约束 =&gt; 立即停车
-            if verdict in (Verdict.DRIFTED, Verdict.STALLED):
-                drifts = sum(1 for a in self.history[-2:] if a.verdict is Verdict.DRIFTED)
-                if drifts &gt;= self.goal.max_consecutive_drifts:
-                    return &quot;escalate_drift&quot;, self.history           # 连续漂移 =&gt; 升级给人
-                feedback = (f&quot;上一轮产出被判定为 {verdict.value}：{reason}&quot;
-                            f&quot;（连续{drifts}次）。请回到原始目标重新理解后再产出。&quot;)
-            else:                                                   # on_track：继续
-                feedback = None
-        return &quot;exit_budget_exhausted&quot;, self.history                # 预算耗尽 =&gt; 放弃/升级
-
-
-# ---------------- 演示 ----------------
 if __name__ == &quot;__main__&quot;:
-    # 目标：写产品口号。判据含程序化硬门槛（字数&lt;=30、含&quot;稳健&quot;），语义质量交给裁判。
-    def check_slogan(text: str) -&gt; tuple[bool, str]:
-        if len(text) &gt; 30:
-            return False, f&quot;超长（{len(text)}字&gt;30）&quot;
-        if &quot;稳健&quot; not in text:
-            return False, &quot;缺少关键词'稳健'&quot;
+    def check_slogan(text: str) -&gt; tuple[bool, str]:            # 程序化硬门槛：不超过 30 字且含&quot;稳健&quot;
+        if len(text) &gt; 30 or &quot;稳健&quot; not in text:
+            return False, f&quot;硬门槛未过（{len(text)}字，含'稳健'={'稳健' in text}）&quot;
         return True, &quot;程序化判据全部满足&quot;
 
-    goal = Goal(
-        description=&quot;为云备份产品写一句中文口号，强调数据安全与稳健可靠，不超过30字，含'稳健'一词。&quot;,
-        programmatic_check=check_slogan,
-        constraints=[re.compile(r&quot;最(好|强)|第一|吊打&quot;)],   # 约束：禁止绝对化用语
-        max_attempts=4,
-    )
-
-    # 模拟执行者：第1轮故意漂移（写成速度广告），第2轮吸收反馈回到正轨。
-    scripted = [&quot;极速云盘，下载提速300%，注册即送百G空间！&quot;,
-                &quot;数据备份，稳健之选：云端守护，安全可靠每一天。&quot;]
+    goal = Goal(description=&quot;为云备份产品写一句中文口号，强调数据安全与稳健可靠，不超过30字，含'稳健'一词。&quot;,
+                programmatic_check=check_slogan, max_attempts=4,
+                constraints=[re.compile(r&quot;最(好|强)|第一|吊打&quot;)])  # 约束：禁止绝对化用语
+    scripted = [&quot;极速云盘，下载提速300%，注册即送百G空间！&quot;,        # 模拟执行者：第 1 轮故意漂移（速度广告）
+                &quot;数据备份，稳健之选：云端守护，安全可靠每一天。&quot;]   # 第 2 轮吸收反馈回到正轨
     cursor = {&quot;i&quot;: 0}
-
-    def agent_step(feedback: str | None) -&gt; str:
-        # 真实场景：把 feedback 回注给模型重新产出；演示用确定性脚本按序取产出。
-        i = min(cursor[&quot;i&quot;], len(scripted) - 1)
+    def agent_step(feedback: str | None) -&gt; str:  # 真实场景：把 feedback 回注给模型重新产出
         cursor[&quot;i&quot;] += 1
-        return scripted[i]
-
-    monitor = GoalMonitor(goal)
-    status, history = monitor.run(agent_step)
+        return scripted[min(cursor[&quot;i&quot;] - 1, len(scripted) - 1)]
+    status, history = run_loop(GoalMonitor(goal), agent_step)
     print(f&quot;最终状态: {status}，共 {len(history)} 轮。&quot;)
 </code></pre>
-<h3 id="1162-框架集成实现langgraph工作节点-监控节点的条件回路">11.6.2 框架集成实现（LangGraph：工作节点 + 监控节点的条件回路）</h3>
-<p>在 LangGraph（<strong>1.2.12</strong> 实测）里，目标监控最自然的形态是"工作节点 → 监控节点 → 条件边"：监控节点判定后由条件边决定回到工作节点（带反馈）、结束（成功）还是终止（超预算）。依赖：<code>pip install langgraph openai</code>。</p>
-<pre><code class="language-python">&quot;&quot;&quot;LangGraph 目标监控回路：draft（工作）-&gt; monitor（判据+裁判）-&gt; 条件路由。
-
-依赖：pip install langgraph openai   # langgraph==1.2.12 实测
-运行前设置 AGENT_LLM_API_KEY（可选 BASE_URL / MODEL），未设置将直接报错。
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import os
-import re
-from typing import Literal, TypedDict
-
-from langgraph.graph import START, StateGraph
-
-
-def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。&quot;&quot;&quot;
-    from openai import OpenAI
-
-    client = OpenAI(
-        base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-        api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    )
-    model = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
-    resp = client.chat.completions.create(model=model, messages=messages, temperature=temperature)
-    return resp.choices[0].message.content or &quot;&quot;
-
-
-class MonitorState(TypedDict):
-    goal: str                       # 原始目标文本（漂移比对基准）
-    feedback: str                   # 监控反馈，回注给工作节点
-    attempts: int                   # 预算计数
-    artifact: str                   # 当前产出
-    status: str                     # running / success / budget_exhausted
-
-
-MAX_ATTEMPTS = 4
-BANNED = re.compile(r&quot;最(好|强)|第一&quot;)   # 约束：禁止绝对化用语
-
-
-def draft(state: MonitorState) -&gt; MonitorState:
-    &quot;&quot;&quot;工作节点：根据目标（和监控反馈）产出。&quot;&quot;&quot;
-    prompt = f&quot;目标：{state['goal']}\n&quot;
-    if state.get(&quot;feedback&quot;):
-        prompt += f&quot;监控反馈：{state['feedback']}\n请据此修正产出。\n&quot;
-    prompt += &quot;直接给出产出正文。&quot;
-    return {&quot;artifact&quot;: llm(prompt, temperature=0.7), &quot;attempts&quot;: state[&quot;attempts&quot;] + 1}
-
-
-def monitor(state: MonitorState) -&gt; MonitorState:
-    &quot;&quot;&quot;监控节点：先程序化检查（约束+硬判据），后模型裁判（语义质量与漂移）。&quot;&quot;&quot;
-    artifact, goal = state[&quot;artifact&quot;], state[&quot;goal&quot;]
-    if BANNED.search(artifact):
-        return {&quot;status&quot;: &quot;running&quot;, &quot;feedback&quot;: f&quot;违反约束：出现绝对化用语 {BANNED.pattern!r}&quot;}
-    if &quot;稳健&quot; not in artifact or len(artifact) &gt; 30:
-        return {&quot;status&quot;: &quot;running&quot;,
-                &quot;feedback&quot;: f&quot;程序化判据未过（含'稳健'={'稳健' in artifact}，{len(artifact)}字）&quot;}
-    verdict = llm(
-        f&quot;原始目标：{goal}\n产出：{artifact}\n&quot;
-        &quot;该产出是否忠实达成目标真实意图？只回答 achieved / drifted / stalled 之一。&quot;,
-        system=&quot;你是独立目标监控裁判，警惕字面达标但意图偏离的产出。&quot;, temperature=0.0,
-    ).strip().lower()
-    if verdict == &quot;achieved&quot;:
-        return {&quot;status&quot;: &quot;success&quot;, &quot;feedback&quot;: &quot;&quot;}
-    return {&quot;status&quot;: &quot;running&quot;,
-            &quot;feedback&quot;: f&quot;裁判判定 {verdict}：请对照原始目标检查是否偏离或空转。&quot;}
-
-
-def route(state: MonitorState) -&gt; Literal[&quot;draft&quot;, &quot;__end__&quot;]:
-    &quot;&quot;&quot;条件路由：成功或预算耗尽则出循环，否则回工作节点。&quot;&quot;&quot;
-    if state[&quot;status&quot;] == &quot;success&quot;:
-        return &quot;__end__&quot;
-    if state[&quot;attempts&quot;] &gt;= MAX_ATTEMPTS:
-        return &quot;__end__&quot;
-    return &quot;draft&quot;
-
-
-def build():
-    g = StateGraph(MonitorState)
-    g.add_node(&quot;draft&quot;, draft)
-    g.add_node(&quot;monitor&quot;, monitor)
-    g.add_edge(START, &quot;draft&quot;)
-    g.add_edge(&quot;draft&quot;, &quot;monitor&quot;)
-    g.add_conditional_edges(&quot;monitor&quot;, route, [&quot;draft&quot;, &quot;__end__&quot;])
-    return g.compile()
-
-
-if __name__ == &quot;__main__&quot;:
-    app = build()
-    final = app.invoke(
-        {&quot;goal&quot;: &quot;为云备份产品写一句中文口号，强调数据安全与稳健可靠，不超过30字，含'稳健'一词。&quot;,
-         &quot;feedback&quot;: &quot;&quot;, &quot;attempts&quot;: 0, &quot;artifact&quot;: &quot;&quot;, &quot;status&quot;: &quot;running&quot;}
-    )
-    print(f&quot;状态: {final['status']}  尝试次数: {final['attempts']}&quot;)
-    print(f&quot;最终产出: {final['artifact']}&quot;)
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>run_loop</code> 是 11.1.2 那张反馈环图的状态转移表，值得逐个出口看：<code>exit_success</code> 只认判据；<code>halt_constraint_violation</code> 对硬约束零容忍（不给"下不为例"的机会）；<code>escalate_drift</code> 在连续漂移时把控制权交给人，而不是让智能体自我修到天荒地老；<code>exit_budget_exhausted</code> 是预算的出口——<strong>"合法放弃"和"成功"一样是一等返回值</strong>。五个返回状态字符串就是给上游（调度器、人）看的信号协议。演示里 <code>agent_step</code> 用脚本模拟执行者，真实场景只需把它换成"把 feedback 回注给模型重新产出"的调用；第 1 轮产出是刻意的目标侵蚀样本——速度广告看似相关，实际答非所问，用它验证监控真的能拦住漂移。读者改哪里：换掉 <code>check_slogan</code>、约束正则和 <code>description</code>，就是你自己任务的目标监控器。</p>
+</blockquote>
+<h3 id="1162-框架差异速览">11.6.2 框架差异速览</h3>
+<p>各框架把"监控节点 + 条件路由"托管掉了，但判定逻辑（判据、约束、预算）仍然要你自己写。本章状态机在四个主流框架里的对应物：</p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>同名能力</th>
+<th>与本章实现的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LangGraph</td>
+<td><code>StateGraph</code> 条件边（<code>add_conditional_edges</code>）</td>
+<td>监控做成独立节点、条件边函数承担路由；<code>recursion_limit</code>（默认 25）兜底死循环</td>
+</tr>
+<tr>
+<td>OpenAI Agents SDK</td>
+<td><code>@output_guardrail</code> 输出护栏</td>
+<td>护栏返回 <code>tripwire_triggered=True</code> 即抛异常中断运行；语义是"终判"，粒度比每步检查粗</td>
+</tr>
+<tr>
+<td>CrewAI</td>
+<td><code>Task(human_input=True)</code></td>
+<td>交付前暂停等人工输入——监控权直接交给人而非自动裁判</td>
+</tr>
+<tr>
+<td>Google ADK</td>
+<td><code>LoopAgent</code> 的 <code>max_iterations</code> + <code>EventActions(escalate=True)</code></td>
+<td>迭代上限是强制项；子代理置 escalate 即终止循环，预算上限内建</td>
+</tr>
+</tbody>
+</table>
+<p>（官方文档：<a href="https://langchain-ai.github.io/langgraph/">LangGraph</a>、<a href="https://openai.github.io/openai-agents-python/concepts/guardrails/">OpenAI Agents SDK Guardrails</a>、<a href="https://docs.crewai.com/learn/human-input-on-execution">CrewAI Human Input</a>、<a href="https://google.github.io/adk-docs/agents/workflow-agents/">ADK Workflow Agents</a>。）</p>
 <h3 id="1163-生产化改造清单">11.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：模型裁判的 JSON 解析失败要重试并降级（如 11.6.1 的失效计数）；程序化判据本身可能抛异常（测试超时），需包裹并按"检查不可用"单独计数。</li>
@@ -488,9 +383,9 @@ if __name__ == &quot;__main__&quot;:
 <li>微软 Azure AI Foundry 推进 OpenTelemetry 多智能体观测（2025-10-01，Azure AI Foundry 官方博客）；框架内置 GenAI 埋点的实测记录：<a href="https://signoz.io/docs/microsoft-agent-framework-observability/">signoz.io/docs/microsoft-agent-framework-observability</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第10章 模型上下文协议</span></a><a class="pager" href="../chapters/ch12-exception-recovery.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第12章 异常处理与恢复</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#111-模式概述">11.1 模式概述</a></li><li class="toc-l3"><a href="#1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#112-起源与历史最早是谁提出来的">11.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#114-实际应用与案例">11.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#115-深度讲解">11.5 深度讲解</a></li><li class="toc-l3"><a href="#1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</a></li><li class="toc-l3"><a href="#1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</a></li><li class="toc-l3"><a href="#1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</a></li><li class="toc-l3"><a href="#1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</a></li><li class="toc-l3"><a href="#1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</a></li><li class="toc-l2"><a href="#116-工程落地实践代码示例">11.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1161-框架无关实现完整可运行">11.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1162-框架集成实现langgraph工作节点-监控节点的条件回路">11.6.2 框架集成实现（LangGraph：工作节点 + 监控节点的条件回路）</a></li><li class="toc-l3"><a href="#1163-生产化改造清单">11.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#117-概览-核心要点-结论">11.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#118-延伸阅读与参考链接">11.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#111-模式概述">11.1 模式概述</a></li><li class="toc-l3"><a href="#1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#112-源起它从哪里来">11.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#114-实际应用与案例">11.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#115-深度讲解">11.5 深度讲解</a></li><li class="toc-l3"><a href="#1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</a></li><li class="toc-l3"><a href="#1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</a></li><li class="toc-l3"><a href="#1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</a></li><li class="toc-l3"><a href="#1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</a></li><li class="toc-l3"><a href="#1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</a></li><li class="toc-l3"><a href="#1156-思想谱系定量证据与被-goodhart-化的监控">11.5.6 思想谱系、定量证据与被 Goodhart 化的监控</a></li><li class="toc-l3"><a href="#1157-怎么用运用判断">11.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#116-工程落地核心源码与讲解">11.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1161-核心源码按序拼接即完整可运行">11.6.1 核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#1162-框架差异速览">11.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#1163-生产化改造清单">11.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#117-概览-核心要点-结论">11.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#118-延伸阅读与参考链接">11.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

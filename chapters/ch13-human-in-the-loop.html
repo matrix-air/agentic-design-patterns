@@ -63,8 +63,8 @@
 <div class="fig-caption" id="fig-13-1">图 13-1：置信度分级路由与人工审批闸门——高置信自动通过、中置信放行加抽检、低置信挂起转人工，裁决后从断点恢复，全链路审计留痕。</div>
 <h3 id="1313-与相邻模式的关系与组合">13.1.3 与相邻模式的关系与组合</h3>
 <p>与路由模式的关系是特化：置信度升级路由就是把路由的判据从"任务类型"换成"确信程度与风险等级"，低置信工单被路由到一类特殊的处理者——人。与异常处理（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的关系是分层：重试、熔断、降级解决"系统自己能不能扛"，升级（escalation）是异常处理的最后一层，扛不住的交给外部兜底者。与反思模式的关系是审稿人换了人：反思让模型自审，人在回路让人类审——人的审稿更贵也更可靠，通常用在反思无法自证的高风险环节。与多智能体协作的关系是"评审智能体"是人审的低成本近似：模型评审员挡掉八成明显问题，剩下两成疑难才值得人看。与记忆模式的关系是反馈的归宿：人工修正的每一条裁决都可以沉淀为记忆、少样本示例或微调数据——这正是 RLHF 的思路在工程侧的回声。</p>
-<h2 id="132-起源与历史最早是谁提出来的">13.2 起源与历史：最早是谁提出来的</h2>
-<p>人审的传统比计算机早得多。1935 年，波音 Model 299 原型机试飞坠毁，调查归因于飞行员在起飞前遗漏了一个控制步骤；这起事故直接催生了飞行检查单，并在其后数年间于波音和整个航空业制度化——这是"高风险动作前用结构化流程强制人工确认"的现代原型。核电行业发展出了同源的纪律：关键操作的双人复核（操作员执行、独立监督员核对），用第二个人拦截第一个人的失误。人因工程（human factors）在 20 世纪 80 年代随驾驶舱自动化普及开始系统研究"人监督机器"的有效性，Wiener 1989 年的 NASA 玻璃驾驶舱报告记录了自动化让飞行员监控能力退化的证据；1999 年 Skitka、Mosier 与 Burdick 的对照实验给"自动化偏见"（automation bias）下了可检验的定义——有自动化辅助的实验组整体错误率反而高于无辅助组。机器学习侧，主动学习在 20 世纪 90 年代成形（见 Settles 2009 年综述的历史梳理），核心思想是"把标注预算花在信息量最大的样本上"，这正是今天置信度升级路由的统计学祖先。2017 年 Christiano 等人证明人类偏好反馈可以替代奖励函数训练策略，为 RLHF 铺路；2022 年 InstructGPT 把这套流程工程化，同年 11 月 ChatGPT 让对齐后的模型触达每个用户；2022 年底 Anthropic 的 Constitutional AI 用 AI 反馈替代大部分人工标注，回应的正是人工标注的规模瓶颈。工程框架侧，LangChain 2024 年为 LangGraph 引入 <code>interrupt()</code>/<code>Command</code> 人机协作原语，把"暂停—等人—恢复"变成框架级能力；2025 年起，主流编码智能体把命令级审批门做成了默认交互。</p>
+<h2 id="132-源起它从哪里来">13.2 源起：它从哪里来</h2>
+<p>人在回路不是 AI 的发明，而是高风险行业纪律的移植：1935 年波音 Model 299 坠机催生飞行检查单，核电业随后有双人复核，确立“不可逆动作前强制人工确认”的原型。人因工程把它变成科学问题：NASA 记录了自动化下人的监控退化，1999 年 Skitka 等人的实验给自动化偏见下了可检验定义。机器学习侧相反：主动学习把“人看哪些样本”变成统计问题，Christiano 等人证明偏好反馈可替代奖励函数，经 InstructGPT 工程化、ChatGPT 触达大众，Constitutional AI 再以 AI 反馈替代标注。今天的功课是合流：模型侧少靠逐件人审，流程侧让人审花在刀刃上。</p>
 <table>
 <thead>
 <tr>
@@ -76,26 +76,14 @@
 </thead>
 <tbody>
 <tr>
-<td>1935</td>
-<td>Model 299 坠机促成飞行检查单，人工确认流程制度化</td>
-<td>Boeing</td>
-<td>航空史公认事件</td>
-</tr>
-<tr>
-<td>1989</td>
-<td>玻璃驾驶舱人因研究报告：自动化致监控退化</td>
-<td>E. Wiener（NASA）</td>
-<td>NASA CR-177528</td>
-</tr>
-<tr>
 <td>1999</td>
-<td>自动化偏见对照实验：有辅助组错误率反高于无辅助组</td>
+<td>自动化偏见对照实验：漏报条件下有辅助组正确识别率约 59%，无辅助组 97%</td>
 <td>Skitka、Mosier、Burdick</td>
-<td><a href="https://doi.org/10.1006/ijhc.1999.0274">DOI</a>（Int. J. Human-Computer Studies 51(5)）</td>
+<td><a href="https://doi.org/10.1006/ijhc.1999.0252">DOI</a>（Int. J. Human-Computer Studies 51(5)）</td>
 </tr>
 <tr>
 <td>2009</td>
-<td>主动学习文献综述：选最有信息量的样本请人标注</td>
+<td>主动学习综述：把标注预算花在信息量最大的样本上</td>
 <td>B. Settles（UW-Madison）</td>
 <td><a href="https://minds.wisconsin.edu/handle/1793/60660">报告 TR1648</a></td>
 </tr>
@@ -104,18 +92,6 @@
 <td>人类偏好反馈强化学习：用比较替代奖励函数</td>
 <td>Christiano et al.（OpenAI/UC Berkeley）</td>
 <td><a href="https://arxiv.org/abs/1706.03741">arXiv:1706.03741</a>（NeurIPS 2017）</td>
-</tr>
-<tr>
-<td>2022年3月</td>
-<td>InstructGPT：RLHF 工程化（标注-训练-评估流水线）</td>
-<td>Ouyang et al.（OpenAI）</td>
-<td><a href="https://arxiv.org/abs/2203.02155">arXiv:2203.02155</a>（NeurIPS 2022）</td>
-</tr>
-<tr>
-<td>2022年11月</td>
-<td>ChatGPT 上线，RLHF 对齐模型触达大众</td>
-<td>OpenAI</td>
-<td>官方发布</td>
 </tr>
 <tr>
 <td>2022年12月</td>
@@ -129,15 +105,9 @@
 <td>LangChain</td>
 <td><a href="https://langchain-ai.github.io/langgraph/">LangGraph 官方文档</a>（0.2.31 起推荐使用）</td>
 </tr>
-<tr>
-<td>2025</td>
-<td>主流编码智能体把命令级审批门做成默认交互</td>
-<td>Anthropic 等多家</td>
-<td><a href="https://code.claude.com/docs/en/iam">产品文档</a></td>
-</tr>
 </tbody>
 </table>
-<p>演化脉络有两条并行的线。一条是人因工程的线：从检查单到双人复核到自动化偏见研究，积累了"人监督机器何时有效、何时失效"的半个世纪证据——结论并不总是鼓舞人心的。另一条是机器学习的线：从主动学习到 RLHF 到 Constitutional AI，方向恰好相反——把人的参与从"逐个决策"压缩成"提供偏好信号"，用更少的人时换取同等的对齐效果。今天工程师面对的问题是把两条线合流：模型侧用偏好学习降低对逐件人审的依赖，流程侧用介入点与升级路由保证剩下的少量人审真的花在刀刃上，而不是变成橡皮图章。</p>
+<p>演化细节与实证放到 13.5 展开：半个世纪人因工程证据（含 Wiener 1989 年 NASA 玻璃驾驶舱报告、Parasuraman 1993 年"自动化诱发自满"）见 13.5.3；RLHF 谱系（InstructGPT 2022 年 3 月工程化、ChatGPT 2022 年 11 月上线、2025 年起编码智能体把命令级审批门做成默认交互）如何反向压缩人的参与，见 13.5.7 的运用判断。</p>
 <h2 id="133-发挥的作用为什么重要">13.3 发挥的作用：为什么重要</h2>
 <p>第一，错误代价的保险机制。智能体系统的错误率永远不可能降到零，人在回路做的事是<strong>把"错误发生"和"错误造成损失"解耦</strong>：低置信输出在造成不可逆后果之前被拦截，一次人工裁决的成本远低于一次事故的善后成本。第二，冷启动期的信任建设。系统上线初期人工介入密度高，随着实测准确率数据积累逐步放宽阈值——"自动化率从 60% 提升到 95%"是有据可依的渐进过程，而不是拍脑袋全量放开。第三，数据飞轮的起点。<strong>人工裁决天然是高质量标注</strong>：审批人修正的每个标签、驳回的每条输出，都是带真实分布的反馈数据，可以直接回流成评估集、少样本示例或微调语料——RLHF 谱系的全部工作都建立在"人类愿意提供反馈"这个前提上。第四，合规与问责的落点。监管者问"这个决定谁负责"时，审计日志里有一条明确的记录：系统给出的建议、置信度多少、哪位审批人基于什么批准了它。没有这条记录，系统在任何受监管行业的落地都会被卡住。</p>
 <h2 id="134-实际应用与案例">13.4 实际应用与案例</h2>
@@ -158,9 +128,11 @@
 <h3 id="1352-置信度升级路由低置信转人工">13.5.2 置信度升级路由：低置信转人工</h3>
 <p>升级路由的核心公式是：<strong>人工注意力应该流向错误代价高且模型确信度低的样本</strong>。实现上是双阈值三档位：置信度高于 <code>AUTO_THRESHOLD</code> 的自动执行；低于 <code>ESCALATE_THRESHOLD</code> 的挂起转人工；中间档自动执行但进抽检池。双阈值的价值在中间档：单阈值系统里"不升级"等于"免检"，而中间档恰恰是<strong>错误率上升最快的区域</strong>——模型"有点拿不准"的输出比"完全拿不准"的输出更频繁，也更容易蒙混过关。</p>
 <p>两个工程细节决定路由是否真的有效。其一，<strong>置信度必须校准</strong>。模型自报的置信度（让它输出 0-1 的数）系统性过自信，直接用会让人审池里塞满其实不错的样本；校准手段包括：用保留集测每个分数段的经验准确率再映射（等值回归分箱）、用多次采样的自洽率（self-consistency）代替单次自白、用独立验证器模型打分。其二，路由判据要乘上风险权重，不只看"模型有多不确定"，还要看"这里错了多贵"：同样的置信度，涉及资金动作的工单应该比咨询类工单的升级阈值高得多。形式化地说，样本升级的期望收益是"人审纠错挽回的期望损失"减去"人审成本"，阈值应该让边际样本的期望收益为零——这也是主动学习"信息量"判据的风险加权版本：人该看的<strong>不是模型最难懂的样本，而是错了最伤的样本</strong>。</p>
+<p>校准为什么是前提，有官方证据可引。OpenAI 在 <a href="https://arxiv.org/abs/2303.08774">GPT-4 技术报告</a>中给出了一组反差鲜明的事实：预训练基模型的校准近乎完美——它预测"我有 70% 把握"时正确率确实接近 70%；但经过 RLHF 后训练，校准显著退化（官方原话是"calibration is reduced"，报告图 8 中校准曲线明显偏离对角线）。原因是 RLHF 的奖励来自人类偏好，而人类评分员天然偏爱听起来果断自信的回答。工程含义直白：<strong>模型说"90% 置信"时，真实正确率完全可能只有六成——升级路由的阈值必须画在校准曲线上，而不是画在自报分数上</strong>。度量工具就是期望校准误差（ECE）：把自报置信度分箱，逐箱算"平均自报置信度与真实准确率之差"再加权求和；ECE 大的模型，先做分箱再映射（或换自洽率信号），然后才配做路由的判据。</p>
 <h3 id="1353-审批疲劳与自动化偏见">13.5.3 审批疲劳与自动化偏见</h3>
-<p>人在回路最大的敌人不是模型出错，而是人停止思考。Skitka、Mosier 与 Burdick 1999 年的实验给出了量化证据：在模拟飞行任务中，配了"非常可靠但非完美"自动辅助的实验组，整体监控表现反而差于无辅助组；错误分两类——omission（自动化没提示的事就没人管）与 commission（自动化建议与训练和其他可靠信息源冲突时仍然照办）。早在 80 年代玻璃驾驶舱普及期，NASA 的人因研究（如 Wiener 1989 年报告）就记录了同类现象，Parasuraman 等人 1993 年将其命名为"自动化诱发的自满"（complacency）。翻译到审批场景：审批人看到第 200 条连续通过的请求后，第 201 条的批准动作退化成条件反射；系统的拦截门还在，拦截力已经归零。</p>
+<p>先说一个反直觉的事实：<strong>给系统加人审并不必然更安全</strong>。大家默认"多一道人工确认总归多一道保险"，工程与实验事实是——一个被淹没、被训练出条件反射的审批人，拦截力可以低到近乎归零，而这道门还在制造"有人把关"的错觉，让上游放心地加大自动化力度。人在回路最大的敌人不是模型出错，而是人停止思考。Skitka、Mosier 与 Burdick 1999 年的实验给出了量化证据：在模拟飞行任务中，配了"非常可靠但非完美"自动辅助的实验组，整体监控表现反而差于无辅助组——漏报条件下，有辅助组正确识别并响应关键事件的比例仅约 59%，无辅助组为 97%（<a href="https://doi.org/10.1006/ijhc.1999.0252">DOI</a>）；错误分两类——omission（自动化没提示的事就没人管）与 commission（自动化建议与训练和其他可靠信息源冲突时仍然照办）。这不是实验室孤例，真实审批流给出的数据更冷：van der Sijs 等人对药物安全警报的系统综述发现，临床医生覆盖（override）了 <strong>49%-96%</strong> 的警报，连严重过量用药这类高危警报也有约四分之一被覆盖（转引自 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6913230/">JAMIA 系统综述</a>）。早在 80 年代玻璃驾驶舱普及期，NASA 的人因研究（如 Wiener 1989 年报告）就记录了同类现象，Parasuraman 等人 1993 年将其命名为"自动化诱发的自满"（complacency）。翻译到审批场景：审批人看到第 200 条连续通过的请求后，第 201 条的批准动作退化成条件反射；系统的拦截门还在，拦截力已经归零。</p>
 <p>对策是一组互相配合的制度设计。<strong>审批请求携带反方信息</strong>：呈现模型理由的同时呈现疑点（"该收件人不在历史往来名单中"），强制审批人做的是判断而非确认。<strong>限额与分流</strong>：升级率超过人工带宽时，正确动作是提高自动阈值或缩小系统负责的范围，而不是让审批人超载——超载的审批门比没有更糟，因为它制造了"有人把关"的错觉。<strong>金标混入</strong>：向审批流定期注入已知答案的测试样本，度量审批人的真实驳回准确率，审批质量本身成为被监控的指标。<strong>驳回率告警</strong>：驳回率长期趋近零，几乎必然意味着审批门已橡皮图章化，应当触发阈值与策略复盘。<strong>责任分离</strong>：配置审批白名单的人与日常点批准的人不应是同一人，防止自己给自己开免检通道。</p>
+<p>这组对策里有实验背书的是"让审批人对结果负责"：Skitka 等人 2000 年的后续实验发现，让被试对整体表现或决策准确性负责（accountable）能显著降低自动化偏见的发生率（<a href="https://doi.org/10.1006/ijhc.1999.0349">DOI</a>）。工程翻译：审批界面应展示"你上个月驳回了多少、抽检复核发现你漏放了多少"，让每个审批人的历史质量可见——<strong>被看见的责任感是可度量的拦截力</strong>。</p>
 <h3 id="1354-批准成本经济学">13.5.4 批准成本经济学</h3>
 <p>人工审批是按人时计价的稀缺资源，流程设计应该像对待 API 配额一样对待它。一次审批的真实成本远超"看一眼"：上下文切换成本（审批人放下手头工作）、等待成本（任务挂起期间业务停摆）、积压成本（审批队列越排越长，低优先级任务的时延失控）。把这些折算成账，很多"加个审批门"的决策会变成"先加校验规则，拦截不了的再升级"——机器校验一次几毫秒、成本趋近于零，能拦掉的请求就不该消耗人时。</p>
 <p>这引出一个可操作的分层原则：升级梯子上每一层都先问"能不能用更便宜的下一层挡掉"。第一层是确定性校验（schema、枚举、数值范围），第二层是规则引擎（黑名单、限额、时段），第三层是廉价模型审核，最后才是人。人只出现在前几层的漏网之鱼上。反过来，省审批成本也有底线：涉及不可逆且高代价的动作，再贵的人审也不能省——这笔账的正确算法是<strong>"审批成本"对比"期望事故损失"，而不是对比"零"</strong>。另外，审批预算应该显式化管理：每天多少人时、按什么优先级分配、超预算时的降级策略是什么（转批处理？提高阈值？暂停非关键自动化？），这些写在运维手册里，而不是等人排满了再临时想。</p>
@@ -170,25 +142,58 @@
 <h3 id="1356-失效模式与何时不要用">13.5.6 失效模式与何时不要用</h3>
 <p>四种典型反模式。<strong>伪审批</strong>：流程上有人审环节，但审批人平均停留时间不足两秒，UI 上连上下文都不展示——这是用形式满足合规、用橡皮图章替代判断，事故复盘时它制造的责任错觉比没有审批更危险。<strong>审批替代校验</strong>：本可以用确定性规则拦下的请求（格式错误、超限、黑名单）全部涌向人工，把人审带宽消耗在机器擅长的判断上。<strong>全有或全无</strong>：要么全自动裸奔，要么凡事都请示——没有中间档位和渐进放行机制，系统永远停在"不可信"或"赌博"两个极端。<strong>单点人审</strong>：唯一审批人休假，升级队列无限积压，挂起任务把整个业务流程拖死——人审入口必须有替代人与超时升级策略。</p>
 <p>何时可以不用这个模式：动作完全可逆且代价低（读查询、草稿生成），高频低风险环节挂人工闸门纯属自毁；模型在目标分布上的实测错误率低到期望损失可以忽略，且错误可检测可回滚；流程对时延极度敏感（毫秒级交易、实时控制），人工介入在物理上不可行——此时安全性应靠事前的规则约束与设计收敛来保证，而不是靠事中的人。判断的统一的尺子始终是期望损失：介入点的价值等于"拦截的错误期望损失"减去"人的成本加流程摩擦"，算得过来才加。</p>
-<h2 id="136-工程落地实践代码示例">13.6 工程落地：实践代码示例</h2>
-<h3 id="1361-框架无关实现完整可运行">13.6.1 框架无关实现（完整可运行）</h3>
-<p>下面的实现覆盖置信度升级工作流的全部骨架决策：双阈值三档路由（自动/抽检/升级）、人工闸门的挂起与恢复（resume 后流程继续）、两条错误路径（LLM 调用失败与输出解析失败都降级转人工而非硬失败）、审计留痕（每条分流与裁决可回放）。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 13 章 框架无关实现：置信度升级 + 挂起审批/恢复 + 审计留痕。
-
-场景：客服工单自动分类。置信度分三档路由——
-  高置信：自动执行；中置信：自动执行 + 事后抽检；低置信：事中挂起，等人工裁决后恢复。
-依赖：pip install openai
-环境变量：AGENT_LLM_BASE_URL / AGENT_LLM_API_KEY / AGENT_LLM_MODEL（见 llm()）
-&quot;&quot;&quot;
+<p>边界条件可以算成一笔人时账。假设单次人工裁决平均耗时 90 秒（读证据包加给结论），一名审批人每天有效投入 4 小时人审，日吞吐上限约 160 单——这意味着<strong>日请求量乘以升级率超过 160 的那一刻，审批门必然积压</strong>：日 10 万单的系统升级率哪怕只有 0.5%，也是每天 500 单排队。所以"该不该加人审"的第二把尺子是规模：流量小的时候双阈值路由是安全网，流量上来之后它先变成瓶颈、再变成橡皮图章（积压逼人放行）。同理，校准有半衰期——模型升级、产品改版、用户构成变化都会让旧阈值失真，阈值必须随分布漂移重标定，而不是一次调好永久沿用。</p>
+<h3 id="1357-怎么用运用判断">13.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>。出现以下特征中的两到三条，就该认真考虑这个模式：动作清单里存在不可逆项（对外发送、资金划转、删除、法务承诺）；模型输出的实测错误率还撑不起全自动化（上线初期几乎必然如此）；行业有问责要求，监管问得出"这个决定谁批的"；人工裁决的样本天然稀缺且贵（医疗、金融），错一个的代价远高于问一次；你在计划用人工反馈持续改进系统——顺带的收益是裁决数据回流成评估集与训练语料。反过来，全可逆、高吞吐、毫秒级时延三占其二，就该去 13.5.6 找替代方案。</p>
+<p><strong>与最近替代方案的对比</strong>。人在回路最常被拿来替代的是两条路：全自动化加异常兜底（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>），以及模型自审（反思模式，<a href="../chapters/ch06-planning.html">第 6 章</a>）。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>人在回路</th>
+<th>全自动 + 异常兜底</th>
+<th>模型自审（反思/评审智能体）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>拦截不可逆错误</td>
+<td>最强（副作用前可否决）</td>
+<td>弱（只能事后补偿/回滚）</td>
+<td>中（依赖评审模型自身不犯同类错）</td>
+</tr>
+<tr>
+<td>单位成本</td>
+<td>最高（人时 + 等待）</td>
+<td>低（机器成本）</td>
+<td>中（多次推理成本）</td>
+</tr>
+<tr>
+<td>吞吐上限</td>
+<td>被人手办天化</td>
+<td>机器容量</td>
+<td>机器容量</td>
+</tr>
+<tr>
+<td>适用位置</td>
+<td>高风险低频决策点</td>
+<td>高频低风险全流程</td>
+<td>高频流程中的初筛层</td>
+</tr>
+</tbody>
+</table>
+<p>三者不是互斥选项而是分层：反思挡掉八成明显问题，异常处理兜住机器故障，人只裁决前两层漏掉的高风险样本——这正是 13.5.4"升级梯子"的组合用法。</p>
+<p><strong>落地三步</strong>。第一步，给动作分级：把系统的全部对外动作按"可逆性 × 单次代价"列表排序，圈出必须事前审批的一小撮（通常不到 10%）。第二步，搭最小闸门：为这一小撮动作实现挂起-裁决-恢复（可直接用 13.6 的骨架），审计字段照 13.5.5 的最小条目落库，人工修正样本自动入评估集。第三步，用量化指标养它：升级率、审批时延、驳回率、金标混入命中率四条曲线每周看——驳回率趋零触发阈值复盘，积压超限触发升级梯子降级；实测数据积累三个月后再决定放宽还是收紧阈值，<strong>让自动化率的每一步提升都有据可依</strong>。</p>
+<h2 id="136-工程落地核心源码与讲解">13.6 工程落地：核心源码与讲解</h2>
+<h3 id="1361-核心源码与讲解框架无关实现">13.6.1 核心源码与讲解（框架无关实现）</h3>
+<p>本节把置信度升级工作流的主程序拆成四个片段：环境与模型接入、数据结构与人工闸门、三档路由主流程、演示与审计回放。<strong>四个片段按序拼接即完整可运行程序</strong>（依赖 <code>pip install openai</code>，环境变量见片段一）。优先保留的是骨架决策与错误路径：双阈值三档分流、挂起与恢复、两条失败路径的降级转人工、审计留痕，一个都不少。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第 13 章 框架无关实现·片段 1/4：环境与模型接入。按序拼接四片段即完整可运行程序
+（依赖 pip install openai 与三个环境变量，见 llm()/client）。&quot;&quot;&quot;
 from __future__ import annotations
-
 import json
 import os
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
-
 from openai import OpenAI
 
 client = OpenAI(
@@ -196,272 +201,171 @@ client = OpenAI(
     api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
 )
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
-
 AUTO_THRESHOLD = 0.90      # &gt;= 高置信：自动执行
-ESCALATE_THRESHOLD = 0.60  # &lt; 低置信：转人工；中间档：自动执行+抽检
-
+ESCALATE_THRESHOLD = 0.60  # &lt; 低置信：转人工；中间档自动执行 + 事后抽检
 VALID_LABELS = [&quot;退款&quot;, &quot;物流&quot;, &quot;产品质量&quot;, &quot;其他&quot;]
 
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;调用 OpenAI 兼容接口，返回模型文本回复。失败时抛异常，由调用方降级。&quot;&quot;&quot;
+    &quot;&quot;&quot;调用 OpenAI 兼容接口。失败抛异常，由调用方降级转人工——不硬失败。&quot;&quot;&quot;
     messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
         {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
     ]
     resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+        model=MODEL, messages=messages, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
 
 
 def now() -&gt; str:
     return datetime.now(timezone.utc).strftime(&quot;%Y-%m-%dT%H:%M:%SZ&quot;)
-
-
-def parse_json_reply(raw: str) -&gt; dict:
-    &quot;&quot;&quot;解析模型回复中的 JSON：容忍 markdown 代码围栏包裹（围栏用 chr(96) 构造，
-    避免在源码里写裸反引号字面量）。&quot;&quot;&quot;
-    fence = chr(96) * 3
-    cleaned = raw.strip().removeprefix(fence + &quot;json&quot;).removesuffix(fence).strip()
-    return json.loads(cleaned)
-
-
-@dataclass
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：片段一暴露三个可替换点——客户端（任何 OpenAI 兼容网关只改环境变量）、双阈值、标签集。两个阈值的取值逻辑：0.90 是自动路径的精度闸，自动执行没有人工兜底，门槛必须落在校准曲线的高置信区（见 13.5.2，先校准再选值）；0.60 之下连"放行加抽检"都不给，因为中间档恰恰是错误率上升最快的区域。<code>llm()</code> 刻意让异常向上抛而不内部吞掉：本模式的纪律是<strong>失败也是信息</strong>——分类失败与低置信同路，都该流向人工。读者要改的只有 <code>VALID_LABELS</code> 与两个阈值。</p>
+</blockquote>
+<pre><code class="language-python">@dataclass
 class Ticket:
-    &quot;&quot;&quot;一条待分类工单。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;待分类工单：path 记录走过的分流路径，全程可追责。&quot;&quot;&quot;
     ticket_id: str
     text: str
     label: str | None = None
     confidence: float = 0.0
-    path: str = &quot;pending&quot;  # pending | auto | sampled | approved | rejected | fallback
-    reason: str = &quot;&quot;
-
-
+    path: str = &quot;pending&quot;  # pending|auto|sampled|approved|rejected|fallback
 @dataclass
 class AuditEntry:
-    &quot;&quot;&quot;审计留痕：每个分流/人工决策都要可追责。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;审计留痕：每个分流与人工决策都可回放。&quot;&quot;&quot;
     ts: str
-    actor: str            # &quot;system&quot; 或审批人 ID
+    actor: str  # &quot;system&quot; 或审批人 ID
     ticket_id: str
-    action: str
+    action: str  # AUTO/SAMPLE/ESCALATE/approved/rejected
     detail: str
-
-
 @dataclass
 class ReviewGateway:
     &quot;&quot;&quot;人工闸门：低置信工单挂起在此，approve/reject 后恢复流程。&quot;&quot;&quot;
-
     pending: dict[str, Ticket] = field(default_factory=dict)
     audit: list[AuditEntry] = field(default_factory=list)
 
     def hold(self, ticket: Ticket, detail: str) -&gt; None:
         self.pending[ticket.ticket_id] = ticket
         self.audit.append(AuditEntry(now(), &quot;system&quot;, ticket.ticket_id, &quot;ESCALATE&quot;, detail))
-        print(f&quot;  [挂起] {ticket.ticket_id} 置信度 {ticket.confidence:.2f} 转人工：{detail}&quot;)
 
     def resume(self, ticket_id: str, decision: str, reviewer: str,
                edited_label: str | None = None) -&gt; Ticket | None:
-        &quot;&quot;&quot;人工裁决：approved（可带修正标签）或 rejected。恢复后续流程。&quot;&quot;&quot;
         ticket = self.pending.pop(ticket_id, None)
-        if ticket is None:
-            print(f&quot;  [恢复失败] {ticket_id} 不在挂起队列中&quot;)
+        if ticket is None:  # 错误路径：恢复不存在的挂起 -&gt; 显式失败，不静默
             return None
-        if decision == &quot;approved&quot;:
-            ticket.path = &quot;approved&quot;
-            ticket.label = edited_label or ticket.label
-            ticket.reason = f&quot;人工批准（审批人 {reviewer}）&quot;
-        else:
-            ticket.path = &quot;rejected&quot;
-            ticket.reason = f&quot;人工驳回（审批人 {reviewer}）&quot;
+        ticket.path = &quot;approved&quot; if decision == &quot;approved&quot; else &quot;rejected&quot;
+        if decision == &quot;approved&quot; and edited_label:
+            ticket.label = edited_label  # 人工修正标签是最贵的再训练数据
         self.audit.append(AuditEntry(now(), reviewer, ticket_id, decision,
                                      f&quot;label={ticket.label} conf={ticket.confidence:.2f}&quot;))
-        print(f&quot;  [恢复] {ticket_id} -&gt; {decision}，最终标签 {ticket.label}&quot;)
         return ticket
-
-
-def classify(ticket: Ticket, gateway: ReviewGateway) -&gt; None:
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：三个数据结构各司其职。<code>Ticket.path</code> 是流程的轨迹字段，六个取值覆盖全部出口，审计回放时靠它还原每条工单走过的路。<code>ReviewGateway.hold</code> 把挂起与审计写在一起：<strong>挂起本身就是一次分流决策，同样要留痕</strong>，而不只是"等待"。<code>resume</code> 的 <code>return None</code> 分支是错误路径：恢复一个不存在的挂起（重复恢复、ID 打错）必须显式失败，静默吞掉会让上游误以为裁决已生效。<code>edited_label</code> 单独传递，是因为人工修正的标签是全流程最贵的训练数据，生产中要把"被修正"这个事实单独记录回流。</p>
+</blockquote>
+<pre><code class="language-python">def classify(ticket: Ticket, gateway: ReviewGateway) -&gt; None:
     &quot;&quot;&quot;LLM 分类 + JSON 解析 + 三档置信度路由。所有失败路径都收敛到人工。&quot;&quot;&quot;
-    system = (&quot;你是客服工单分类器。只输出 JSON：&quot;
-              '{&quot;label&quot;: &quot;&lt;标签&gt;&quot;, &quot;confidence&quot;: &lt;0到1的小数&gt;, &quot;reason&quot;: &quot;&lt;一句话&gt;&quot;}')
-    prompt = f&quot;标签只能取：{('、'.join(VALID_LABELS))}。工单内容：{ticket.text}&quot;
+    system = '你是客服工单分类器。只输出 JSON：{&quot;label&quot;: &quot;&lt;标签&gt;&quot;, &quot;confidence&quot;: &lt;0到1的小数&gt;}'
+    prompt = f&quot;标签只能取：{'、'.join(VALID_LABELS)}。工单内容：{ticket.text}&quot;
     try:
         raw = llm(prompt, system=system, temperature=0.0)
-    except Exception as exc:  # LLM 不可用：降级转人工，而不是硬失败
+    except Exception as exc:  # 错误路径 1：LLM 不可用 -&gt; 降级转人工，不硬失败
         gateway.hold(ticket, f&quot;LLM 调用失败，降级转人工（{exc}）&quot;)
         ticket.path = &quot;fallback&quot;
         return
-    try:
-        parsed = parse_json_reply(raw)
+    try:  # 错误路径 2：解析失败/非法标签 = 系统自报&quot;我不知道&quot;，与低置信同路
+        fence = chr(96) * 3  # 代码围栏字面量，避免在源码里写裸三反引号
+        cleaned = raw.strip().removeprefix(fence + &quot;json&quot;).removesuffix(fence).strip()
+        parsed = json.loads(cleaned)
         label, conf = str(parsed[&quot;label&quot;]), float(parsed[&quot;confidence&quot;])
         if label not in VALID_LABELS:
             raise ValueError(f&quot;非法标签 {label}&quot;)
     except (json.JSONDecodeError, KeyError, ValueError) as exc:
-        # 解析失败 = 系统自报&quot;我不知道&quot;，与低置信同路：转人工
         gateway.hold(ticket, f&quot;输出解析失败（{exc}），原文：{raw[:60]!r}&quot;)
         ticket.path = &quot;fallback&quot;
         return
     ticket.label, ticket.confidence = label, conf
-    if conf &gt;= AUTO_THRESHOLD:
+    if conf &gt;= AUTO_THRESHOLD:  # 高置信：自动执行
         ticket.path = &quot;auto&quot;
-        gateway.audit.append(AuditEntry(now(), &quot;system&quot;, ticket.ticket_id, &quot;AUTO&quot;,
-                                        f&quot;{label} conf={conf:.2f}&quot;))
-        print(f&quot;  [自动] {ticket.ticket_id} -&gt; {label}（置信度 {conf:.2f}）&quot;)
-    elif conf &gt;= ESCALATE_THRESHOLD:
-        ticket.path = &quot;sampled&quot;  # 中间档：照常执行，但进事后抽检队列
-        gateway.audit.append(AuditEntry(now(), &quot;system&quot;, ticket.ticket_id, &quot;SAMPLE&quot;,
-                                        f&quot;{label} conf={conf:.2f} 进抽检队列&quot;))
-        print(f&quot;  [抽检] {ticket.ticket_id} -&gt; {label}（置信度 {conf:.2f}，事后抽检）&quot;)
-    else:
+        gateway.audit.append(AuditEntry(now(), &quot;system&quot;, ticket.ticket_id,
+                                        &quot;AUTO&quot;, f&quot;{label} conf={conf:.2f}&quot;))
+    elif conf &gt;= ESCALATE_THRESHOLD:  # 中间档：照常执行，进事后抽检队列
+        ticket.path = &quot;sampled&quot;
+        gateway.audit.append(AuditEntry(now(), &quot;system&quot;, ticket.ticket_id,
+                                        &quot;SAMPLE&quot;, f&quot;{label} conf={conf:.2f} 进抽检队列&quot;))
+    else:  # 低置信：挂起，等人工裁决后恢复
         gateway.hold(ticket, f&quot;低置信（{conf:.2f} &lt; {ESCALATE_THRESHOLD}）&quot;)
-
-
-def act_on_label(ticket: Ticket) -&gt; str:
-    &quot;&quot;&quot;分类落地的&quot;副作用&quot;动作：演示用，生产中这里是路由到业务系统。&quot;&quot;&quot;
-    return f&quot;工单 {ticket.ticket_id} 按标签「{ticket.label}」派发给对应小组&quot;
-
-
-if __name__ == &quot;__main__&quot;:
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这是全章的骨架，注意所有失败路径的走向——LLM 调用失败（路径 1）与解析失败/非法标签（路径 2）都进 <code>gateway.hold</code> 转人工而不是抛异常出进程：<strong>系统的每次"我不知道"都应变成一次人工介入，而不是一次崩溃</strong>。<code>fence</code> 用 <code>chr(96)</code> 构造是本书代码的书写约定；生产中更稳的做法是开结构化输出（JSON mode），从根上消掉解析失败。三档判断从高到低：<code>&gt;=0.90</code> 自动、<code>&gt;=0.60</code> 照常执行加抽检、其余挂起——中间档不是暂停，是用"事后看一眼"的成本换掉"事前等待"的成本。读者要改的：资金动作类标签的阈值应整体上移（风险加权，见 13.5.2）。</p>
+</blockquote>
+<pre><code class="language-python">if __name__ == &quot;__main__&quot;:
     gateway = ReviewGateway()
     tickets = [
-        Ticket(f&quot;T-{uuid.uuid4().hex[:6]}&quot;, &quot;我的订单三天了还没发货，物流信息一直不动。&quot;),
-        Ticket(f&quot;T-{uuid.uuid4().hex[:6]}&quot;, &quot;东西收到是碎的，要求赔偿。&quot;),
-        Ticket(f&quot;T-{uuid.uuid4().hex[:6]}&quot;, &quot;你们这个破店，我要求马上退钱不然投诉到底。&quot;),
-        Ticket(f&quot;T-{uuid.uuid4().hex[:6]}&quot;, &quot;包装盒上没有生产日期，请问正常吗？&quot;),
+        Ticket(&quot;T-1&quot;, &quot;我的订单三天了还没发货，物流信息一直不动。&quot;),
+        Ticket(&quot;T-2&quot;, &quot;包装盒上没有生产日期，请问正常吗？&quot;),
     ]
-    print(&quot;== 第一阶段：自动分类与分流 ==&quot;)
+    print(&quot;== 阶段 1：自动分类与三档分流 ==&quot;)
     for t in tickets:
         classify(t, gateway)
-
-    print(&quot;\n== 第二阶段：人工审批挂起工单并恢复 ==&quot;)
+    print(&quot;\n== 阶段 2：人工裁决挂起工单并恢复 ==&quot;)
     for tid in list(gateway.pending):
-        # 演示里全部批准；真实系统中审批人可批准/驳回/修正标签
         gateway.resume(tid, &quot;approved&quot;, reviewer=&quot;alice&quot;, edited_label=&quot;物流&quot;)
-
-    print(&quot;\n== 第三阶段：按最终标签执行动作 ==&quot;)
+    print(&quot;\n== 阶段 3：按最终路径执行 + 审计回放 ==&quot;)
     for t in tickets:
-        if t.label and t.path in {&quot;auto&quot;, &quot;sampled&quot;, &quot;approved&quot;}:
-            print(&quot; &quot;, act_on_label(t))
+        if t.path in {&quot;auto&quot;, &quot;sampled&quot;, &quot;approved&quot;}:
+            print(f&quot;  执行：{t.ticket_id} 按标签「{t.label}」派发&quot;)
         else:
-            print(f&quot;  {t.ticket_id} 未执行（{t.path}）——如实留在待办，不假装完成&quot;)
-
-    print(&quot;\n== 审计日志 ==&quot;)
+            print(f&quot;  {t.ticket_id} 未执行（{t.path}）——如实留在待办&quot;)
     for e in gateway.audit:
         print(f&quot;  {e.ts} | {e.actor:6} | {e.ticket_id} | {e.action:8} | {e.detail}&quot;)
 </code></pre>
-<h3 id="1362-框架集成实现langgraph-interrupt事中暂停与恢复">13.6.2 框架集成实现（LangGraph interrupt：事中暂停与恢复）</h3>
-<p>LangGraph 从 0.2.31 起推荐用 <code>interrupt()</code> 做人在回路：节点内调用 <code>interrupt(payload)</code> 后图暂停，payload 连同整个图状态存入检查点；外部裁决后用 <code>Command(resume=...)</code> 恢复，<code>interrupt()</code> 的返回值就是人类给的裁决。语义上有两个关键点：恢复时被中断的节点从头重跑，因此 interrupt 之前的代码必须无副作用；<code>interrupt</code> 强依赖 checkpointer。在 <strong>langgraph==1.2.16</strong> 实测（无需模型调用，分类用确定性打分规则）。</p>
-<pre><code class="language-python">&quot;&quot;&quot;LangGraph interrupt()/Command 恢复：低置信工单事中挂起，人工裁决后恢复执行。
-
-依赖：pip install langgraph   # langgraph==1.2.16 实测（无需模型调用，分类用确定性规则）
-运行：python ch13_langgraph_interrupt.py
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import operator
-from typing import Annotated, Any, TypedDict
-
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph import END, START, StateGraph
-from langgraph.types import Command, interrupt
-
-AUTO_THRESHOLD = 0.90      # &gt;= 高置信：自动通过
-ESCALATE_THRESHOLD = 0.60  # &lt; 低置信：interrupt 挂起等人工
-
-
-class FlowState(TypedDict):
-    items: list[dict[str, Any]]                    # [{id, text, score}]
-    decisions: dict[str, str]                      # id -&gt; auto | approved | rejected
-    executed: Annotated[list[str], operator.add]   # 追加式执行/审计日志
-
-
-def classify(state: FlowState) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;确定性打分：命中高优关键词的个数决定置信度（生产中替换为模型打分）。&quot;&quot;&quot;
-    keys = {&quot;退款&quot;, &quot;发货&quot;, &quot;赔偿&quot;, &quot;投诉&quot;}
-    items = []
-    for it in state[&quot;items&quot;]:
-        hits = sum(1 for k in keys if k in it[&quot;text&quot;])
-        items.append({**it, &quot;score&quot;: round(min(1.0, 0.50 + 0.20 * hits), 2)})
-    return {&quot;items&quot;: items, &quot;decisions&quot;: {}, &quot;executed&quot;: []}
-
-
-def _next_undecided(state: FlowState) -&gt; dict[str, Any] | None:
-    return next((it for it in state[&quot;items&quot;] if it[&quot;id&quot;] not in state[&quot;decisions&quot;]), None)
-
-
-def route(state: FlowState) -&gt; str:
-    &quot;&quot;&quot;路由函数：全部已决 -&gt; 收尾；当前未决工单高置信 -&gt; 自动；低置信 -&gt; 挂起等人。&quot;&quot;&quot;
-    it = _next_undecided(state)
-    if it is None:
-        return &quot;finalize&quot;
-    return &quot;auto_decide&quot; if it[&quot;score&quot;] &gt;= AUTO_THRESHOLD else &quot;human_review&quot;
-
-
-def auto_decide(state: FlowState) -&gt; dict[str, Any]:
-    it = _next_undecided(state)
-    return {&quot;decisions&quot;: {**state[&quot;decisions&quot;], it[&quot;id&quot;]: &quot;auto&quot;}}
-
-
-def human_review(state: FlowState) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;事中暂停：interrupt 把审批请求抛给外部并停图；恢复后 interrupt 返回人工裁决。
-    注意：恢复执行时本节点从头重跑，interrupt 之前的代码必须无副作用。&quot;&quot;&quot;
-    it = _next_undecided(state)
-    decision = interrupt({&quot;question&quot;: &quot;该工单置信度过低，请裁决&quot;, &quot;item&quot;: it})
-    if decision not in {&quot;approved&quot;, &quot;rejected&quot;}:   # 非法输入按驳回兜底，不让流程卡死
-        decision = &quot;rejected&quot;
-    return {&quot;decisions&quot;: {**state[&quot;decisions&quot;], it[&quot;id&quot;]: decision}}
-
-
-def finalize(state: FlowState) -&gt; dict[str, Any]:
-    executed: list[str] = []
-    for it in state[&quot;items&quot;]:
-        d = state[&quot;decisions&quot;].get(it[&quot;id&quot;])
-        if d in {&quot;auto&quot;, &quot;approved&quot;}:
-            executed.append(f&quot;{it['id']} 已执行（路径={d}，score={it['score']:.2f}）&quot;)
-        else:
-            executed.append(f&quot;{it['id']} 未执行（路径={d}），如实留在待办&quot;)
-    return {&quot;executed&quot;: executed}
-
-
-def build_app():
-    g = StateGraph(FlowState)
-    g.add_node(&quot;classify&quot;, classify)
-    g.add_node(&quot;auto_decide&quot;, auto_decide)
-    g.add_node(&quot;human_review&quot;, human_review)
-    g.add_node(&quot;finalize&quot;, finalize)
-    g.add_edge(START, &quot;classify&quot;)
-    g.add_conditional_edges(&quot;classify&quot;, route, [&quot;auto_decide&quot;, &quot;human_review&quot;, &quot;finalize&quot;])
-    g.add_conditional_edges(&quot;auto_decide&quot;, route, [&quot;auto_decide&quot;, &quot;human_review&quot;, &quot;finalize&quot;])
-    g.add_conditional_edges(&quot;human_review&quot;, route, [&quot;auto_decide&quot;, &quot;human_review&quot;, &quot;finalize&quot;])
-    g.add_edge(&quot;finalize&quot;, END)
-    return g.compile(checkpointer=InMemorySaver())  # interrupt 依赖检查点，必配
-
-
-if __name__ == &quot;__main__&quot;:
-    app = build_app()
-    config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;batch-1&quot;}}
-
-    result: dict[str, Any] = app.invoke(
-        {&quot;items&quot;: [
-            {&quot;id&quot;: &quot;A1&quot;, &quot;text&quot;: &quot;我要退款，已经投诉过一次&quot;},
-            {&quot;id&quot;: &quot;A2&quot;, &quot;text&quot;: &quot;发货太慢了，要求赔偿&quot;},
-            {&quot;id&quot;: &quot;A3&quot;, &quot;text&quot;: &quot;东西收到是碎的，要求赔偿&quot;},
-            {&quot;id&quot;: &quot;A4&quot;, &quot;text&quot;: &quot;请问保修多久？&quot;},
-        ]},
-        config,
-    )
-    print(&quot;[运行1] 触发挂起：&quot;, result.get(&quot;__interrupt__&quot;)[0].value)
-    print(&quot;[运行1] 已自动通过：&quot;, app.get_state(config).values.get(&quot;decisions&quot;))
-
-    result = app.invoke(Command(resume=&quot;approved&quot;), config)  # 第一个低置信工单：批准
-    print(&quot;[运行2] 又停在下一个低置信工单：&quot;, result.get(&quot;__interrupt__&quot;)[0].value[&quot;item&quot;][&quot;id&quot;])
-
-    result = app.invoke(Command(resume=&quot;bogus&quot;), config)     # 第二个低置信工单：非法输入
-    print(&quot;[运行3] 全部处理完成：&quot;)
-    for line in result[&quot;executed&quot;]:
-        print(&quot;   &quot;, line)
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：演示分三阶段，对应真实系统的三个组件。阶段 2 的 <code>resume</code> 在真实系统中是审批 UI 的回调：裁决是结构化的（approve/reject 加修正标签），不是一句模糊的"嗯"。阶段 3 只执行 <code>auto/sampled/approved</code> 三种路径——<code>rejected</code> 与 <code>fallback</code> 如实留在待办，<strong>流程绝不假装完成</strong>。末尾的审计回放打印验证 13.5.5 的要求：给定日志，能离线重建每条工单从进入到裁决的完整链路。读者要改的：<code>gateway</code> 换成落库实现（挂起表加审计表），演示用的内存对象只适合单进程自测。</p>
+</blockquote>
+<h3 id="1362-框架差异速览langgraph-interrupt">13.6.2 框架差异速览（LangGraph <code>interrupt()</code>）</h3>
+<p>原 LangGraph 完整示例（<code>interrupt()</code> 挂起 + <code>Command(resume=...)</code> 恢复）压缩为下表：同名能力在该框架里的函数与一句话差异，细节以 <a href="https://langchain-ai.github.io/langgraph/">LangGraph 官方文档</a>为准（0.2.31 起推荐 interrupt 用法，langgraph==1.2.16 实测可用）。</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>框架无关实现（本节片段）</th>
+<th>LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>挂起等人</td>
+<td>自维护 <code>pending</code> 队列（生产落库）</td>
+<td>节点内 <code>interrupt(payload)</code>：图暂停，状态连同提问存入检查点</td>
+</tr>
+<tr>
+<td>裁决注入</td>
+<td><code>resume()</code> 把结构化裁决写回工单</td>
+<td><code>Command(resume=裁决)</code>：裁决成为 <code>interrupt()</code> 的返回值</td>
+</tr>
+<tr>
+<td>断点语义</td>
+<td>手工保存/恢复，粒度自定</td>
+<td>恢复时被中断节点<strong>从头重跑</strong>，interrupt 之前的代码必须无副作用</td>
+</tr>
+<tr>
+<td>前置条件</td>
+<td>无</td>
+<td>必配 checkpointer（如 <code>InMemorySaver</code>），interrupt 强依赖检查点</td>
+</tr>
+<tr>
+<td>状态查看</td>
+<td>遍历 tickets 与 audit 列表</td>
+<td><code>app.get_state(config)</code> 取图状态、历史与挂起中的 interrupt</td>
+</tr>
+<tr>
+<td>适用判断</td>
+<td>单流程、嵌入现有服务最轻</td>
+<td>多分支图、需要多线程会话与状态回放</td>
+</tr>
+</tbody>
+</table>
 <h3 id="1363-生产化改造清单">13.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>闸门持久化</strong>：挂起队列与审计日志落库（而非内存对象），审批服务重启不丢单；挂起任务带超时，超时按升级策略转下一审批人或降级处理。</li>
@@ -495,7 +399,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Ouyang et al.,《Training language models to follow instructions with human feedback》（InstructGPT，RLHF 工程化，NeurIPS 2022）：<a href="https://arxiv.org/abs/2203.02155">arXiv:2203.02155</a></li>
 <li>Bai et al.,《Constitutional AI: Harmlessness from AI Feedback》（Anthropic，AI 反馈替代大部分人工标注）：<a href="https://arxiv.org/abs/2212.08073">arXiv:2212.08073</a></li>
 <li>Settles,《Active Learning Literature Survey》，置信度升级路由的统计学源头（UW-Madison TR1648）：<a href="https://minds.wisconsin.edu/handle/1793/60660">报告原文</a></li>
-<li>Skitka、Mosier、Burdick，《Does automation bias decision-making?》，自动化偏见的对照实验证据（1999）：<a href="https://doi.org/10.1006/ijhc.1999.0274">DOI</a></li>
+<li>Skitka、Mosier、Burdick，《Does automation bias decision-making?》，自动化偏见的对照实验证据（1999）：<a href="https://doi.org/10.1006/ijhc.1999.0252">DOI</a></li>
 </ul>
 <p><strong>官方文档与规范</strong></p>
 <ul>
@@ -511,9 +415,9 @@ if __name__ == &quot;__main__&quot;:
 <li>OpenAI Operator System Card（按风险严重度×可逆性分级配置人工介入）：<a href="https://openai.com/index/operator-system-card/">https://openai.com/index/operator-system-card/</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch12-exception-recovery.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第12章 异常处理与恢复</span></a><a class="pager" href="../chapters/ch14-knowledge-retrieval-rag.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第14章 知识检索</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#131-模式概述">13.1 模式概述</a></li><li class="toc-l3"><a href="#1311-问题背景为什么需要这个模式">13.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1312-核心机制它如何工作">13.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1313-与相邻模式的关系与组合">13.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#132-起源与历史最早是谁提出来的">13.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#133-发挥的作用为什么重要">13.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#134-实际应用与案例">13.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#135-深度讲解">13.5 深度讲解</a></li><li class="toc-l3"><a href="#1351-介入点设计事前审批事中暂停事后抽检">13.5.1 介入点设计：事前审批、事中暂停、事后抽检</a></li><li class="toc-l3"><a href="#1352-置信度升级路由低置信转人工">13.5.2 置信度升级路由：低置信转人工</a></li><li class="toc-l3"><a href="#1353-审批疲劳与自动化偏见">13.5.3 审批疲劳与自动化偏见</a></li><li class="toc-l3"><a href="#1354-批准成本经济学">13.5.4 批准成本经济学</a></li><li class="toc-l3"><a href="#1355-审计留痕不只是合规要求">13.5.5 审计留痕：不只是合规要求</a></li><li class="toc-l3"><a href="#1356-失效模式与何时不要用">13.5.6 失效模式与何时不要用</a></li><li class="toc-l2"><a href="#136-工程落地实践代码示例">13.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1361-框架无关实现完整可运行">13.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1362-框架集成实现langgraph-interrupt事中暂停与恢复">13.6.2 框架集成实现（LangGraph interrupt：事中暂停与恢复）</a></li><li class="toc-l3"><a href="#1363-生产化改造清单">13.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#137-概览-核心要点-结论">13.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#138-延伸阅读与参考链接">13.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#131-模式概述">13.1 模式概述</a></li><li class="toc-l3"><a href="#1311-问题背景为什么需要这个模式">13.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1312-核心机制它如何工作">13.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1313-与相邻模式的关系与组合">13.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#132-源起它从哪里来">13.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#133-发挥的作用为什么重要">13.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#134-实际应用与案例">13.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#135-深度讲解">13.5 深度讲解</a></li><li class="toc-l3"><a href="#1351-介入点设计事前审批事中暂停事后抽检">13.5.1 介入点设计：事前审批、事中暂停、事后抽检</a></li><li class="toc-l3"><a href="#1352-置信度升级路由低置信转人工">13.5.2 置信度升级路由：低置信转人工</a></li><li class="toc-l3"><a href="#1353-审批疲劳与自动化偏见">13.5.3 审批疲劳与自动化偏见</a></li><li class="toc-l3"><a href="#1354-批准成本经济学">13.5.4 批准成本经济学</a></li><li class="toc-l3"><a href="#1355-审计留痕不只是合规要求">13.5.5 审计留痕：不只是合规要求</a></li><li class="toc-l3"><a href="#1356-失效模式与何时不要用">13.5.6 失效模式与何时不要用</a></li><li class="toc-l3"><a href="#1357-怎么用运用判断">13.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#136-工程落地核心源码与讲解">13.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1361-核心源码与讲解框架无关实现">13.6.1 核心源码与讲解（框架无关实现）</a></li><li class="toc-l3"><a href="#1362-框架差异速览langgraph-interrupt">13.6.2 框架差异速览（LangGraph interrupt()）</a></li><li class="toc-l3"><a href="#1363-生产化改造清单">13.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#137-概览-核心要点-结论">13.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#138-延伸阅读与参考链接">13.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

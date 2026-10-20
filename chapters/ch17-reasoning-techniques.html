@@ -59,8 +59,8 @@
 <div class="fig-caption" id="fig-17-1">图 17-1：系统 1 / 系统 2 与测试时算力分配——难度决定走一步作答还是显式推理，投票的一致与分歧决定"再想多少"；算力沿"一步作答 → 多链投票 → 推理模型"逐级上调，收益边际递减，故按难度分配而非无脑拉满。</div>
 <h3 id="1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</h3>
 <p>推理技术与<strong>反思</strong>（<a href="../chapters/ch04-reflection.html">第 4 章</a>）是同一枚硬币的两面：推理是前向展开（答案产生前的思考），反思是回看修正（答案产生后的审视）；自洽性投票与反思的"再试一次"常串联使用——一致性低就触发反思。思维树本质上是<strong>规划</strong>（<a href="../chapters/ch06-planning.html">第 6 章</a>）在推理空间的实例：候选分支、评估、回溯，与任务规划的分解评估同构。<strong>ReAct 式交错</strong>把推理节点嵌进<strong>工具调用</strong>（<a href="../chapters/ch05-tool-use.html">第 5 章</a>）循环——观察之后、行动之前插入一个简短的"想法"，这正是智能体循环中最小粒度的推理节点。推理模型选型与<strong>路由</strong>（<a href="../chapters/ch02-routing.html">第 2 章</a>）和<strong>资源感知优化</strong>（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）直接相关：按难度把请求分流到普通模型与推理模型，是 2024 年后级联的新维度。显式思维链的每一步都是<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的检查点素材，而"思考多少步"的预算约束属于<strong>目标与监控</strong>（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）。</p>
-<h2 id="172-起源与历史最早是谁提出来的">17.2 起源与历史：最早是谁提出来的</h2>
-<p>显式中间推理的价值在思维链论文之前已被零星观察到大模型具备，但 2022 年 1 月 Google 的 Wei 等人用一组少样本示例把它变成了可复现的方法：在 GSM8K 等算术推理基准上，思维链提示让 PaLM 540B 的成绩迈过 50% 这道当时的门槛。三个月后 Wang 等人发现推理链本身就是可采样的分布——多条链投票的收益超过任何单链；Kojima 等人则证明连示例都不需要，一句"Let's think step by step"就能从通用模型里引出推理。2022 年 10 月 ReAct 把推理从"答题前的草稿"改造成"行动间的独白"，思维正式进入智能体循环。2023 年是结构化推理之年：思维树给推理装上了搜索与回溯，OpenAI 的"Let's Verify Step by Step"证明逐步的过程奖励优于只看终局的结果奖励，思维图把推理单元推广为任意拓扑。2024 年 8 月 Snell 等人给出测试时算力的定量标尺——固定算力预算下按难度分配，小模型可以胜过 14 倍大的模型；一个月后 OpenAI 发布 o1-preview，把长思维链内化为训练目标，"推理模型"成为独立品类；2025 年 1 月 DeepSeek-R1 用纯强化学习（GRPO）复现并开源了这条路，长思维链在无过程标注的条件下自发涌现。</p>
+<h2 id="172-源起它从哪里来">17.2 源起：它从哪里来</h2>
+<p>思维链作为方法，始于 2022 年初 Google 的 Wei 等人：一组少样本示例即可让模型写出分步推理再作答，GSM8K 上 PaLM 540B 迈过 50% 门槛。此后沿两条线长粗：<strong>去噪</strong>——Wang 等人发现推理链可采样投票（自洽性），收益超过任何单链，Kojima 等人证明一句咒语即可引出推理；<strong>搜索与监督</strong>——思维树给推理装上回溯，OpenAI 证明逐步奖励优于只看终局。2024 年 8 月 Snell 等人把"想多久"变成可计算的分配问题；一个月后 o1 发布，长思维链内化为训练目标；2025 年 1 月 DeepSeek-R1 用纯强化学习开源复现，演化见 17.5。</p>
 <table>
 <thead>
 <tr>
@@ -75,65 +75,34 @@
 <td>2022-01</td>
 <td>思维链（CoT）：少样本示例引出显式中间推理</td>
 <td>Wei 等（Google）</td>
-<td><a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a>，NeurIPS 2022</td>
+<td><a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a></td>
 </tr>
 <tr>
 <td>2022-03</td>
-<td>自洽性（Self-Consistency）：多链采样 + 多数投票</td>
+<td>自洽性：多链采样 + 多数投票</td>
 <td>Wang 等（Google）</td>
-<td><a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a>，ICLR 2023</td>
-</tr>
-<tr>
-<td>2022-05</td>
-<td>零样本思维链：一句"一步一步思考"即可引出推理</td>
-<td>Kojima 等（东京大学等）</td>
-<td><a href="https://arxiv.org/abs/2205.11916">arXiv:2205.11916</a>，NeurIPS 2022</td>
-</tr>
-<tr>
-<td>2022-10</td>
-<td>ReAct：推理与行动交错，思维进入智能体循环</td>
-<td>Yao 等（普林斯顿大学/Google Brain）</td>
-<td><a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a>，ICLR 2023</td>
+<td><a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a></td>
 </tr>
 <tr>
 <td>2023-05</td>
-<td>思维树（ToT）：推理成为可搜索的树</td>
-<td>Yao 等（普林斯顿大学/Google DeepMind）</td>
-<td><a href="https://arxiv.org/abs/2305.10601">arXiv:2305.10601</a>，NeurIPS 2023</td>
-</tr>
-<tr>
-<td>2023-05</td>
-<td>过程监督："Let's Verify Step by Step"证明逐步奖励优于终局奖励</td>
+<td>过程监督：逐步奖励优于终局奖励</td>
 <td>Lightman 等（OpenAI）</td>
-<td><a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a>，ICLR 2024</td>
-</tr>
-<tr>
-<td>2023-08</td>
-<td>思维图（GoT）：推理单元组织为任意图，支持聚合与回溯</td>
-<td>Besta 等（ETH Zurich）</td>
-<td><a href="https://arxiv.org/abs/2308.09687">arXiv:2308.09687</a>，AAAI 2024</td>
+<td><a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a></td>
 </tr>
 <tr>
 <td>2024-08</td>
-<td>测试时计算最优分配：按难度分配算力，小模型可胜约 14 倍大模型</td>
+<td>测试时算力最优分配：小模型可胜约 14 倍大模型</td>
 <td>Snell 等（UC Berkeley）</td>
 <td><a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a></td>
 </tr>
 <tr>
-<td>2024-09</td>
-<td>o1-preview 发布：推理模型品类开端</td>
-<td>OpenAI</td>
-<td><a href="https://openai.com/index/learning-to-reason-with-llms/">官方发布</a></td>
-</tr>
-<tr>
-<td>2025-01</td>
-<td>DeepSeek-R1：GRPO 纯强化学习涌现长思维链</td>
-<td>DeepSeek</td>
-<td><a href="https://arxiv.org/abs/2501.12948">arXiv:2501.12948</a></td>
+<td>2024-09 / 2025-01</td>
+<td>o1 发布、DeepSeek-R1 开源：推理模型成为品类</td>
+<td>OpenAI / DeepSeek</td>
+<td><a href="https://openai.com/index/learning-to-reason-with-llms/">官方发布</a> / <a href="https://arxiv.org/abs/2501.12948">arXiv:2501.12948</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络的主线是<strong>推理从提示技巧升格为训练目标</strong>：第一代靠示例与咒语"求"模型思考，第二代在输出分布上做统计与搜索的工程，第三代直接把"生成正确思维链"写进损失函数。与此同时，"何时推理、推理多久"从研究员的兴趣变成工程师的调度问题——这正是本章与<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>交接的地方。</p>
 <h2 id="173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</h2>
 <p><strong>正确率</strong>：在多步任务上，推理技术的收益是数量级级的。思维树论文中的经典对比：24 点游戏上，标准思维链的正确率约 4%，搜索式推理推到约 74%——同 一个模型，只是把"怎么想"改成了"想、评、选、退"。自洽性在 GSM8K 上为思维链再添十几个百分点，代价仅仅是多采几条链。这些数字的共同含义是：<strong>多步任务的瓶颈常常不是模型不知道，而是模型没算够</strong>。</p>
 <p><strong>可控性</strong>：显式思维链把黑盒生成变成可检查的过程——错误定位到某一步、答案可追溯到依据、过程本身成为评估与审计的对象。对智能体而言，这直接转化为<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>的检查点与<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的过程评估素材。</p>
@@ -157,30 +126,90 @@
 <p>卡尼曼把人类认知分为系统 1（快速、自动、直觉）与系统 2（缓慢、费力、审慎），这个类比精确地描摹了推理技术的位置：一步作答是系统 1——从问题直接跳到答案；显式思维链是系统 2 的替身——用串行的语言生成模拟"把工作记忆摊在纸上算"。类比很好用，但有两条边界必须刻在心里。第一条：<strong>模型的"深思"仍是 next-token prediction</strong>。思维链不是在另一个计算模式里运行，它只是把计算摊开成更多 token——收益真实存在（串行计算的叠加），但机制与人类慎思不同，因此思维链会犯人类慎思不会犯的错：中间步骤写对了、答案却抄错；或前一步的小错在链上滚成雪球。第二条：<strong>解释未必是原因</strong>。思维链读起来像推理，但研究反复提示它可能是事后合理化——改变提示里的暗示因素，模型会为同一个（被暗示的）答案写出截然不同的"推理"。工程含义有二：其一，思维链的可解释性价值是"可检查"而非"必真诚"，审计高风险决策不能只看它写的理由；其二，过程监督之所以有效，部分原因正是逐步打分比只看终局更难被表面合理化骗过。</p>
 <h3 id="1752-结果监督与过程监督">17.5.2 结果监督与过程监督</h3>
 <p>给推理上监督有两条路。<strong>结果监督（ORM）</strong>只看终局：答案对就整链奖励——便宜、可自动化（有标准答案或单元测试的领域几乎免费），但稀疏：一条二十步的链只在最后拿到一个比特的信号，而且"蒙对答案的错误链"同样被奖励，模型学到的可能是运气而非推理。<strong>过程监督（PRM）</strong>逐步打分：OpenAI 的"Let's Verify Step by Step"在 MATH 基准上证明，逐步奖励模型对最终正确率的提升显著优于同规模的结果奖励模型，并公开了 80 万步级标注的 PRM800K 数据集。过程信号密、能精确惩罚"第一步就歪"的链，代价是标注昂贵——人工逐步打分的成本远高于只判对错。工程上的折中表：数学这类有标准答案的域，用结果监督筛链 + 投票足够；代码域用单元测试当准过程监督（每个测试通过与否都是中间信号）；开放域没有免费判分器，要么投人审（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>），要么用强模型做裁判模型——但裁判自身的偏差要被评估（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）盯住。</p>
+<p>"显著优于"不止是定性结论，这篇论文给的是同题同模型的硬数字：在 MATH 测试集的代表性子集上做 Best-of-N 重排，<strong>过程监督的 PRM 解出 78.2%，结果监督的 ORM 只有 72.4%，而多数投票基线更低至 69.6%</strong>（<a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a>）；且随采样数 N 增大，PRM 的领先持续扩大——更好的验证器能从更大的候选池里挖出更多价值。过程监督标注贵的软肋也有一条工程解法：论文用主动学习把"看起来有说服力但答错"的解法优先送人标，数据效率约为均匀标注的 2.6 倍，公开的 PRM800K（80 万步级人工标注）即由此而来。工程者可以把 2.6 倍读成一条预算换算：预算不变时，花在"挑哪些链给人看"上的采样成本，能换来近三倍的步级监督数据。</p>
 <h3 id="1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</h3>
 <p>"多想更准"不是无限线性、而是<strong>边际收益递减</strong>的曲线：同一问题采样第 2 条链的期望增益远高于第 40 条；树搜索加一层深度的收益随深度递减；推理模型把思考 token 从一千涨到一万，正确率曲线先陡后平。Snell 等人 2024 年的论文把这幅图定量化了，并给出两个工程级结论。其一，<strong>算力应按难度分配</strong>：简单问题少量采样即收敛，过度思考反而可能把正确答案"投"没了；困难问题值得多采样、深搜索——固定预算下按难度优化分配，一个明显更小的模型可以胜过大约 14 倍大的模型。其二，<strong>难度要先估</strong>：分配的前提是知道谁难谁易，实践中用轻量信号（自洽性一致性、第一次尝试的正确性、任务元数据）做难度路由，这本质上是<a href="../chapters/ch02-routing.html">第 2 章</a>的路由问题在"思考深度"维度的重演。把三件事连起来——难度估计、按难度给预算、预算内选最优技术（投票 vs 搜索 vs 推理模型）——就是推理技术的调度层，也是它从论文变成生产组件的最后一公里。</p>
+<p>两个常被读丢的定量细节值得补进工程判断。其一，"按难度分配"不是一句正确的口号，它有价签：Snell 等人的论文里，compute-optimal 策略相对最优 best-of-N 基线把测试时算力的<strong>扩展效率提升超过 4 倍</strong>（<a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a>）——同样的正确率，四分之一的算力就够。其二，"小模型胜 14 倍大模型"有明确的适用边界：实验前提是该问题对小模型具有<strong>非平凡的成功率</strong>——小模型必须"偶尔答对"，测试时算力才能把概率质量集中到正确答案上；对小模型完全不咬合的任务（专有领域长尾、特殊输出格式），多采样只会把预算烧成一致错误的投票，这条路线失效，只能换模型。回看 17.2 的演化线，其主线是<strong>推理从提示技巧升格为训练目标</strong>：第一代靠示例与咒语"求"模型思考，第二代在输出分布上做统计与搜索的工程，第三代直接把"生成正确思维链"写进损失函数；与此同时，"何时推理、推理多久"从研究员的兴趣变成工程师的调度问题——这正是本章与<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>交接的地方。</p>
 <h3 id="1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</h3>
 <p>o1 系列与 DeepSeek-R1 一类推理模型把长思维链内化后，选型问题浮出水面：什么时候该付"思考税"？<strong>该用的场景</strong>：多步数学与逻辑、算法级代码、复杂调试、智能体的规划与根因分析——特征是"步骤多、单步难、答错贵"，且延迟可容忍（推理模型的思考常以十秒计）。<strong>不该用的场景</strong>同样明确。分类、抽取、格式转换、简单改写这类任务，普通模型一步到位且更稳，推理模型不仅慢一个数量级、贵若干倍，还可能"过度思考"——把简单问题绕进复杂的自我怀疑，反而增加出错面。高 QPS 主链路要把延迟与成本算进 SLO，默认不用推理模型，困难请求经路由升级（<a href="../chapters/ch02-routing.html">第 2 章</a>、<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）。两个选型纪律：其一，<strong>用自家难任务集做升级判据</strong>，通用基准的"更强"未必落在你的长尾上；其二，<strong>注意推理 token 的计费口径</strong>——推理模型的思维链往往不返回原文（或只返回摘要），但 token 照常计费，成本核算必须读 usage 而不是估算输出长度。</p>
+<p>再补一个反直觉的证据：<strong>"更会思考"不等于"处处更好"</strong>。Apple 的《The Illusion of Thinking》（<a href="https://arxiv.org/abs/2506.06941">arXiv:2506.06941</a>）用可控谜题环境系统对比标准 LLM 与大型推理模型（LRM），发现任务复杂度存在三个区间：<strong>低复杂度任务上标准模型反而优于推理模型</strong>，中等复杂度才是推理模型的优势区，高复杂度上两者同时崩溃；且推理模型的"思考投入"随复杂度先升后降——token 预算没用完，模型就放弃了思考。这为"按难度分配"补上了反面：难度低时，多想不仅更贵更慢，还可能想错（把简单问题绕进复杂的自我怀疑）。"何时开推理"可以落成一张判据表：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>用普通模型一步作答</th>
+<th>开推理（投票 / 树 / 推理模型）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>步骤数</td>
+<td>≤2 步、无中间依赖</td>
+<td>多步依赖，中间结论相互影响</td>
+</tr>
+<tr>
+<td>校验</td>
+<td>有廉价外部校验（正则 / 查表 / 单元测试）</td>
+<td>无免费判分器，需投票或模型自评</td>
+</tr>
+<tr>
+<td>延迟 SLO</td>
+<td>P95 秒级以内</td>
+<td>可容忍十秒级思考</td>
+</tr>
+<tr>
+<td>答错代价</td>
+<td>低（可重试、可快速人工纠正）</td>
+<td>高（不可逆动作、高价值决策）</td>
+</tr>
+</tbody>
+</table>
+<p>判据满足左列三项以上就用普通模型——推理是稀缺资源，默认关闭，按难度显式打开。</p>
 <h3 id="1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</h3>
 <p>智能体的"思考"不是一团整体，而是分布在不同位置、不同深度的推理节点。<strong>循环前</strong>：规划节点（<a href="../chapters/ch06-planning.html">第 6 章</a>）做任务分解，此处值得用较深的推理（思维树或推理模型），因为一次规划的收益覆盖整个任务。<strong>循环中</strong>：ReAct 式的"想法"节点——观察之后、行动之前，一句话回答"现在该做什么、为什么"；这个节点必须轻，一句话的 rationale 足以维持计划感与可追溯性，长篇大论只会稀释上下文并烧 token。<strong>失败时</strong>：反思节点（<a href="../chapters/ch04-reflection.html">第 4 章</a>）做归因与改道，深度可以高于循环中的想法——它低频且高价值。<strong>提交前</strong>：对不可逆动作（付款、删除、外发），在执行前插入一个校验推理节点，重列将要发生的副作用——这是把系统 2 强制插在系统 1 的手已经抬起来的时刻。设计原则总结为一条：<strong>推理深度与决策不可逆性、失败代价成正比，与触发频率成反比</strong>。高频节点保持轻，低频关口保持重，整体才既准又省。</p>
 <h3 id="1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</h3>
 <p>思维链的账单有三笔：token 成本随链长线性上涨；延迟随生成串行累积；上下文占用随轨迹增长反过来挤压后续步骤。失效模式沿链展开。<strong>错误传播</strong>：一步走偏，后续步骤以它为前提，链越长纠偏越难——ReAct 论文对比纯思维链时就指出，无外部反馈的长链幻觉会沿过程累积；对策是缩短单链、引入外部检查点（工具结果、单元测试）、或用自洽性投票对冲单链方差。<strong>走神与失焦</strong>：长链生成中模型可能重复绕圈、自相矛盾、忘记初始约束——链不是越长越好，步数上限（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的预算）与"已确定的进展"显式回填（如 17.6.1 的 progress 变量）都是直接解法。<strong>过程泄漏</strong>：内部草稿混进用户可见输出，暴露语气失控的中间状态甚至敏感上下文——思维链要与最终答案分通道存放，返回给用户前剥离开。<strong>多样性坍缩</strong>：温度采样不足时五条链长得一样，投票变成伪冗余——检查投票分布的唯一性就知道采样是否真的多样。何时可以不用：答案可一步给出、且有廉价外部校验（如正则、查表）兜底的任务，直接作答加校验比展开推理更便宜也更稳。</p>
-<h2 id="176-工程落地实践代码示例">17.6 工程落地：实践代码示例</h2>
-<h3 id="1761-框架无关实现完整可运行">17.6.1 框架无关实现（完整可运行）</h3>
-<p>以下实现本章两大经典技术：自洽性多数投票（含一致性指标——它同时是升级信号）与简化版思维树（每层两候选、贪心下钻、失败路径降级为继续推进）。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第17章 推理技术：Self-Consistency 多数投票 + 简化版 Tree of Thoughts。
-
-- self_consistency(question, n)：温度采样 n 条思维链，抽取&quot;答案：&quot;行做多数投票，
-  并报告一致性——一致性低本身就是&quot;该升级更强推理&quot;的信号；
-- tot_answer(question, depth, breadth)：简化版 ToT——每层让模型提出 breadth 个
-  候选思路并自评分，贪心选最高分下钻，depth 层后汇出最终答案（贪心 DFS 形态的
-  &quot;在思维上搜索&quot;；完整 ToT 还支持束搜索与回溯，见正文）。
-
-运行前设置环境变量：
-  AGENT_LLM_API_KEY（必填）、AGENT_LLM_BASE_URL / AGENT_LLM_MODEL（可选）
-&quot;&quot;&quot;
+<h3 id="1757-怎么用运用判断">17.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>——出现以下特征时值得引入本章技术：任务可分解为多个相互依赖的步骤（数学推导、多跳问答、算法级代码、根因分析）；一步作答在你的自有评测集上失败率不可接受，且存在某种判分信号（标准答案、单元测试、格式校验）可自动验收；延迟与成本预算允许为"困难请求"支付数倍 token；或一致性、投票分布本身是你要的可观测信号。</p>
+<p>与最相近方案（直接换更大/推理模型）对比：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>测试时推理（本章）</th>
+<th>直接换更强 / 推理模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>成本分布</td>
+<td>按难度付钱：简单请求免费，难请求付思考税</td>
+<td>全量请求承担高价与高延迟</td>
+</tr>
+<tr>
+<td>可控性</td>
+<td>预算旋钮在手（采样数、树深、思考上限）</td>
+<td>定价与延迟由供应商决定</td>
+</tr>
+<tr>
+<td>收益上限</td>
+<td>受"小模型非平凡成功率"前提约束</td>
+<td>难度上限更高，适合全新难题</td>
+</tr>
+<tr>
+<td>工程现实</td>
+<td>与换模型互补：先投票，一致性低再升级</td>
+<td>高价值低频任务的最短路径</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：第一步，结构化抽取——在提示里约定"最后一行以'答案：X'结尾"，让答案能从思维链中机械剥离，投票对象是归一化后的答案而非全文；第二步，在 20~50 道自家难题上跑"一步作答 vs 自洽性 n=5"对照，记录正确率差与成本差，用数据决定值不值（对照 17.5.4 的判据表）；第三步，把一致性做成升级信号——一致率 ≥0.6 采纳投票结果，低一致性升级思维树或推理模型，并给每个思维节点设 token 与步数上限防走神（呼应<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的预算）。</p>
+<h2 id="176-工程落地核心源码与讲解">17.6 工程落地：核心源码与讲解</h2>
+<h3 id="1761-框架无关实现片段式">17.6.1 框架无关实现（片段式）</h3>
+<p>以下四个片段按原文件顺序排列，<strong>按序拼接即完整可运行程序</strong>（Python 3.10+，含错误路径与演示入口）。它实现本章两大经典技术：自洽性多数投票（一致性指标同时是升级信号）与简化版思维树（每层两候选、贪心下钻、失败路径降级为继续推进）。</p>
+<p><strong>片段 1／4：客户端与采样基座</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;第17章 推理技术：Self-Consistency 多数投票 + 简化版 Tree of Thoughts。&quot;&quot;&quot;
 from __future__ import annotations
-
 import json
 import os
 import re
@@ -188,10 +217,8 @@ from collections import Counter
 
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
 
@@ -203,14 +230,14 @@ def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3,
         messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
     messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
     resp = client.chat.completions.create(
-        model=model or MODEL,
-        messages=messages,
-        temperature=temperature,
-    )
+        model=model or MODEL, messages=messages, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
-
-
-COT_SYSTEM = (&quot;你是一丝不苟的解题者。请一步步推理，最后一行以'答案：X'的格式&quot;
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一段是"能让思考被采样"的基座。注意 <code>llm</code> 的默认温度是 0.3，但本程序所有推理调用都<strong>显式传更高的温度（0.7）</strong>——自洽性与候选生成的价值来自多样性，用默认低温跑 n=5 等于把一条思维链抄五遍，投票变成伪冗余（17.5.6 的"多样性坍缩"）。读者适配时唯一要确认的是环境变量；若走推理模型，请把温度设为供应商推荐的值（部分推理模型固定为 1.0，不可调）。</p>
+</blockquote>
+<p><strong>片段 2／4：自洽性多数投票</strong></p>
+<pre><code class="language-python">COT_SYSTEM = (&quot;你是一丝不苟的解题者。请一步步推理，最后一行以'答案：X'的格式&quot;
               &quot;给出最终答案，X 尽量简短（如 5/14）。&quot;)
 
 
@@ -220,31 +247,27 @@ def extract_answer(text: str) -&gt; str:
     return matches[-1].strip() if matches else &quot;&quot;
 
 
-# ---------- 技术一：Self-Consistency 多数投票 ----------
-
 def self_consistency(question: str, n: int = 5,
                      temperature: float = 0.7) -&gt; tuple[str, float, Counter]:
-    &quot;&quot;&quot;采样 n 条思维链并投票，返回 (最佳答案, 一致性, 投票分布)。
-
-    失败路径：单条采样异常只弃该票；全部失败返回空答案与零一致性。
-    &quot;&quot;&quot;
+    &quot;&quot;&quot;采样 n 条思维链并投票，返回 (最佳答案, 一致性, 投票分布)。&quot;&quot;&quot;
     votes: list[str] = []
     for _ in range(n):
         try:
             votes.append(extract_answer(llm(question, COT_SYSTEM, temperature)))
-        except Exception as exc:
+        except Exception as exc:  # 单条采样失败只弃该票，不中断投票
             print(f&quot;  [采样失败，弃一票] {type(exc).__name__}: {exc}&quot;)
-    votes = [v for v in votes if v]          # 无效票（未按格式作答）不计入
+    votes = [v for v in votes if v]  # 未按格式作答的无效票不计入
     if not votes:
         return (&quot;&quot;, 0.0, Counter())
     counter = Counter(votes)
     best, count = counter.most_common(1)[0]
     return (best, count / len(votes), counter)
-
-
-# ---------- 技术二：简化版 Tree of Thoughts（两择一贪心下钻） ----------
-
-TOT_STEP_SYSTEM = (
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：三个细节决定这段投票是真冗余还是伪冗余。其一，提示里约定"最后一行以'答案：X'"、抽取时取 <code>matches[-1]</code>——取最后一个匹配是防模型中途写多个"答案"字样，协议（提示约定）与解析器（正则）必须成对设计。其二，投票对象是<strong>抽取后的答案</strong>而非全文：五条全文各不相同，五条答案却可能一样，投全文永远得不到多数。其三，失败路径三条各自有归宿——单条异常弃票不中断、空串无效票被过滤、全部失败返回零一致性；<strong>返回的 <code>agreement</code> 不只是质量分，它就是 17.5.3 说的升级触发信号</strong>（低于 0.6 升级更强推理）。<code>n=5</code> 是工程起点：收益最大的前几条链，五条通常已能拿到自洽性收益的大半。</p>
+</blockquote>
+<p><strong>片段 3／4：ToT 候选生成与防御式解析</strong></p>
+<pre><code class="language-python">TOT_STEP_SYSTEM = (
     &quot;你在协助求解一个多步问题。根据问题与当前进展，提出 {breadth} 个不同的下一步思路，&quot;
     &quot;并为每个思路给 0 到 10 的可行性评分。只输出 JSON 数组，格式：&quot;
     '[{{&quot;thought&quot;: &quot;思路描述&quot;, &quot;score&quot;: 8}}]'
@@ -260,128 +283,83 @@ def _parse_candidates(raw: str, breadth: int) -&gt; list[dict]:
         data = json.loads(match.group(0))
     except json.JSONDecodeError:
         return []
-    candidates: list[dict] = []
-    for item in data[:breadth]:
-        if isinstance(item, dict) and &quot;thought&quot; in item:
-            candidates.append({&quot;thought&quot;: str(item[&quot;thought&quot;]),
-                               &quot;score&quot;: float(item.get(&quot;score&quot;, 0.0))})
-    return candidates
-
-
-def tot_answer(question: str, depth: int = 2,
+    return [{&quot;thought&quot;: str(it[&quot;thought&quot;]), &quot;score&quot;: float(it.get(&quot;score&quot;, 0.0))}
+            for it in data[:breadth] if isinstance(it, dict) and &quot;thought&quot; in it]
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：ToT 的每一步都要求模型输出结构化 JSON，而"模型没按格式输出"是常态而非异常——所以这段解析是防御式写法的样板：<code>re.S</code> 让 <code>.</code> 匹配换行（模型常在 JSON 前后寒暄）、截取第一个 <code>[…]</code> 块再做 <code>json.loads</code>、解析失败与缺 <code>thought</code> 字段都归一为空列表，把"是否降级"的决定权交给调用方。<code>{breadth}</code> 双写成 <code>{{breadth}}</code> 是因为模板要过 <code>str.format</code>，JSON 花括号必须转义——这是 prompt 模板化最常见的坑。<code>score</code> 用 <code>float(it.get(..., 0.0))</code> 兜底：模型漏打分时按最低分处理，宁丢一票不崩一层。</p>
+</blockquote>
+<p><strong>片段 4／4：贪心下钻与演示入口</strong></p>
+<pre><code class="language-python">def tot_answer(question: str, depth: int = 2,
                breadth: int = 2) -&gt; tuple[str, list[str]]:
     &quot;&quot;&quot;简化 ToT：每层展开 breadth 个候选、贪心选最高分下钻，depth 层后终答。&quot;&quot;&quot;
-    progress = &quot;（尚未开始）&quot;
-    trace: list[str] = []
+    progress, trace = &quot;（尚未开始）&quot;, []
     for step in range(depth):
         prompt = (f&quot;问题：{question}\n当前进展：{progress}\n&quot;
                   f&quot;请提出下一步的 {breadth} 个候选思路并评分。&quot;)
         raw = llm(prompt, TOT_STEP_SYSTEM.format(breadth=breadth), temperature=0.7)
         candidates = _parse_candidates(raw, breadth)
-        if not candidates:
+        if not candidates:  # 失败路径：解析失败不中断，保持既有进展继续
             trace.append(f&quot;第{step + 1}层：候选解析失败，保持进展继续&quot;)
             continue
         best = max(candidates, key=lambda c: c[&quot;score&quot;])
         trace.append(f&quot;第{step + 1}层候选：{candidates}；选中：{best['thought']}&quot;)
         progress = f&quot;{progress} -&gt; 第{step + 1}步：{best['thought']}&quot;
-    final = llm(
+    return llm(
         f&quot;问题：{question}\n已确定的思路链：{progress}\n&quot;
         &quot;请沿这条思路完成求解，最后一行以'答案：X'结尾。&quot;,
-        COT_SYSTEM, temperature=0.2)
-    return final, trace
+        COT_SYSTEM, temperature=0.2), trace
 
 
 if __name__ == &quot;__main__&quot;:
-    question = (&quot;袋中有红球 5 个、白球 3 个，每次摸出一个不放回。&quot;
-                &quot;摸两次，两次都是红球的概率是多少？请用最简分数回答。&quot;)
-    answer, agreement, counter = self_consistency(question, n=5)
-    print(f&quot;[Self-Consistency] 投票分布：{dict(counter)}&quot;)
-    print(f&quot;  最佳答案：{answer}（一致性 {agreement:.0%}；过低请升级更强推理）\n&quot;)
-
-    final, trace = tot_answer(
-        &quot;把 7 棵树栽成 6 行，每行恰好 3 棵，给出栽种布局的思路。&quot;, depth=2, breadth=2)
-    for line in trace:
-        print(f&quot;[ToT] {line}&quot;)
+    answer, agreement, counter = self_consistency(
+        &quot;袋中有红球 5 个、白球 3 个，不放回摸两次，两次都是红球的概率是多少？请用最简分数回答。&quot;)
+    print(f&quot;[Self-Consistency] 投票分布：{dict(counter)}；最佳：{answer}（一致性 {agreement:.0%}）&quot;)
+    final, trace = tot_answer(&quot;把 7 棵树栽成 6 行，每行恰好 3 棵，给出栽种布局的思路。&quot;)
+    print(&quot;\n&quot;.join(f&quot;[ToT] {line}&quot; for line in trace))
     print(f&quot;[ToT] 最终回答：{final[:120]}…&quot;)
 </code></pre>
-<h3 id="1762-框架集成实现langgraph自洽性作为状态机循环">17.6.2 框架集成实现（LangGraph：自洽性作为状态机循环）</h3>
-<p><a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> 把自洽性的"采样—判停—汇总"表达为图：generate 节点每次产出一张选票，条件边在票数不足时回到自身、攒够 N 票进入 aggregate 汇总。示例基于 langgraph 0.2.x 的 StateGraph API 与 langchain-openai 的 ChatOpenAI；如版本不同，节点与条件边的写法以官方文档为准。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第17章：LangGraph 实现自洽性——采样循环 + 多数投票汇总。
-
-依赖：pip install langgraph langchain-openai（示例基于 langgraph 0.2.x StateGraph API）
-环境变量：AGENT_LLM_API_KEY（必填）、AGENT_LLM_BASE_URL / AGENT_LLM_MODEL（可选）
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import operator
-import os
-import re
-from collections import Counter
-from typing import Annotated, TypedDict
-
-from langchain_openai import ChatOpenAI
-from langgraph.graph import END, START, StateGraph
-
-N_SAMPLES = 5
-
-
-class VoteState(TypedDict):
-    question: str
-    votes: Annotated[list[str], operator.add]   # 各节点追加，自动合并
-    final: str
-
-
-model = ChatOpenAI(
-    model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    temperature=0.7,   # 自洽性依赖采样多样性，温度刻意偏高
-)
-
-
-def generate(state: VoteState) -&gt; dict:
-    &quot;&quot;&quot;采样一条思维链并抽取答案，追加一张选票。&quot;&quot;&quot;
-    resp = model.invoke([
-        (&quot;system&quot;, &quot;一步步推理，最后一行以'答案：X'给出最终答案。&quot;),
-        (&quot;user&quot;, state[&quot;question&quot;]),
-    ])
-    matches = re.findall(r&quot;答案[:：]\s*(.+)&quot;, resp.content)
-    return {&quot;votes&quot;: [matches[-1].strip()] if matches else [&quot;&lt;格式无效&gt;&quot;]}
-
-
-def more_needed(state: VoteState) -&gt; str:
-    &quot;&quot;&quot;条件边：票数不足回 generate 继续，攒够进 aggregate。&quot;&quot;&quot;
-    return &quot;generate&quot; if len(state[&quot;votes&quot;]) &lt; N_SAMPLES else &quot;aggregate&quot;
-
-
-def aggregate(state: VoteState) -&gt; dict:
-    &quot;&quot;&quot;多数投票汇总；一致性作为质量信号随结果输出。&quot;&quot;&quot;
-    counter = Counter(state[&quot;votes&quot;])
-    best, count = counter.most_common(1)[0]
-    agreement = count / len(state[&quot;votes&quot;])
-    note = &quot;&quot; if agreement &gt;= 0.6 else &quot;（一致性偏低，建议升级思维树或推理模型）&quot;
-    return {&quot;final&quot;: f&quot;{best}（{count}/{len(state['votes'])} 票，一致性 {agreement:.0%}）{note}&quot;}
-
-
-builder = StateGraph(VoteState)
-builder.add_node(&quot;generate&quot;, generate)
-builder.add_node(&quot;aggregate&quot;, aggregate)
-builder.add_edge(START, &quot;generate&quot;)
-builder.add_conditional_edges(
-    &quot;generate&quot;, more_needed,
-    {&quot;generate&quot;: &quot;generate&quot;, &quot;aggregate&quot;: &quot;aggregate&quot;},   # 循环到判停为止
-)
-builder.add_edge(&quot;aggregate&quot;, END)
-graph = builder.compile()
-
-if __name__ == &quot;__main__&quot;:
-    result: dict = graph.invoke({
-        &quot;question&quot;: &quot;甲乙两管同开 4 小时注满水池，甲单开 6 小时注满，乙单开几小时注满？&quot;,
-        &quot;votes&quot;: [],
-    })
-    print(f&quot;投票明细：{result['votes']}&quot;)
-    print(f&quot;最终答案：{result['final']}&quot;)
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这是贪心 DFS 形态的"在思维上搜索"。两个设计值得盯住：其一，<code>progress</code> 把已确定的思路链回填进下一层提示——模型每层都看得见全局进展，这是防长链"走神"的显式机制（对应 17.5.6）；其二，搜索（高温 0.7 提候选）与终答（低温 0.2 走链）<strong>分两次调用、两种温度</strong>——搜索负责发散找路，终答负责收敛把路走稳。<code>depth=2</code> 不是偷懒：规划深度的边际收益递减很快，两层树通常够用，把预算留给执行中的反思（17.4 案例同款纪律）。<code>trace</code> 全程记录每层候选与选中项，正是<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>过程评估要的轨迹素材；生产化时把 <code>print</code> 换成结构化日志即可。</p>
+</blockquote>
+<h3 id="1762-框架差异速览langgraph">17.6.2 框架差异速览（LangGraph）</h3>
+<p><a href="https://langchain-ai.github.io/langgraph/">LangGraph</a>（示例基于 0.2.x 的 StateGraph API 与 langchain-openai）把自洽性表达为"采样—判停—汇总"的状态图，与 17.6.1 的对应关系如下：</p>
+<table>
+<thead>
+<tr>
+<th>17.6.1 中的能力</th>
+<th>LangGraph 对应</th>
+<th>一句话差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>采样 n 条思维链</td>
+<td>generate 节点每次产一票，条件边回环自身</td>
+<td>循环从 <code>for</code> 变成图的条件边</td>
+</tr>
+<tr>
+<td>判停（攒够 N 票）</td>
+<td>条件边函数返回 <code>"generate"</code> / <code>"aggregate"</code></td>
+<td>判停逻辑与图结构显式分离</td>
+</tr>
+<tr>
+<td>选票归并</td>
+<td><code>votes: Annotated[list[str], operator.add]</code></td>
+<td>各节点追加由框架按 reducer 自动合并</td>
+</tr>
+<tr>
+<td>多数投票汇总</td>
+<td>aggregate 节点读全量状态</td>
+<td>汇总节点天然拿到全部选票，算一致性</td>
+</tr>
+<tr>
+<td>并发采样</td>
+<td>图并行展开多个 generate 分支</td>
+<td>框架调度并发，代码只写"投一票"的逻辑</td>
+</tr>
+</tbody>
+</table>
 <h3 id="1763-生产化改造清单">17.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：采样失败弃票不中断；答案抽取失败按无效票计；投票全空时降级为单链直答并打标。</li>
@@ -433,9 +411,9 @@ if __name__ == &quot;__main__&quot;:
 <li>OpenAI o1-preview 发布页：<a href="https://openai.com/index/introducing-openai-o1-preview/">Introducing OpenAI o1-preview</a>——推理模型安全性与限速的官方说明。</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch16-resource-aware-optimization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第16章 资源感知优化</span></a><a class="pager" href="../chapters/ch18-guardrails-safety.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第18章 护栏机制</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#171-模式概述">17.1 模式概述</a></li><li class="toc-l3"><a href="#1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#172-起源与历史最早是谁提出来的">17.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#174-实际应用与案例">17.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#175-深度讲解">17.5 深度讲解</a></li><li class="toc-l3"><a href="#1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</a></li><li class="toc-l3"><a href="#1752-结果监督与过程监督">17.5.2 结果监督与过程监督</a></li><li class="toc-l3"><a href="#1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</a></li><li class="toc-l3"><a href="#1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</a></li><li class="toc-l3"><a href="#1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</a></li><li class="toc-l3"><a href="#1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</a></li><li class="toc-l2"><a href="#176-工程落地实践代码示例">17.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1761-框架无关实现完整可运行">17.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1762-框架集成实现langgraph自洽性作为状态机循环">17.6.2 框架集成实现（LangGraph：自洽性作为状态机循环）</a></li><li class="toc-l3"><a href="#1763-生产化改造清单">17.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#177-概览-核心要点-结论">17.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1771-本章小结">17.7.1 本章小结</a></li><li class="toc-l3"><a href="#1772-核心要点">17.7.2 核心要点</a></li><li class="toc-l3"><a href="#1773-结论">17.7.3 结论</a></li><li class="toc-l2"><a href="#178-延伸阅读与参考链接">17.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#171-模式概述">17.1 模式概述</a></li><li class="toc-l3"><a href="#1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#172-源起它从哪里来">17.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#174-实际应用与案例">17.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#175-深度讲解">17.5 深度讲解</a></li><li class="toc-l3"><a href="#1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</a></li><li class="toc-l3"><a href="#1752-结果监督与过程监督">17.5.2 结果监督与过程监督</a></li><li class="toc-l3"><a href="#1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</a></li><li class="toc-l3"><a href="#1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</a></li><li class="toc-l3"><a href="#1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</a></li><li class="toc-l3"><a href="#1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</a></li><li class="toc-l3"><a href="#1757-怎么用运用判断">17.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#176-工程落地核心源码与讲解">17.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1761-框架无关实现片段式">17.6.1 框架无关实现（片段式）</a></li><li class="toc-l3"><a href="#1762-框架差异速览langgraph">17.6.2 框架差异速览（LangGraph）</a></li><li class="toc-l3"><a href="#1763-生产化改造清单">17.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#177-概览-核心要点-结论">17.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1771-本章小结">17.7.1 本章小结</a></li><li class="toc-l3"><a href="#1772-核心要点">17.7.2 核心要点</a></li><li class="toc-l3"><a href="#1773-结论">17.7.3 结论</a></li><li class="toc-l2"><a href="#178-延伸阅读与参考链接">17.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

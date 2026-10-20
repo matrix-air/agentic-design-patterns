@@ -63,12 +63,12 @@
 <div class="fig-caption" id="fig-9-1">图 9-1：学习闭环的骨架（捕获-工件化-复用-修正）与强化版进化环（生成-评估-选择-变异）。</div>
 <h3 id="913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</h3>
 <p>学习与适应是若干模式的"时间维度"扩展。反思模式（<a href="../chapters/ch04-reflection.html">第 4 章</a>）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（<a href="../chapters/ch08-memory.html">第 8 章</a>）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
-<h2 id="92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</h2>
-<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见<a href="../chapters/ch04-reflection.html">第 4 章</a>）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 <a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a>（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 <a href="https://github.com/codelion/openevolve">OpenEvolve</a>，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
+<h2 id="92-源起它从哪里来">9.2 源起：它从哪里来</h2>
+<p>这条路线的骨架来自 1975 年 John Holland 的遗传算法：它把自然选择抽象为“种群+变异+适应度”的可执行搜索。此后五十年它一直缺一个好用的变异算子——位翻转太盲目；直到 LLM 让变异升级为有语义的改写，闭环才跑通。2023 年 3 月 Reflexion 证明语言化自我反思可以当学习信号；同年 5 月 Voyager 把成功操作固化为可检索的技能代码；2023 年 10 月斯坦福的 DSPy 主张提示词应由编译器从数据自动优化；2024 年 1 月 AlphaCodium 给出测试驱动的编码流程；2025 年 5 月 Google DeepMind 的 AlphaEvolve 汇成完整闭环并进生产，开源社区的 OpenEvolve 随即复刻了它。</p>
 <table>
 <thead>
 <tr>
-<th>年份月</th>
+<th>年份</th>
 <th>事件</th>
 <th>提出者/机构</th>
 <th>出处</th>
@@ -83,43 +83,30 @@
 </tr>
 <tr>
 <td>2023.3</td>
-<td>Reflexion：语言化反思的情景式在线学习</td>
+<td>Reflexion：语言化反思的在线学习</td>
 <td>Noah Shinn 等</td>
-<td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>；NeurIPS 2023（详见<a href="../chapters/ch04-reflection.html">第 4 章</a>）</td>
+<td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>；NeurIPS 2023</td>
 </tr>
 <tr>
 <td>2023.5</td>
-<td>Voyager：Minecraft 技能库与自动课程</td>
+<td>Voyager：技能库终身学习原型</td>
 <td>Guanzhi Wang 等（NVIDIA/Caltech 等）</td>
 <td><a href="https://arxiv.org/abs/2305.16291">arXiv:2305.16291</a></td>
 </tr>
 <tr>
 <td>2023.10</td>
-<td>DSPy：提示词作为编译产物的程序化优化</td>
+<td>DSPy：提示词作为编译产物</td>
 <td>Omar Khattab 等（斯坦福）</td>
 <td><a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a>；ICLR 2024</td>
 </tr>
 <tr>
-<td>2024.1</td>
-<td>AlphaCodium：测试驱动的迭代编码流程</td>
-<td>Tal Ridnik、Ido Rivero（Codium AI/Qodo）</td>
-<td><a href="https://arxiv.org/abs/2401.08500">arXiv:2401.08500</a></td>
-</tr>
-<tr>
 <td>2025.5</td>
-<td>AlphaEvolve：进化编码智能体与算法发现引擎</td>
-<td>Alexander Novikov 等（Google DeepMind）</td>
-<td>发布于<a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">官方博客</a>；论文 <a href="https://arxiv.org/abs/2506.13131">arXiv:2506.13131</a></td>
-</tr>
-<tr>
-<td>2025</td>
-<td>OpenEvolve：AlphaEvolve 的开源复刻</td>
-<td>开源社区</td>
-<td><a href="https://github.com/codelion/openevolve">GitHub 开源</a></td>
+<td>AlphaEvolve：进化编码智能体进生产</td>
+<td>Google DeepMind</td>
+<td><a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">官方博客</a>；<a href="https://arxiv.org/abs/2506.13131">arXiv:2506.13131</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络清晰可循：进化计算给了循环骨架（1975），LLM 让"变异算子"从随机位翻转升级为有语义的改写（这是质的飞跃——变异不再是盲目的）；Reflexion 证明语言反馈可用（2023.3），Voyager 把反馈固化为可复用技能（2023.5），DSPy 把优化对象从"答案"上移到"提示程序"（2023.10），AlphaCodium 给出工程化的测试驱动流程（2024.1），AlphaEvolve 则汇成完整闭环并在真实生产系统上兑现（2025）。</p>
 <h2 id="93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</h2>
 <p>第一，复利效应。不带学习的智能体第 1000 次执行与第 1 次没有区别；带学习的智能体把每次执行变成训练数据，边际成本递减、边际质量递增——这是产品层面真实的护城河。第二，免训练的适应速度。环境变了、接口换了、新坑出现了，改一个技能条目或经验条目即时生效，不需要数据集、训练与发布。第三，可审计的学习。学到的每一条经验都是文本，可以审查"它最近学到了什么"，错误经验可以定点删除——与不可解释的权重更新相比，治理成本天差地别。第四，系统级改进的实证。AlphaEvolve 的结果证明这套闭环不只在玩具基准上有效：它为 Google 的 Borg 数据中心调度找到的启发式平均回收约 0.7% 的全球算力并已在生产运行一年以上，把 Gemini 训练中一个关键矩阵乘 kernel 提速 23%（整体训练时间减约 1%），甚至改进了支撑其自身模型训练的基础设施——智能体改进自己赖以运行的系统，<strong>这是自我改进叙事第一次获得工程注脚</strong>。</p>
 <h2 id="94-实际应用与案例">9.4 实际应用与案例</h2>
@@ -176,7 +163,8 @@
 </tr>
 </tbody>
 </table>
-<p>选型的经验法则：<strong>改"怎么用模型"选非参数化，改"模型本身会不会"选参数化</strong>。提示层面能解决的表达问题（格式、流程、领域知识注入、错误规避）不要动权重；当非参数化工件积累出稳定模式（同一类提示修改反复出现）、或需要把能力下沉到更小更便宜的模型以降本时，再把工件蒸馏成微调数据——两条路线是接力关系而非对立关系。</p>
+<p>选型的经验法则：<strong>改"怎么用模型"选非参数化，改"模型本身会不会"选参数化</strong>。提示层面能解决的表达问题（格式、流程、领域知识注入、错误规避）不要动权重；当非参数化工件积累出稳定模式（同一类提示修改反复出现）、或需要把能力下沉到更小更便宜的模型以降本时，再把工件蒸馏成微调数据——两条路线是接力关系而非对立关系。
+这条路线的收益有公开数字背书。DSPy 官方论文（<a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a>，ICLR 2024）报告：编译后的程序相对标准少样本提示，GPT-3.5 的质量提升一般超过 25%，llama2-13b-chat 超过 65%；相对专家手写示例管线，GPT-3.5 最高提升 5%~46%；更实用的是能力下沉——把程序编译到 770M 参数的 T5 与 llama2-13b，质量就能与依赖专家提示链的 GPT-3.5 方法相当，<strong>非参数化工件是把能力搬到便宜模型上的最短路径</strong>。Google DeepMind 的 OPRO（<a href="https://arxiv.org/abs/2309.03409">arXiv:2309.03409</a>，ICLR 2024）用 LLM 当优化器，优化出的提示在 Big-Bench Hard 上比人工提示最高提升 50%，但在 GSM8K 上最高只有 8%——<strong>同一方法在不同任务上的收益相差六倍</strong>，自动优化不是点石成金，任务本身有没有提示空间才是分母。</p>
 <h3 id="952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</h3>
 <p>进化循环有四个环节，每个环节都有工程要点。<strong>生成</strong>：AlphaEvolve 用双模型 ensemble——快速模型（Gemini Flash）大量产出想法保证搜索广度，强模型（Gemini Pro）对有希望的候选做深度改写，相当于"广撒网+重点培养"的成本最优组合。变异的形式很重要：让 LLM 输出对现有代码的定向修改（diff/替换块），比每次从头重写更容易保留已验证的部分。<strong>评估</strong>：这是整个循环的命门。评估器必须廉价（每次评估几分钟内）、自动（无人参与）、可信（评分与真实目标一致）。AlphaEvolve 的评估流水线先跑小样例快速淘汰废品，再做完整评分，甚至让另一个 LLM 评估难以程序化的属性（可读性等）。<strong>选择</strong>：进化数据库不是简单 top-k，AlphaEvolve 借鉴 MAP-Elites 一类质量-多样性思想并配合岛屿模型——既保留最优个体，也保留不同特征维度上的差异化个体，防止种群过早收敛到单一套路。<strong>终止</strong>：满分即停、代数预算、调用预算三者取严，进化循环没有预算控制就是一台烧钱机。</p>
 <h3 id="953-技能库与自动课程">9.5.3 技能库与自动课程</h3>
@@ -184,50 +172,76 @@
 <h3 id="954-从经验回放到经验库">9.5.4 从经验回放到经验库</h3>
 <p>Reflexion 的情景记忆只服务单次任务（几轮尝试之间），把它变成跨会话资产需要跨过三道坎。<strong>抽象层级</strong>：单次反思是"这次我错在哪"，经验库条目必须是"这类情境下应如何"——要再抽一层模式，条目 schema 建议：触发条件/情境、采取的行动、结果、教训、置信度、来源。<strong>信任分级</strong>：自动沉淀的经验初始置信度低，被复用且成功的次数累积置信度，人工审核直接给高置信；检索时低置信经验只作参考、高置信经验可直接影响行为。<strong>防腐</strong>：经验库与记忆库一样需要去重、合并与过期（<a href="../chapters/ch08-memory.html">第 8 章</a>的机制全部适用），此外还要防"回音室"——智能体检索自己的经验、按经验行动、又把行动结果写成新经验，若评估信号有偏，错误会在库里自我强化。打断回音室的手段是引入外部信号（真实用户反馈、独立评审）定期校准。</p>
 <h3 id="955-失效模式与反模式">9.5.5 失效模式与反模式</h3>
-<p><strong>评估器被攻破（Goodhart 陷阱）</strong>：进化循环是最强力的 Goodhart 放大器——它不优化你以为的目标，只优化你的评分函数。测试覆盖不全时，进化会找到"通过测试但错误"的解；评分函数有代理缝隙，进化一定钻进去。对策：评估器分层（快筛+全量）、定期人工抽查高分个体、评估集与选择集分离。<strong>自我强化回音室</strong>：如上所述，无外部信号的自评闭环会让偏见固化。<strong>库膨胀与检索退化</strong>：技能/经验条目无限增长后，相似条目互相稀释，检索精度下降，旧技能与新环境不符却不自知。对策：容量上限、定期合并去重、复用失败即降权。<strong>环境漂移</strong>：经验是历史的快照，接口升级、业务规则变化后，旧经验从资产变成误导源。对策：经验条目带时间与适用范围，关键条目复用前做低成本验证。<strong>成本失控</strong>：进化循环、批量评估、技能验证都在放大调用量。对策：调用预算硬编码、廉价评估器前置过滤、高分个体缓存复用。</p>
+<p><strong>评估器被攻破（Goodhart 陷阱）</strong>：进化循环是最强力的 Goodhart 放大器——它不优化你以为的目标，只优化你的评分函数。测试覆盖不全时，进化会找到"通过测试但错误"的解；评分函数有代理缝隙，进化一定钻进去。对策：评估器分层（快筛+全量）、定期人工抽查高分个体、评估集与选择集分离。<strong>自我强化回音室</strong>：如上所述，无外部信号的自评闭环会让偏见固化。<strong>库膨胀与检索退化</strong>：技能/经验条目无限增长后，相似条目互相稀释，检索精度下降，旧技能与新环境不符却不自知。对策：容量上限、定期合并去重、复用失败即降权。<strong>环境漂移</strong>：经验是历史的快照，接口升级、业务规则变化后，旧经验从资产变成误导源。对策：经验条目带时间与适用范围，关键条目复用前做低成本验证。<strong>成本失控</strong>：进化循环、批量评估、技能验证都在放大调用量。对策：调用预算硬编码、廉价评估器前置过滤、高分个体缓存复用。
+需要澄清一个最常见的误解：<strong>大家以为经验库“越攒越聪明”，工程事实是：没有防腐设计的经验库会朝评分函数漂移，而不是朝真实目标漂移</strong>。进化循环是最强力的 Goodhart 放大器——它只优化你写下的评分函数，不优化你以为的目标；而自评闭环（检索自己的经验 → 按经验行动 → 把结果写回经验）会把评估器的每一次偏差都复利放大，最终库里高分经验与真实目标渐行渐远，回音室里无人察觉。这不是理论担忧：评分函数与真实目标的缝隙在哪，进化就把解集推到哪。所以经验库的第一运维指标不是“条目数”，而是<strong>复用成功率</strong>——复用后失败的经验必须降权或改写；评估集要定期从真实流量重采样；外部信号（用户反馈、独立评审）是唯一能打断回音室的锚。</p>
 <h3 id="956-何时不要用">9.5.6 何时不要用</h3>
 <p>没有可靠评估器的任务（开放创意、主观审美、一次性的复杂决策）不适合进化循环——没有可信的适应度函数，循环只会收敛到噪声。任务量太小的场景不值得建经验库——复利需要足够多的复利周期。环境每周剧变的业务，经验还没沉淀就已过期，学习机制的成本收不回。这三类场景的正确选择是：把资源投在更好的单次执行（更强的模型、更好的提示），而不是投在学习机制上。</p>
-<h2 id="96-工程落地实践代码示例">9.6 工程落地：实践代码示例</h2>
-<h3 id="961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</h3>
-<p>最小可用版"技能库 + 确定性评估器 + 进化循环"：进化一个金额抽取提示词，评估器是确定性的精确匹配（这是循环能工作的前提），带调用预算、满分即停、变异失败降级与技能库防膨胀。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 9 章 框架无关实现：技能库 + 评估器 + 进化循环（最小可用版）。
-
-任务示例：进化一个&quot;从文本中提取订单金额（整数，单位元）&quot;的提示词。
-评估器是确定性的（精确匹配），这正是进化循环能成立的前提。
-
-运行前设置环境变量：
-  export AGENT_LLM_API_KEY=...        # 必填
-  export AGENT_LLM_BASE_URL=...       # 可选
-  export AGENT_LLM_MODEL=...          # 可选，默认 gpt-4o-mini
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import os
-import re
+<h3 id="957-怎么用运用判断">9.5.7 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：①任务存在廉价、自动、可信的评估器（测试、精确匹配、确定性指标）；②同类任务高频重复（每天几十次以上，复利有周期可乘）；③失败模式重复出现且能写成条目（同一类坑踩两次就该沉淀）。三者缺一，学习机制的成本收不回。</p>
+<p><strong>边界条件</strong>：标注样例少于约 20 条时编译优化容易过拟合小评测集；评分函数有代理缝隙（测试覆盖不全、代理指标失真）时进化一定钻进去；环境每周剧变的业务，经验未沉淀已过期。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>手写提示</th>
+<th>编译优化（DSPy 类）</th>
+<th>微调</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>门槛</td>
+<td>即时但靠手感</td>
+<td>需小标注集 + 度量函数</td>
+<td>需成规模数据与训练</td>
+</tr>
+<tr>
+<td>收益</td>
+<td>基线水平</td>
+<td>相对少样本提升 25%~65%</td>
+<td>可改变能力本身</td>
+</tr>
+<tr>
+<td>边际成本</td>
+<td>每次改动纯人工</td>
+<td>一次编译几十~几百次调用</td>
+<td>一轮完整训练与发布</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>原型、一次性任务</td>
+<td>稳定管线的持续优化</td>
+<td>非参数化到顶后的能力下沉</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：①把任务的评估器写成代码（哪怕只有 20 个标注样例的精确匹配），这是整个闭环的门票；②挑失败最多的一类任务，用本章进化循环或 DSPy 的 <code>BootstrapFewShot</code> 跑一次完整编译，记录每代得分曲线验证收益真实；③把跑赢的提示词固化为版本化工件入库，附失败样例与适用条件，每月用新流量回测一次，复用成功率跌破阈值就回滚。</p>
+<h2 id="96-工程落地核心源码与讲解">9.6 工程落地：核心源码与讲解</h2>
+<h3 id="961-框架无关核心源码按序拼接即完整可运行">9.6.1 框架无关核心源码（按序拼接即完整可运行）</h3>
+<p>以下四个片段按原文件顺序实现最小可用版“技能库 + 确定性评估器 + 进化循环”，进化对象是一个金额抽取提示词：确定性评估（精确匹配）是循环成立的前提，另带调用预算、满分即停、变异失败降级与库容量防膨胀。<strong>按序拼接（片段 1→4）即完整可运行程序</strong>。</p>
+<p><strong>片段 1／4：基座与统一接口。</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;第 9 章 核心源码：技能库 + 确定性评估器 + 进化循环（按序拼接 4 片段可运行）。&quot;&quot;&quot;
+import os, re
 from dataclasses import dataclass
-
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
-
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;调用 OpenAI 兼容接口。失败抛异常，由调用方决定降级。&quot;&quot;&quot;
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
+    &quot;&quot;&quot;调用 OpenAI 兼容接口；失败只抛异常，由调用方决定降级。&quot;&quot;&quot;
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else [])
+    msgs.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
     resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+        model=MODEL, messages=msgs, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
-
-
-# ---------- 评估集：小而硬，与选择逻辑隔离 ----------
-
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：基座与全书统一——llm() 的任何异常都向上抛，降级决策权交给调用方。本程序的灵魂其实在下一个片段：评估器必须是确定性的（这里是精确匹配），这是进化循环能成立的前提；没有确定性判卷，“进化”就只是随机游走。读者替换任务时，先替换的就是片段 2 里的评测集与判卷逻辑，本片段原样保留。</p>
+</blockquote>
+<p><strong>片段 2／4：评估器与评测集。</strong></p>
+<pre><code class="language-python"># 评测集：小而硬（千分位/前后缀干扰/多数字干扰），且与选择逻辑隔离，防 Goodhart
 EVAL_SET: list[tuple[str, int]] = [
     (&quot;订单总额 428 元，已支付&quot;, 428),
     (&quot;实付199元&quot;, 199),
@@ -238,39 +252,33 @@ EVAL_SET: list[tuple[str, int]] = [
 
 
 def parse_amount(reply: str) -&gt; int | None:
-    &quot;&quot;&quot;从模型回复中解析整数金额；解析失败返回 None（按答错计）。&quot;&quot;&quot;
+    &quot;&quot;&quot;从模型回复解析整数金额；解析失败返回 None（按答错计）。&quot;&quot;&quot;
     m = re.search(r&quot;\d[\d,]*&quot;, (reply or &quot;&quot;).replace(&quot; &quot;, &quot;&quot;))
-    if not m:
-        return None
-    try:
-        return int(m.group(0).replace(&quot;,&quot;, &quot;&quot;))
-    except ValueError:
-        return None
+    return int(m.group(0).replace(&quot;,&quot;, &quot;&quot;)) if m else None
 
 
 def evaluate(prompt: str) -&gt; tuple[float, list[str]]:
-    &quot;&quot;&quot;评估一个提示词：返回（得分 0~1，失败样例描述）。LLM 异常按答错计。&quot;&quot;&quot;
+    &quot;&quot;&quot;评估提示词：返回（得分 0~1, 失败样例）。LLM 异常按答错计。&quot;&quot;&quot;
     score, fails = 0.0, []
     for text, gold in EVAL_SET:
         try:
-            reply = llm(f&quot;{prompt}\n\n输入：{text}\n只输出整数金额。&quot;,
-                        temperature=0.0)
-            got = parse_amount(reply)
+            got = parse_amount(llm(f&quot;{prompt}\n\n输入：{text}\n只输出整数金额。&quot;,
+                                   temperature=0.0))
         except Exception:
-            got = None  # 调用失败：如实按错误处理，不重试到通过为止
+            got = None  # 调用失败按错计，绝不重试到通过为止
         if got == gold:
             score += 1.0 / len(EVAL_SET)
         else:
             fails.append(f&quot;「{text[:16]}」期望{gold}实得{got}&quot;)
     return score, fails
-
-
-# ---------- 技能库：通过评估的提示词沉淀为可复用、可检索的技能 ----------
-
-@dataclass
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：EVAL_SET 只有 5 条，但条条踩坑（千分位、前后缀干扰、多数字干扰）——小而硬胜过大而软。评估集与选择集必须分离，这是防 Goodhart 的第一道闸；evaluate 里 LLM 异常按答错计分，绝不“重试到通过为止”，否则评估器就开了后门。parse_amount 用最宽松的正则抓整数，解析失败按错计——评分函数必须覆盖“模型输出了但没按格式”这个最常见的真实失败。</p>
+</blockquote>
+<p><strong>片段 3／4：技能库与变异算子。</strong></p>
+<pre><code class="language-python">@dataclass
 class Skill:
-    &quot;&quot;&quot;一条技能 = 经验证的提示词 + 得分 + 适用记录。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;一条技能 = 经验证的提示词 + 得分 + 失败记录。&quot;&quot;&quot;
     name: str
     prompt: str
     score: float
@@ -278,165 +286,102 @@ class Skill:
 
 
 class SkillLibrary:
-    &quot;&quot;&quot;技能库：有容量上限，防膨胀；按得分排序供检索复用。&quot;&quot;&quot;
+    &quot;&quot;&quot;技能库：容量上限防膨胀，按得分排序供检索复用。&quot;&quot;&quot;
 
     def __init__(self, capacity: int = 20) -&gt; None:
         self.skills: list[Skill] = []
         self.capacity = capacity
 
     def add(self, skill: Skill) -&gt; None:
+        &quot;&quot;&quot;双门槛：不完美且重复的不收录；超容量只留最优。&quot;&quot;&quot;
         if skill.score &lt; 1.0 and any(s.prompt == skill.prompt for s in self.skills):
-            return  # 不完美且重复：不收录
+            return
         self.skills.append(skill)
         self.skills.sort(key=lambda s: -s.score)
-        if len(self.skills) &gt; self.capacity:  # 容量上限：只留最优
-            self.skills = self.skills[: self.capacity]
-
-    def best(self) -&gt; Skill | None:
-        return self.skills[0] if self.skills else None
+        self.skills = self.skills[: self.capacity]
 
 
-# ---------- 进化循环：生成 -&gt; 评估 -&gt; 选择 -&gt; 变异 ----------
-
-POP_SIZE = 3   # 每代变异体数量
-MAX_GEN = 3    # 代数预算（叠加调用预算，双重止损）
+POP_SIZE, MAX_GEN = 3, 3  # 每代变异数与代数预算（另有满分即停，三重止损）
 
 
 def mutate(prompt: str, fails: list[str]) -&gt; str:
-    &quot;&quot;&quot;用 LLM 对最优提示做有语义的变异；变异失败则原样保留（退化但不断环）。&quot;&quot;&quot;
+    &quot;&quot;&quot;LLM 语义变异：定向修复失败样例；变异失败原样保留（不断环）。&quot;&quot;&quot;
     fails_txt = &quot;\n&quot;.join(fails) or &quot;（无失败样例，请提升鲁棒性）&quot;
     try:
-        out = llm(
-            &quot;下面这个提示词在部分样例上失败：\n提示词：\n&quot; + prompt
-            + &quot;\n失败情况：\n&quot; + fails_txt
-            + &quot;\n改写提示词以修复失败，保持简短。只输出新提示词本身。&quot;,
-            system=&quot;你是提示词工程专家。&quot;,
-            temperature=0.7,
-        )
+        out = llm(&quot;下面这个提示词在部分样例上失败：\n&quot; + prompt
+                  + &quot;\n失败情况：\n&quot; + fails_txt
+                  + &quot;\n改写提示词以修复失败，保持简短。只输出新提示词本身。&quot;,
+                  system=&quot;你是提示词工程专家。&quot;, temperature=0.7)
         return out.strip() or prompt
     except Exception:
         return prompt
-
-
-def evolve(seed: str, library: SkillLibrary) -&gt; Skill | None:
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：SkillLibrary.add 的双门槛（不完美且重复的不收录、容量上限只留最优）把 9.5.5 的“库膨胀”对策直接写进数据结构。mutate 把失败样例喂回给 LLM 做定向改写而非从头重写——语义变异保留已验证部分，这正是 LLM 相对随机位翻转的本质优势（9.2 说的“五十年之缺”由此补上）；变异失败原样返回：退化但不断环。变异用 0.7 的温度留探索空间，评估用 0.0 保持判卷稳定。</p>
+</blockquote>
+<p><strong>片段 4／4：进化主循环与止损。</strong></p>
+<pre><code class="language-python">def evolve(seed: str, library: SkillLibrary) -&gt; Skill | None:
     &quot;&quot;&quot;主循环：逐代评估种群，满分即停；否则选最优变异出下一代。&quot;&quot;&quot;
-    population = [seed]
-    best: Skill | None = None
+    population, best = [seed], None
     for gen in range(MAX_GEN):
         scored: list[tuple[str, float, list[str]]] = []
         for p in population:
             s, fails = evaluate(p)
             skill = Skill(f&quot;amount-extract-g{gen}&quot;, p, s, &quot;; &quot;.join(fails[:2]))
             library.add(skill)
-            if best is None or s &gt; best.score:
-                best = skill
+            best = skill if best is None or s &gt; best.score else best
             scored.append((p, s, fails))
-            print(f&quot;[gen {gen}] score={s:.2f} fails={len(fails)}&quot;)
-        if best and best.score &gt;= 0.999:  # 满分提前停止，省预算
+        if best is not None and best.score &gt;= 0.999:  # 满分提前停止，省预算
             break
         scored.sort(key=lambda x: -x[1])
-        top_prompt, _, top_fails = scored[0]  # 选择：截断式选最优
+        top_prompt, _, top_fails = scored[0]  # 截断式选择：只留最优出下一代
         population = [mutate(top_prompt, top_fails) for _ in range(POP_SIZE)]
     return best
 
 
 if __name__ == &quot;__main__&quot;:
-    lib = SkillLibrary()
-    seed_prompt = &quot;从输入文本中提取订单金额，输出一个整数（单位元），不要输出其他内容。&quot;
-    winner = evolve(seed_prompt, lib)
+    winner = evolve(&quot;从输入文本提取订单金额，只输出一个整数（单位元）。&quot;, SkillLibrary())
     if winner is None:
         raise SystemExit(&quot;进化未产出任何可用技能&quot;)  # 诚实失败，不硬凑结果
-    print(&quot;\n最优技能得分：&quot;, winner.score)
-    print(&quot;提示词：&quot;, winner.prompt)
-    print(&quot;失败记录：&quot;, winner.note or &quot;无&quot;)
-    print(&quot;技能库规模：&quot;, len(lib.skills))
+    print(&quot;最优技能得分：&quot;, winner.score, &quot;\n提示词：&quot;, winner.prompt,
+          &quot;\n失败记录：&quot;, winner.note or &quot;无&quot;)
 </code></pre>
-<h3 id="962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</h3>
-<p>DSPy 把手写提示的"手工雕琢"替换为声明式模块加自动编译：模块定义输入输出签名（Signature），优化器（如 BootstrapFewShot）用少量标注样例自动生成少样本演示并注入。以下按 dspy 2.5+/3.x API 编写，字段名随版本演进请以官方文档为准。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第 9 章 框架集成实现：DSPy 版提示程序优化。
-
-安装：pip install &quot;dspy&gt;=2.5&quot;
-运行前：export AGENT_LLM_API_KEY=... 等（与本章其余示例一致）。
-注：按 dspy 2.5+/3.x API 编写，以官方文档为准。
-&quot;&quot;&quot;
-import os
-
-import dspy
-
-lm = dspy.LM(
-    model=f&quot;openai/{os.environ.get('AGENT_LLM_MODEL', 'gpt-4o-mini')}&quot;,
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    api_base=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    max_tokens=512,
-)
-dspy.configure(lm=lm)
-
-
-class ExtractAmount(dspy.Signature):
-    &quot;&quot;&quot;从文本中提取订单金额，输出整数（单位元）。&quot;&quot;&quot;
-
-    text: str = dspy.InputField(desc=&quot;包含金额的原始文本&quot;)
-    amount: int = dspy.OutputField(desc=&quot;金额整数，单位元&quot;)
-
-
-class AmountExtractor(dspy.Module):
-    &quot;&quot;&quot;声明式模块：不手写提示，交给优化器编译。&quot;&quot;&quot;
-
-    def __init__(self) -&gt; None:
-        super().__init__()
-        self.extract = dspy.ChainOfThought(ExtractAmount)
-
-    def forward(self, text: str):
-        return self.extract(text=text)
-
-
-TRAIN: list[tuple[str, int]] = [
-    (&quot;订单总额 428 元，已支付&quot;, 428),
-    (&quot;实付199元&quot;, 199),
-    (&quot;金额：¥3,200（含税）&quot;, 3200),
-    (&quot;退款 15 元后的余额是 985 元&quot;, 985),
-]
-
-
-def metric(example, pred, trace=None) -&gt; bool:
-    &quot;&quot;&quot;度量函数：优化器用它判卷；解析失败一律算错。&quot;&quot;&quot;
-    try:
-        return int(pred.amount) == example.amount
-    except Exception:
-        return False
-
-
-def build_trainset() -&gt; list[dspy.Example]:
-    out = [dspy.Example(text=t, amount=a).with_inputs(&quot;text&quot;) for t, a in TRAIN]
-    if not out:
-        raise ValueError(&quot;训练集为空，无法编译&quot;)
-    return out
-
-
-if __name__ == &quot;__main__&quot;:
-    trainset = build_trainset()
-    program = AmountExtractor()
-
-    # 先跑未编译基线（失败不阻断，继续编译）
-    try:
-        base = program(text=trainset[0].text)
-        print(&quot;基线输出：&quot;, base.amount)
-    except Exception as exc:
-        print(&quot;基线调用失败（继续编译流程）：&quot;, exc)
-
-    optimizer = dspy.BootstrapFewShot(
-        metric=metric, max_bootstrapped_demos=2, max_labeled_demos=2
-    )
-    optimized = optimizer.compile(program, trainset=trainset)
-
-    for text, gold in [(&quot;本月消费合计 12,088元&quot;, 12088), (&quot;运费 8 元已含&quot;, 8)]:
-        try:
-            pred = optimized(text=text)
-            print(f&quot;{text} -&gt; {pred.amount}（期望 {gold}）&quot;)
-        except Exception as exc:
-            print(f&quot;{text} -&gt; 调用失败：{exc}&quot;)
-    # 进阶：dspy.MIPROv2(metric=metric, auto=&quot;light&quot;) 可同时优化指令与少样本示例
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：evolve 的止损是第一优先级：代数上限 MAX_GEN、种群规模 POP_SIZE、满分 0.999 提前停——没有预算的进化循环是烧钱机。截断式选择（只留最优出下一代）是刻意简化，生产上应按 9.5.2 换成质量-多样性选择防过早收敛。winner 为 None 时显式退出——进化无产出是真实可能，诚实失败好过硬凑结果。读者明天就能跑：把 EVAL_SET 换成自己任务的 20 个标注样例即可。</p>
+</blockquote>
+<h3 id="962-框架差异速览">9.6.2 框架差异速览</h3>
+<p>同一“经验工件化 + 自动优化”能力在主流框架中的对应物（版本迭代快，接口名以官方文档为准）：</p>
+<table>
+<thead>
+<tr>
+<th>框架/项目</th>
+<th>核心抽象</th>
+<th>与本章骨架的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://dspy.ai">DSPy</a></td>
+<td>Signature + 优化器</td>
+<td>声明输入输出签名，<code>BootstrapFewShot</code>/<code>MIPROv2</code> 编译指令与少样本示例</td>
+</tr>
+<tr>
+<td><a href="https://github.com/codelion/openevolve">OpenEvolve</a></td>
+<td>进化数据库 + LLM ensemble</td>
+<td>AlphaEvolve 循环的开源复刻，对任意可评估函数演化代码工件</td>
+</tr>
+<tr>
+<td><a href="https://github.com/zou-group/textgrad">TextGrad</a></td>
+<td>文本反馈即“梯度”</td>
+<td>对复合系统的任意文本节点做“反向传播”式批评改写</td>
+</tr>
+<tr>
+<td>Voyager 式技能库</td>
+<td>技能代码 + 嵌入检索</td>
+<td>技能执行通过才入库，按任务描述检索复用，配自动课程推进难度</td>
+</tr>
+</tbody>
+</table>
 <h3 id="963-生产化改造清单">9.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：评估调用失败按错误计分而非重试到通过；进化无产出时显式退出并保留最优种子。</li>
@@ -486,9 +431,9 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://arxiv.org/abs/2401.08500">AlphaCodium 论文摘要</a>：CodeContests 成绩出处</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第8章 记忆管理</span></a><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第10章 模型上下文协议</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l2"><a href="#96-工程落地实践代码示例">9.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-源起它从哪里来">9.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l3"><a href="#957-怎么用运用判断">9.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#96-工程落地核心源码与讲解">9.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#961-框架无关核心源码按序拼接即完整可运行">9.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#962-框架差异速览">9.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

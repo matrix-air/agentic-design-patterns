@@ -61,8 +61,8 @@
 <div class="fig-caption" id="fig-16-1">图 16-1：资源感知级联的骨架——查询先过缓存，mini 档先答并以"自评置信度 + 机械校验"把关，不达标才升级 frontier，每条路径都写进成本账本。</div>
 <h3 id="1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</h3>
 <p>级联是<strong>路由</strong>（<a href="../chapters/ch02-routing.html">第 2 章</a>）的运行时形态：路由按先验特征分流，级联按"处理得怎么样"的事后证据升降舱，两者常叠加成"入口粗分流 + 通道内级联"的两级结构。上下文瘦身与<strong>记忆</strong>（<a href="../chapters/ch08-memory.html">第 8 章</a>）共享同一批手段（摘要、淘汰、压缩），差别在目的：记忆为长期效果存取，瘦身只为本次调用减负。降级（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）是资源优化在故障态的极端形式——容量不足时主动降低服务等级保可用性。级联的置信评估借用了<strong>反思</strong>（<a href="../chapters/ch04-reflection.html">第 4 章</a>）的自评技术，批处理的任务编排复用<strong>并行化</strong>（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）的模式。最后，一切优化必须有<strong>评估</strong>（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）兜底：省下的每一分钱，都要用"质量没有跌破底线"的证据来换。</p>
-<h2 id="162-起源与历史最早是谁提出来的">16.2 起源与历史：最早是谁提出来的</h2>
-<p>"用更少的计算换同样的能力"比大模型老得多。2015 年 Hinton 等人的知识蒸馏给出了这条路线的训练期原型：大模型的输出分布里含有比硬标签更多的"暗知识"，让小模型去模仿它，小模型就能获得远超其体量的表现——这为后来一切"小模型替大模型干活"的方案提供了理论地基。2022 年 Leviathan 等人的投机解码把效率做到了解码期：小草稿模型连猜多个 token，大模型一次并行验证，数学上保证输出分布不变而速度提升数倍。2023 年成为系统级优化的爆发年：<a href="https://github.com/zilliztech/GPTCache">GPTCache</a> 把语义缓存变成通用组件，FrugalGPT 用严格实验回答了"级联到底能省多少"——把 Q&amp;A 任务的成本降到约 1/88 而保持 GPT-4 级精度，<a href="https://github.com/vllm-project/vllm">vLLM</a> 用分页 KV 管理把服务吞吐提升 2~4 倍，<a href="https://github.com/microsoft/LLMLingua">LLMLingua</a> 则证明上下文本身也是可压缩的资源。2024 年起，头部供应商把优化内化成平台能力：批处理半价、提示缓存自动折扣，工程师从"自己造轮子"转向"选对开关"。</p>
+<h2 id="162-源起它从哪里来">16.2 源起：它从哪里来</h2>
+<p>"用更少的计算换同样的能力"比大模型老得多：2015 年 Hinton 等人的知识蒸馏先证明大模型的"暗知识"可压进小模型，为"小模型替大模型干活"提供了理论地基。转折发生在 2023 年：斯坦福的 Chen 等人用 FrugalGPT 把"级联"从直觉变成严格实验，证明 Q&amp;A 成本可降到约 1/88 而保持 GPT-4 级精度；同年 GPTCache 把语义缓存变成通用组件，vLLM 与 LLMLingua 证明服务吞吐与上下文也是可优化资源。2024 年起，批处理半价与提示缓存折扣把优化内化成平台能力——本章模式正是这条演化线在编排期的收束，演化细节见 16.5。</p>
 <table>
 <thead>
 <tr>
@@ -75,73 +75,36 @@
 <tbody>
 <tr>
 <td>2015-03</td>
-<td>知识蒸馏：大模型的"暗知识"可压缩进小模型，确立训练期降本路线</td>
-<td>Hinton、Vinyals、Dean（Google）</td>
+<td>知识蒸馏：暗知识可压缩进小模型，确立训练期降本路线</td>
+<td>Hinton 等（Google）</td>
 <td><a href="https://arxiv.org/abs/1503.02531">arXiv:1503.02531</a></td>
 </tr>
 <tr>
 <td>2022-11</td>
-<td>投机解码：草稿模型起草、大模型并行验证，输出分布不变而加速 2~3 倍</td>
+<td>投机解码：草稿-验证范式，输出分布不变而加速</td>
 <td>Leviathan 等（Google）</td>
-<td><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a>，ICML 2023</td>
-</tr>
-<tr>
-<td>2023-03</td>
-<td>GPTCache 开源：LLM 语义缓存成为通用组件</td>
-<td>Zilliz 主导</td>
-<td><a href="https://github.com/zilliztech/GPTCache">GitHub 开源项目</a></td>
+<td><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a></td>
 </tr>
 <tr>
 <td>2023-05</td>
-<td>FrugalGPT：级联把 Q&amp;A 成本降到约 1/88 而保持 GPT-4 级精度</td>
-<td>Chen、Zaharia、Zou（斯坦福）</td>
+<td>FrugalGPT：级联把 Q&amp;A 成本降到约 1/88</td>
+<td>Chen 等（斯坦福）</td>
 <td><a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></td>
 </tr>
 <tr>
 <td>2023-09</td>
-<td>vLLM（PagedAttention）：分页 KV 管理提升服务吞吐 2~4 倍</td>
+<td>vLLM（PagedAttention）：服务吞吐提升 2~4 倍</td>
 <td>Kwon 等（UC Berkeley）</td>
-<td><a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a>，SOSP 2023</td>
+<td><a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a></td>
 </tr>
 <tr>
-<td>2023-10</td>
-<td>LLMLingua 提示压缩：用小模型裁剪上下文，论文报告最高约 20 倍</td>
-<td>Jiang 等（微软）</td>
-<td><a href="https://arxiv.org/abs/2310.05736">arXiv:2310.05736</a>，ACL 2024</td>
-</tr>
-<tr>
-<td>2023 起</td>
-<td>OpenRouter 提供多厂商模型统一接入、计费与路由的网关服务</td>
-<td>OpenRouter</td>
-<td><a href="https://openrouter.ai/docs">官方文档</a></td>
-</tr>
-<tr>
-<td>2024-04</td>
-<td>OpenAI Batch API 上线：异步批处理任务半价计费</td>
-<td>OpenAI</td>
-<td><a href="https://platform.openai.com/docs/guides/batch">官方文档</a></td>
-</tr>
-<tr>
-<td>2024-06</td>
-<td>RouteLLM：偏好数据训练的路由器，同等质量下成本降约 2~3 倍</td>
-<td>LMSYS</td>
-<td><a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></td>
-</tr>
-<tr>
-<td>2024-08</td>
-<td>Anthropic Prompt Caching 正式可用：提示前缀缓存成为平台能力</td>
-<td>Anthropic</td>
-<td><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">官方文档</a></td>
-</tr>
-<tr>
-<td>2024-10</td>
-<td>OpenAI 自动提示缓存：命中前缀自动折扣，无需改造代码</td>
-<td>OpenAI</td>
-<td><a href="https://platform.openai.com/docs/guides/prompt-caching">官方文档</a></td>
+<td>2024-04 起</td>
+<td>Batch 半价与提示缓存折扣：优化内化为平台能力</td>
+<td>OpenAI / Anthropic</td>
+<td><a href="https://platform.openai.com/docs/guides/batch">Batch 文档</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络的主线是<strong>优化的重心不断上移</strong>：训练期（把模型做小——蒸馏、量化）、解码期（把生成加快——投机解码）、服务期（把并发装下——vLLM、连续批处理）、编排期（把请求调度好——级联、路由、缓存、压缩）。越靠近编排期，优化越不依赖对模型内部的改造，越依赖对自身流量与 SLO 的认知——这也解释了为什么本章的模式最终都落在工程纪律上，而不是模型技巧上。</p>
 <h2 id="163-发挥的作用为什么重要">16.3 发挥的作用：为什么重要</h2>
 <p><strong>成本侧，它把"用得起"变成设计属性。</strong>FrugalGPT 的 1/88 与 RouteLLM 的 2~3 倍给出的是数量级证据：真实流量中大部分请求并不需要最强模型，为难度分布定价而非为最坏情况定价，能把推理成本压下一个数量级而质量可验证地不塌。缓存的价值同样以数量级计——高频问答场景里，语义缓存把重复流量的边际成本直接打到接近零；提示缓存则让"每个请求都拖着两三千 token 的系统提示与工具定义"从固定税变成可折扣项。</p>
 <p><strong>延迟侧，它把"更快"从模型升级中解耦出来。</strong>投机解码在不改变输出的前提下加速生成；缓存命中把响应时间从秒级降到毫秒级；批处理把不赶时间的任务挪出高峰，等于给交互流量让出了道路。SLO 视角下，延迟优化往往不需要更贵的模型，只需要更聪明的排队与分流。</p>
@@ -162,35 +125,67 @@
 <p><strong>LiteLLM 企业网关与 OpenRouter 聚合流量</strong>。开源 LLM 网关 <a href="https://www.litellm.ai/customers">LiteLLM</a> 的公开客户页记载：NVIDIA 工程师用它把 100 多个模型端点收敛为单一访问层，Netflix 团队称新模型接入从数小时改造缩短到一天内，Okta 换后端模型只需改网关配置而不触发新的安全评审，AT&amp;T 数据办公室报告编码类 AI 任务成本最多下降 56%。作为对照面，<a href="https://openrouter.ai/rankings">OpenRouter 的公开用量榜</a>按经 API 处理的 token 量实时排名数百万开发者的真实流量——<strong>聚合路由与统一计费已成多模型时代的公共基础设施</strong>（开源仓库：<a href="https://github.com/BerriAI/litellm">github.com/BerriAI/litellm</a>）。</p>
 <h2 id="165-深度讲解">16.5 深度讲解</h2>
 <h3 id="1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</h3>
-<p>三个目标互为汇率：更强模型换来质量、付出成本与延迟；更大缓存换来延迟与成本、付出新鲜度风险；更长思考换来质量、付出延迟与 token。资源感知优化不承诺"三者全要"，它承诺的是<strong>让每次交换发生在汇率最有利的地方</strong>。把这件事从口头变成工程，靠的是每类请求一份显式 SLO：质量底线（如"抽取消息字段准确率 ≥ 98%"）、延迟目标（P95 ≤ 3 秒）、成本上限（每请求均价 ≤ x 元）。SLO 的真正作用是划定<strong>不可交易区</strong>：质量底线以下的省钱是亏损——错误答案的下游处理成本（返工、投诉、人工）远超省下的推理费。工程上常见的错误是把三角当成静态配置；正确的做法是按请求类别分别设定——闲聊类请求的质量底线可以低、成本目标必须狠，支付类请求恰好相反——并在流量结构变化时重新校准。</p>
+<p>三个目标互为汇率：更强模型换来质量、付出成本与延迟；更大缓存换来延迟与成本、付出新鲜度风险；更长思考换来质量、付出延迟与 token。资源感知优化不承诺"三者全要"，它承诺的是<strong>让每次交换发生在汇率最有利的地方</strong>。把这件事从口头变成工程，靠的是每类请求一份显式 SLO：质量底线（如"抽取消息字段准确率 ≥ 98%"）、延迟目标（P95 ≤ 3 秒）、成本上限（每请求均价 ≤ x 元）。SLO 的真正作用是划定<strong>不可交易区</strong>：质量底线以下的省钱是亏损——错误答案的下游处理成本（返工、投诉、人工）远超省下的推理费。工程上常见的错误是把三角当成静态配置；正确的做法是按请求类别分别设定——闲聊类请求的质量底线可以低、成本目标必须狠，支付类请求恰好相反——并在流量结构变化时重新校准。回看 16.2 的演化线，其主线是<strong>优化的重心不断上移</strong>：训练期（把模型做小——蒸馏、量化）、解码期（把生成加快——投机解码）、服务期（把并发装下——vLLM、连续批处理）、编排期（把请求调度好——级联、路由、缓存、压缩）。越靠近编排期，优化越不依赖改造模型内部，越依赖对自身流量与 SLO 的认知——这也是本章的模式最终都落在工程纪律上、而不是模型技巧上的原因。</p>
 <h3 id="1652-级联与置信度升级frugalgpt-的账怎么算">16.5.2 级联与置信度升级：FrugalGPT 的账怎么算</h3>
 <p>级联由三部分组成：候选模型序列（按成本升序）、升级判据（gate）、以及一个必须回答的问题——判据的成本。FrugalGPT 论文试验了三种判据：让模型给自己的答案打分、让另一个模型验证、以及一致性检验（同一问题多次采样看答案是否收敛）。账要算全：升级路径上，简单请求只付一次便宜调用，困难请求要付"便宜调用 + 贵调用"两份钱外加串联延迟——因此级联的盈亏平衡点取决于<strong>升级率</strong>：如果 90% 的请求都被判据放行，省 88% 的账大致成立；如果判据过于严苛、一半请求都要升级，便宜模型就变成了纯粹的附加税。升级判据的设计有三条纪律。其一，<strong>判据必须独立于被判者</strong>：让小模型自评置信度是必要信号但绝不充分——小模型的典型失败模式是"自信地错"，自我报告的 0.95 与正确率之间没有可靠换算，因此机械校验（格式、数字范围、引用存在性、禁语清单）必须与自评并联，任何一路不过即升级。其二，<strong>阈值要用自己流量回放校准</strong>：论文数值（乃至供应商宣称的校准性）不能直接搬，拿几百条带标注的历史请求跑一遍，画出"阈值—升级率—捕获率"曲线再定点。其三，<strong>审计升级通道的捕获率</strong>：升级后的答案里"确实纠正了问题"的比例若长期趋近于零，说明判据只会在坏答案上失灵得不够频繁，整个级联只是在为每次请求多付一次调用。</p>
+<p>级联值不值，可以笔算。设 mini 单请求成本 c_小、frontier 单请求成本 c_大、判据放行率（mini 直接接住的比例）为 P，则级联的期望成本是 <strong>E[cascade] = P·c_小 + (1−P)·(c_小 + c_大) = c_小 + (1−P)·c_大</strong>——每个请求都先付一次便宜的钱，只有没接住的才追加贵的。与全量 frontier（成本 c_大）比较，级联更便宜的条件化简后极简：<strong>P &gt; c_小/c_大，盈亏平衡的升级率就是两档模型的价格比</strong>。代入 OpenAI 官方价算一笔：gpt-4o-mini 输入 $0.15、输出 $0.60 每百万 token，gpt-4o 为 $2.50/$10.00（<a href="https://developers.openai.com/api/docs/models/gpt-4o">官方模型页</a>）；按典型客服请求 4000 输入 + 500 输出计，mini 单请求约 $0.0009、4o 约 $0.015，价格比约 6%——<strong>只要 mini 能不升级地接住 6% 的请求，级联在纯账单上就赢了</strong>，16 倍的价差让级联几乎稳赚。反过来，"什么时候级联反而更贵"有三个明确答案：其一，<strong>两档价差小</strong>（价格比接近 1，比如 standard 与 frontier 同价档），P* 水涨船高，升级率一超过就白忙；其二，<strong>小模型太弱</strong>导致 P 低，大量请求双份付费，级联沦为附加税（FrugalGPT 的判据成本也要计入——一致性检验要求多次采样，判据开销可能吃掉级联节省）；其三，<strong>判定太松</strong>，表面账单最省，坏答案一路放行——这就引出下面这笔更贵的账。</p>
+<p>一个反直觉的工程事实：<strong>级联最贵的不是 token，是返工</strong>。上例中两档模型的单请求差价只有约 1.4 美分；而一个被错误答案放行的请求，下游代价常常是一次人工坐席介入——按时薪 20 美元、处理 5 分钟估算约 1.7 美元，是模型差价的一百倍以上（人工成本为工程估算量级，用于说明数量级）。算总账：日流量 10 万的客服，判据太松让 1% 的坏答案过闸，每天约 1700 美元的人工返工，够把整条链路全量升级到 frontier（10 万 × 1.5 美分 ≈ 1500 美元）再剩点零头。这笔钱不出现在推理发票上，所以最容易被忽略；它只能靠"升级通道捕获率"与下游人工工单率两个指标间接盯住——<strong>级联的阈值校准，省的是看得见的账单，防的是看不见的返工</strong>。</p>
 <h3 id="1653-模型分级frontier-standard-mini-的档位设计">16.5.3 模型分级：frontier / standard / mini 的档位设计</h3>
 <p>分级是级联与路由的调度对象，档位划得对不对直接决定上游机制的收益。划档的依据不是模型名称而是三个可测维度：能力（在<strong>你自己的</strong>任务集上的评测分，而非榜单）、价格（含输入输出差价与缓存折扣）、延迟（首 token 与整体时长）。工程上常见三档：mini 档处理高置信度的机械任务（分类、抽取、格式转换、简单问询），standard 档处理常规生成与多步推理，frontier 档处理困难推理、高价值决策与级联终点。三条纪律值得写进规范：<strong>能力评测必须用自家任务集</strong>——通用基准上"接近 frontier"的模型，在你领域里的长尾上可能差得远；<strong>档位之间保持接口同构</strong>——三档用同一套消息格式与输出契约，升降级才是配置改动而非代码改动；<strong>每档都要有降级出口</strong>——frontier 故障时 standard 能否顶住、mini 全挂时是否直接熔断，要提前演练而不是临场发明。多供应商场景下，OpenRouter 式网关把这些档位抽象成统一的"厂商/模型名"字符串，路由表里一行就是一次换挡。</p>
 <h3 id="1654-缓存命中率经济学">16.5.4 缓存命中率经济学</h3>
-<p>缓存收益的公式极其朴素：节省 = 命中率 ×（生成成本 − 缓存存取成本），但三个变量各藏陷阱。<strong>精确缓存</strong>零误命中风险，键设计是全部学问：归一化（大小写、空白、标点）能显著提命中率，但要把用户身份、租户、知识库版本纳入键，否则跨户串数据与陈旧答案两种事故迟早发生。<strong>语义缓存</strong>（GPTCache 路线）用向量相似度把"换了说法的同一问题"也命中，命中率提升一个台阶，代价是引入了传统缓存没有的失效模式——<strong>误命中</strong>：两个相似度 0.92 的问题可能一个问退款时限、一个问退货时限，返回错答案还不报错。因此相似阈值必须按业务回放校准，高风险域（金融、医疗）要么不用语义缓存，要么在命中后附加"这是缓存答案，如需精确信息请换个问法"的披露。<strong>提示缓存</strong>（供应商前缀缓存）是另一种经济学：命中的输入 token 按大幅折扣计费（Anthropic 与 OpenAI 先后在 2024 年提供了这一能力），它不省生成、只省重复输入，所以优化的全部技巧在于<strong>保持前缀稳定</strong>——系统提示、工具定义、few-shot 示例按稳定性倒序排列，任何把时间戳或随机 ID 插进提示头部的写法都在亲手销毁缓存。</p>
+<p>缓存收益的公式极其朴素：节省 = 命中率 ×（生成成本 − 缓存存取成本），但三个变量各藏陷阱。<strong>精确缓存</strong>零误命中风险，键设计是全部学问：归一化（大小写、空白、标点）能显著提命中率，但要把用户身份、租户、知识库版本纳入键，否则跨户串数据与陈旧答案两种事故迟早发生。<strong>语义缓存</strong>（GPTCache 路线）用向量相似度把"换了说法的同一问题"也命中，命中率提升一个台阶，代价是引入了传统缓存没有的失效模式——<strong>误命中</strong>：两个相似度 0.92 的问题可能一个问退款时限、一个问退货时限，返回错答案还不报错。因此相似阈值必须按业务回放校准，高风险域（金融、医疗）要么不用语义缓存，要么在命中后附加"这是缓存答案，如需精确信息请换个问法"的披露。<strong>提示缓存</strong>（供应商前缀缓存）是另一种经济学：命中的输入 token 按大幅折扣计费（Anthropic 与 OpenAI 先后在 2024 年提供了这一能力），它不省生成、只省重复输入，所以优化的全部技巧在于<strong>保持前缀稳定</strong>——系统提示、工具定义、few-shot 示例按稳定性倒序排列，任何把时间戳或随机 ID 插进提示头部的写法都在亲手销毁缓存。提示缓存的收益同样可以笔算：OpenAI 官方价中缓存命中的输入 token 按五折计（gpt-4o 缓存输入 $1.25 对比标准输入 $2.50，gpt-4o-mini 为 $0.075 对比 $0.15，<a href="https://platform.openai.com/docs/models/gpt-4o-mini">官方模型页</a>），于是<strong>整体节省 = 命中率 × 50% × 输入成本占比</strong>。仍按 4000 输入 + 500 输出的 gpt-4o 请求算：未命中时单请求 $0.015，其中输入占 $0.010（约 2/3）；命中率 80% 时输入侧降到 $0.006，整体成本 $0.011——<strong>省 26.7%；命中率每提升 10 个百分点，整体成本再降约 3.3 个百分点</strong>。这说明缓存是典型的"命中率工程"：收益与命中率成正比，而命中率只取决于键设计与流量重复度，与模型强弱无关。边界条件同样清楚：长尾问答流量（命中率 &lt;20%）答案缓存收益有限，此时优先做提示缓存——前缀固定即可自动命中，不依赖流量重复。</p>
 <h3 id="1655-上下文瘦身的优先级先历史再工具再检索">16.5.5 上下文瘦身的优先级：先历史、再工具、再检索</h3>
 <p>上下文通胀的三个来源——对话历史、工具定义与工具返回、检索片段——削减难度与风险完全不同，因此有一个稳定的优先级。<strong>先裁历史</strong>：历史是三者中对当前任务边际价值最低的——早期轮次的意图早已固化在后续轮次里，把超过窗口的旧轮次压缩成摘要（保留结论与关键参数、丢弃寒暄与试错过程），信息损失最小、节省立竿见影，且摘要可以离线做，不占交互延迟。<strong>再裁工具</strong>：工具定义是静默的固定税，十几个工具的 schema 轻松吃掉上千 token；按当前任务动态裁剪工具清单（查询类会话不带写工具）、把工具返回的原始 JSON 压成字段级摘要，都是低风险高收益的动作——但要守住底线：<strong>永不裁剪系统提示中的行为约束与安全规则</strong>，那是整个系统的承重结构。<strong>最后裁检索</strong>：检索片段是答案的证据链，裁剪风险最高；正确的顺序是先重排（rerank）后截断，让排名靠后的片段整段退场而不是各段均匀挨刀，必要时再用 LLMLingua 类压缩模型做有损压缩——并把"被压缩的片段"记入元数据，答案出问题时能追溯是压缩吞掉了证据。整条瘦身管线必须可回放评估：拿历史请求在"全量上下文 vs 各级瘦身"下重跑，画出压缩率—质量曲线，而不是凭感觉裁。</p>
 <h3 id="1656-批处理与错峰">16.5.6 批处理与错峰</h3>
 <p>批处理是被低估的杠杆：OpenAI Batch API 以 50% 折扣换取 24 小时完成窗口，对一切"截止时间是明天早上"的任务（夜间报表、语料标注、历史回填、评估集跑分）这是无风险的半价。工程上要建立<strong>延迟分级</strong>：把流量显式分为实时、准实时、离线三档，离线档一律走批处理接口；批任务用检查点管理部分失败（呼应<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>），失败条目进死信队列重放而非整批重来。错峰的另一面是给交互流量让路：共享容量的部署里，批任务安排在低谷执行，等于用时间换算力。最后，批处理的折扣结构会反向影响架构——如果 70% 的调用量本可以批处理却走了实时链路，那不是供应商贵，是你的延迟分级没做。</p>
 <h3 id="1657-失效模式反模式与何时不要用">16.5.7 失效模式、反模式与何时不要用</h3>
 <p>失效模式按杀伤力排序。<strong>判据失灵</strong>：小模型自信地错、机械校验全过，坏答案带着"低廉"的成本标签一路下行——对策是高风险通道叠加第二道独立信号并审计捕获率。<strong>缓存陈旧与串户</strong>：知识更新后旧答案还在服务，或租户 A 的数据出现在租户 B 的命中里——对策是键带版本与租户、设 TTL、命中可披露。<strong>瘦身误伤</strong>：把行为约束或 few-shot 示例当冗余裁掉，质量断崖却查不到变更——对策是承重 token 白名单加回放评估。<strong>记账缺失</strong>：没有按请求的模型、token、命中、升级记录，一切优化退化为传说——账本是本章一切模式的前置条件。<strong>为优化而优化</strong>：流量小到月账单不及一台服务器的团队，引入级联与语义缓存的维护成本远超收益。资源感知优化有一条清晰的适用门槛：<strong>当推理成本或延迟成为产品决策的约束条件时才上这套机制</strong>；在此之前，把最强模型、最直链路、无缓存作为基线，把工程精力花在找产品价值上——账本可以先建，调度不必先行。</p>
-<h2 id="166-工程落地实践代码示例">16.6 工程落地：实践代码示例</h2>
-<h3 id="1661-框架无关实现完整可运行">16.6.1 框架无关实现（完整可运行）</h3>
-<p>以下实现本章的核心骨架：三级资源调度器 = 两级缓存（精确 + 相似度）→ mini 档先答并自评置信 → 机械校验不过关升级 frontier。全程成本记账，结束时输出账本报告。相似缓存用字符三元组 Jaccard 模拟 GPTCache 的语义匹配（生产中应换成向量相似度）。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第16章 资源感知优化：级联路由器——小模型先答、自评置信、升级大模型。
-
-配套两件基础设施：
-1) 两级答案缓存：精确缓存（归一化后相同）+ 相似缓存（字符三元组 Jaccard，
-   生产应替换为向量相似度，即 GPTCache 的做法；阈值必须用业务回放校准）；
-2) 成本记账：按分级模型池单价（每百万 token）累计费用，统计缓存命中与升级率。
-
-运行前设置环境变量：
-  AGENT_LLM_API_KEY（必填）、AGENT_LLM_BASE_URL（可选）
-  AGENT_LLM_MODEL_MINI / AGENT_LLM_MODEL_FRONTIER（可选，默认 gpt-4o-mini / gpt-4o）
-&quot;&quot;&quot;
+<h3 id="1658-怎么用运用判断">16.5.8 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>——出现以下特征时，本章模式开始值得投入：推理月账单可量化且进入了产品损益讨论；流量难度分布高度不均（多数请求机械、少数困难），且可选的两档模型存在数倍价差（16.5.2 的 P &gt; c_小/c_大 判据）；存在可机械校验的质量信号（格式、数字范围、引用存在性）；请求有明显重复结构（相似问询、固定长前缀）或明显非实时截止时间。</p>
+<p>与两个最相近的替代方案对比：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>全量最强模型</th>
+<th>一刀切降档</th>
+<th>级联 + 缓存（本章）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>显性账单</td>
+<td>最高</td>
+<td>最低</td>
+<td>低（随升级率浮动）</td>
+</tr>
+<tr>
+<td>隐性返工</td>
+<td>最少</td>
+<td>最多（长尾质量塌陷）</td>
+<td>可控（判据兜底 + 捕获率审计）</td>
+</tr>
+<tr>
+<td>工程复杂度</td>
+<td>零</td>
+<td>零</td>
+<td>需账本、判据校准、缓存失效策略</td>
+</tr>
+<tr>
+<td>适用流量</td>
+<td>高价值低频</td>
+<td>机械任务为主</td>
+<td>难度不均的中大规模流量</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：第一步，建账本——按请求记录模型、token、缓存命中与升级（16.6 的 CostLedger 即最小原型），跑一两周拿到基线均价、升级率与流量难度分布；第二步，定 SLO 与判据——每类请求写明质量底线，用几百条带标注的历史请求回放出"阈值—升级率—捕获率"曲线，在曲线上定点而不是拍脑袋；第三步，上级联与缓存——mini 先答 + 机械校验并联自评置信，命中路径全留痕，上线后每周审计升级通道捕获率，趋近于零就简化级联，缓存键随知识版本失效。</p>
+<h2 id="166-工程落地核心源码与讲解">16.6 工程落地：核心源码与讲解</h2>
+<h3 id="1661-框架无关实现片段式">16.6.1 框架无关实现（片段式）</h3>
+<p>以下四个片段按原文件顺序排列，<strong>按序拼接即完整可运行程序</strong>（Python 3.10+，含错误路径与演示入口）。它实现本章骨架：两级缓存（精确 + 三元组相似）→ mini 先答并自评置信 → 机械校验并联置信闸门 → 不过关升级 frontier，全程成本记账。相似缓存用字符三元组 Jaccard 模拟 GPTCache 的语义匹配（生产中应换成向量相似度）。</p>
+<p><strong>片段 1／4：模型池、单价与调用接口</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;第16章 资源感知优化：级联路由器——缓存 → mini 先答自评 → 不过关升级 frontier。&quot;&quot;&quot;
 from __future__ import annotations
-
 import json
 import os
 import re
@@ -198,262 +193,174 @@ from dataclasses import dataclass, field
 
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 
-# ---------- 分级模型池与示例单价（美元/百万 token，以供应商现价为准） ----------
 MINI = os.environ.get(&quot;AGENT_LLM_MODEL_MINI&quot;, &quot;gpt-4o-mini&quot;)
 FRONTIER = os.environ.get(&quot;AGENT_LLM_MODEL_FRONTIER&quot;, &quot;gpt-4o&quot;)
-PRICES: dict[str, tuple[float, float]] = {
-    MINI: (0.15, 0.60),
-    FRONTIER: (2.50, 10.00),
-}
-
+PRICES: dict[str, tuple[float, float]] = {MINI: (0.15, 0.60), FRONTIER: (2.50, 10.00)}
 MINI_CONFIDENCE_GATE = 0.85   # mini 自评置信门槛：达标且过机检才算&quot;接住&quot;
-SIM_THRESHOLD = 0.80          # 相似缓存阈值：偏低会误命中，偏高无收益，须回放校准
-
+SIM_THRESHOLD = 0.80          # 相似缓存阈值：偏低误命中、偏高无收益，须回放校准
 
 def llm_raw(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3,
             model: str | None = None) -&gt; tuple[str, dict]:
-    &quot;&quot;&quot;调用大模型，返回 (文本, usage 字典)。usage 供成本记账。&quot;&quot;&quot;
+    &quot;&quot;&quot;调用大模型，返回 (文本, usage)；usage 交给成本账本。&quot;&quot;&quot;
     messages: list[dict[str, str]] = []
     if system:
         messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
     messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
     resp = client.chat.completions.create(
-        model=model or MINI,
-        messages=messages,
-        temperature=temperature,
-    )
-    usage = resp.usage
+        model=model or MINI, messages=messages, temperature=temperature)
     return (resp.choices[0].message.content or &quot;&quot;,
-            {&quot;prompt_tokens&quot;: usage.prompt_tokens,
-             &quot;completion_tokens&quot;: usage.completion_tokens})
-
-
-def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3,
-        model: str | None = None) -&gt; str:
-    &quot;&quot;&quot;规范要求的 llm() 辅助函数：只返回文本。&quot;&quot;&quot;
-    text, _ = llm_raw(prompt, system, temperature, model)
-    return text
-
-
-# ---------- 第一件基础设施：两级答案缓存 ----------
-
-def _normalize(text: str) -&gt; str:
-    &quot;&quot;&quot;归一化：去空白与标点、转小写。注意生产中键还要拼上租户与知识库版本。&quot;&quot;&quot;
+            {&quot;prompt_tokens&quot;: resp.usage.prompt_tokens,
+             &quot;completion_tokens&quot;: resp.usage.completion_tokens})
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一段只做一件事——让"模型是谁、多少钱"成为配置而非代码。<code>llm_raw</code> 与普通封装的差别在返回值：它把 <code>usage</code>（prompt/completion token 数）原样带回，因为级联的一切经济学（账本、命中率、升级率）都以它为原料，丢掉 usage 的封装等于扔掉了账本。单价表 <code>PRICES</code> 采用 OpenAI 官方价（mini $0.15/$0.60、4o $2.50/$10.00 每百万 token），换供应商只改这一张表；两个阈值先给经验值——置信门槛 0.85 偏严（宁可多升级），相似阈值 0.80 偏松（宁可少误杀），<strong>都必须用你自己的历史流量回放重新定点</strong>，16.5.2 的盈亏平衡公式给出校准方向。读者适配自己场景时，通常只需要改 <code>PRICES</code>、两个阈值和两个环境变量。</p>
+</blockquote>
+<p><strong>片段 2／4：两级答案缓存</strong></p>
+<pre><code class="language-python">def _norm(text: str) -&gt; str:
+    &quot;&quot;&quot;缓存键归一化；生产中键还须拼上租户与知识库版本，防串户与陈旧。&quot;&quot;&quot;
     return re.sub(r&quot;[^\w\u4e00-\u9fff]+&quot;, &quot;&quot;, text).lower()
-
-
-def _trigrams(text: str) -&gt; set[str]:
-    t = _normalize(text)
-    return {t[i:i + 3] for i in range(max(len(t) - 2, 1))}
 
 
 @dataclass
 class AnswerCache:
-    &quot;&quot;&quot;精确缓存优先，未命中再扫相似缓存（线性扫描，生产应换向量索引）。&quot;&quot;&quot;
+    &quot;&quot;&quot;两级缓存：精确键优先；未命中按字符三元组 Jaccard 找相似（生产换向量索引）。&quot;&quot;&quot;
     threshold: float = SIM_THRESHOLD
     _exact: dict[str, tuple[str, str]] = field(default_factory=dict)
-    _all: list[tuple[str, str, str]] = field(default_factory=list)
+    _seq: list[tuple[str, str, str]] = field(default_factory=list)
 
     def lookup(self, question: str) -&gt; tuple[str, str] | None:
-        key = _normalize(question)
-        if key in self._exact:
+        if (key := _norm(question)) in self._exact:
             return self._exact[key]
-        grams = _trigrams(question)
-        for prev_q, answer, model in self._all:
-            prev = _trigrams(prev_q)
+        grams = {key[i:i + 3] for i in range(max(len(key) - 2, 1))}
+        for prev_q, answer, model in self._seq:
+            p = _norm(prev_q)
+            prev = {p[i:i + 3] for i in range(max(len(p) - 2, 1))}
             if grams and prev and len(grams &amp; prev) / len(grams | prev) &gt;= self.threshold:
                 return (answer, f&quot;{model}（相似缓存）&quot;)
         return None
 
     def store(self, question: str, answer: str, model: str) -&gt; None:
-        self._exact[_normalize(question)] = (answer, model)
-        self._all.append((question, answer, model))
-
-
-# ---------- 第二件基础设施：成本账本 ----------
-
-@dataclass
+        self._exact[_norm(question)] = (answer, model)
+        self._seq.append((question, answer, model))
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>lookup</code> 先查精确键再线性扫相似——顺序不可反，精确命中的零风险必须优先兑现；相似度用字符三元组 Jaccard（<code>len(g∩p)/len(g∪p)</code>）模拟 GPTCache 的向量相似度，好处是零依赖、可离线跑通，代价是只对中文短问句有效。返回值带"处理层级"标注（<code>f"{model}（相似缓存）"</code>），是为了演示与审计时能区分"这条答案花没花钱"。两个生产化提醒直接写在代码注释里：真实缓存键必须拼上租户 ID 与知识库版本号（否则串户与陈旧答案两种事故迟早发生）；线性扫描是 O(n) 的，生产换成向量索引（FAISS、pgvector 一类）。适配时先调 <code>SIM_THRESHOLD</code>：拿历史问句对标注几十条"是否同一问题"，画出阈值—准确率曲线再定点。</p>
+</blockquote>
+<p><strong>片段 3／4：成本账本与升级闸门</strong></p>
+<pre><code class="language-python">@dataclass
 class CostLedger:
-    &quot;&quot;&quot;按模型累计 token 与费用；另记缓存命中与升级次数。&quot;&quot;&quot;
+    &quot;&quot;&quot;按模型累计 token 与费用，另记命中与升级次数——账本是调度前提。&quot;&quot;&quot;
     cache_hits: int = 0
     escalations: int = 0
     usage: dict[str, dict[str, int]] = field(default_factory=dict)
 
     def add(self, model: str, usage: dict) -&gt; None:
-        bucket = self.usage.setdefault(
-            model, {&quot;prompt_tokens&quot;: 0, &quot;completion_tokens&quot;: 0})
-        bucket[&quot;prompt_tokens&quot;] += usage.get(&quot;prompt_tokens&quot;, 0)
-        bucket[&quot;completion_tokens&quot;] += usage.get(&quot;completion_tokens&quot;, 0)
+        u = self.usage.setdefault(model, {&quot;p&quot;: 0, &quot;c&quot;: 0})
+        u[&quot;p&quot;] += usage.get(&quot;prompt_tokens&quot;, 0)
+        u[&quot;c&quot;] += usage.get(&quot;completion_tokens&quot;, 0)
 
     def cost_of(self, model: str) -&gt; float:
         pin, pout = PRICES.get(model, (0.0, 0.0))
-        u = self.usage.get(model, {&quot;prompt_tokens&quot;: 0, &quot;completion_tokens&quot;: 0})
-        return u[&quot;prompt_tokens&quot;] / 1e6 * pin + u[&quot;completion_tokens&quot;] / 1e6 * pout
+        u = self.usage.get(model, {&quot;p&quot;: 0, &quot;c&quot;: 0})
+        return u[&quot;p&quot;] / 1e6 * pin + u[&quot;c&quot;] / 1e6 * pout
 
-    def report(self) -&gt; str:
-        lines = [&quot;---- 成本账本 ----&quot;]
-        for model, u in self.usage.items():
-            lines.append(f&quot;  {model}: 输入 {u['prompt_tokens']} tok / &quot;
-                         f&quot;输出 {u['completion_tokens']} tok，约 ${self.cost_of(model):.6f}&quot;)
-        lines.append(f&quot;  缓存命中 {self.cache_hits} 次，升级 {self.escalations} 次，&quot;
-                     f&quot;合计约 ${sum(self.cost_of(m) for m in self.usage):.6f}&quot;)
-        return &quot;\n&quot;.join(lines)
-
-
-# ---------- 核心：级联调度 ----------
-
-CONFIDENT_SYSTEM = (
-    &quot;你是客服问答助手。请直接回答用户问题，然后在最后一行单独输出自评 JSON：&quot;
-    '{&quot;confidence&quot;: 0到1的小数}。confidence 表示你对答案正确性的把握。'
-)
-
+CONFIDENT_SYSTEM = '你是客服问答助手。直接回答问题，最后一行单独输出自评 JSON：{&quot;confidence&quot;: 0到1的小数}。'
 DISFLUENT_MARKERS = (&quot;我不知道&quot;, &quot;无法确定&quot;, &quot;没有相关信息&quot;, &quot;抱歉，我无法&quot;)
 
-
-def mechanical_check(answer: str) -&gt; bool:
-    &quot;&quot;&quot;机械校验：独立于模型自我报告的最低要求——这是防&quot;自信地错&quot;的第一道闸。&quot;&quot;&quot;
-    if not answer or len(answer) &gt; 800:
-        return False
-    return not any(m in answer for m in DISFLUENT_MARKERS)
-
-
-def extract_confidence(answer: str) -&gt; float:
-    &quot;&quot;&quot;从答案尾部提取自评置信度；解析失败按 0 处理——宁升级，不误放。&quot;&quot;&quot;
-    matches = re.findall(r'\{[^{}]*&quot;confidence&quot;[^{}]*\}', answer)
-    if matches:
-        try:
-            value = float(json.loads(matches[-1]).get(&quot;confidence&quot;, 0.0))
-            return min(max(value, 0.0), 1.0)
-        except (ValueError, json.JSONDecodeError):
-            return 0.0
-    return 0.0
-
-
-def strip_confidence(answer: str) -&gt; str:
-    &quot;&quot;&quot;去掉答案尾部的自评 JSON，只留正文给用户。&quot;&quot;&quot;
-    return re.sub(r'\s*\{[^{}]*&quot;confidence&quot;[^{}]*\}\s*$', &quot;&quot;, answer).strip()
-
-
-def cascade_answer(question: str, cache: AnswerCache,
+def answer_gate(draft: str) -&gt; tuple[bool, str]:
+    &quot;&quot;&quot;双路闸门：机械校验 + 自评置信，任一路不过即拦截（宁升级，不误放）。&quot;&quot;&quot;
+    body = re.sub(r'\s*\{[^{}]*&quot;confidence&quot;[^{}]*\}\s*$', &quot;&quot;, draft).strip()
+    if not body or len(body) &gt; 800 or any(m in body for m in DISFLUENT_MARKERS):
+        return False, body
+    matches = re.findall(r'\{[^{}]*&quot;confidence&quot;[^{}]*\}', draft)
+    try:
+        conf = float(json.loads(matches[-1]).get(&quot;confidence&quot;, 0.0))
+    except (ValueError, json.JSONDecodeError, IndexError):
+        conf = 0.0  # 解析失败按 0 处理：格式噪声不能被当作&quot;高置信&quot;放行
+    return conf &gt;= MINI_CONFIDENCE_GATE, body
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>CostLedger</code> 刻意朴素——三行累计、一个单价函数，它存在的意义是让"每请求均价、命中率、升级率"从感觉变成数字，替换成你的记账中间件时保持这三个计数即可。<code>answer_gate</code> 是全章最重要的一段：<strong>机械校验（长度、拒答话术）与模型自评置信并联</strong>，任一路不过即拦截——小模型的典型失败是"自信地错"，所以自我报告的 0.95 不可单独采信；置信 JSON 解析失败按 0 处理是"宁升级、不误放"的落点（<code>except</code> 兜住格式噪声、空列表与非法数值三类异常）。<code>body</code> 在闸门内剥离自评 JSON，保证用户永远看不到模型的内心独白。适配时把 <code>DISFLUENT_MARKERS</code> 换成你业务的真实拒答话术，把 800 字上限换成你产品的输出契约。</p>
+</blockquote>
+<p><strong>片段 4／4：级联主流程与演示</strong></p>
+<pre><code class="language-python">def cascade_answer(question: str, cache: AnswerCache,
                    ledger: CostLedger) -&gt; tuple[str, str]:
-    &quot;&quot;&quot;级联：缓存 → mini（自评+机检）→ frontier。返回 (答案, 实际处理层级)。&quot;&quot;&quot;
-    hit = cache.lookup(question)
-    if hit is not None:
+    &quot;&quot;&quot;级联主流程：缓存 → mini（过闸门）→ frontier。返回 (答案, 处理层级)。&quot;&quot;&quot;
+    if (hit := cache.lookup(question)) is not None:
         ledger.cache_hits += 1
         return hit
-
-    # 第一级：mini 先答 + 自评置信度
     draft, usage = llm_raw(question, CONFIDENT_SYSTEM, temperature=0.2, model=MINI)
     ledger.add(MINI, usage)
-    body = strip_confidence(draft)
-    if extract_confidence(draft) &gt;= MINI_CONFIDENCE_GATE and mechanical_check(body):
+    ok, body = answer_gate(draft)
+    if ok:
         cache.store(question, body, MINI)
         return body, MINI
-
-    # 第二级：升级 frontier，把 mini 草稿一并附上，减少重复劳动
-    ledger.escalations += 1
+    ledger.escalations += 1  # 升级：附上 mini 草稿让 frontier 核查，而非从零重做
     final, usage = llm_raw(
-        f&quot;用户问题：{question}\n\n下面是一个低置信度草稿，请核查事实并给出更严谨的最终答案：\n{draft}&quot;,
+        f&quot;用户问题：{question}\n\n低置信度草稿：\n{draft}\n请核查事实并给出更严谨的最终答案。&quot;,
         &quot;你是资深客服专家。给出严谨、可执行、300 字以内的最终答案，不要输出 JSON。&quot;,
-        temperature=0.2,
-        model=FRONTIER,
-    )
+        temperature=0.2, model=FRONTIER)
     ledger.add(FRONTIER, usage)
     cache.store(question, final, FRONTIER)
     return final, FRONTIER
 
-
 if __name__ == &quot;__main__&quot;:
-    questions = [
-        &quot;你们的工作时间是什么？&quot;,            # 简单：mini 大概率接住
-        &quot;发票开错了怎么重开？&quot;,              # 中等
-        &quot;请解释幂等键在扣款重试场景中如何防止重复扣款，以及实现要点。&quot;,  # 困难：可能升级
-        &quot;这个月账单怎么查&quot;,                  # 新问题
-        &quot;这个月账单怎么查询？&quot;,              # 与上一条高度相似：应命中相似缓存
-        &quot;这个月账单怎么查&quot;,                  # 完全重复：应命中精确缓存
-    ]
+    qs = [&quot;你们的工作时间是什么？&quot;, &quot;这个月账单怎么查&quot;, &quot;这个月账单怎么查询？&quot;,
+          &quot;请解释幂等键在扣款重试场景中如何防止重复扣款，以及实现要点。&quot;]
     cache, ledger = AnswerCache(), CostLedger()
-    for q in questions:
+    for q in qs:
         try:
-            answer, tier = cascade_answer(q, cache, ledger)
+            _, tier = cascade_answer(q, cache, ledger)
         except Exception as exc:  # 诚实的错误路径：单条失败不拖垮整批演示
-            print(f&quot;问：{q}\n  [失败] {type(exc).__name__}: {exc}\n&quot;)
+            print(f&quot;[失败] {type(exc).__name__}: {exc}&quot;)
             continue
-        print(f&quot;问：{q}\n  处理层级：{tier}\n  答：{answer[:60]}…\n&quot;)
-    print(ledger.report())
+        print(f&quot;问：{q} -&gt; 处理层级：{tier}&quot;)
+    print(f&quot;[账本] 命中 {ledger.cache_hits} / 升级 {ledger.escalations} / 合计 ${sum(ledger.cost_of(m) for m in ledger.usage):.6f}&quot;)
 </code></pre>
-<h3 id="1662-框架集成实现openai-兼容客户端openrouter-风格的多模型统一路由">16.6.2 框架集成实现（OpenAI 兼容客户端：OpenRouter 风格的多模型统一路由）</h3>
-<p>OpenRouter 的价值是把"多厂商、多档位"收敛成一个 OpenAI 兼容接口：<code>base_url</code> 指向网关，模型用"厂商/模型名"字符串表达，换模型只是换一个字符串。以下示例演示按任务类型选档与客户端侧 fallback（沿候选列表逐个降级）；代码按 OpenRouter 公开文档编写（openai Python SDK ≥ 1.x），<strong>模型字符串以网关当期目录为准</strong>。</p>
-<pre><code class="language-python">&quot;&quot;&quot;第16章：OpenRouter 风格多模型统一网关（OpenAI 兼容客户端写法）。
-
-要点：
-1) base_url 指向网关，模型用 &quot;厂商/模型名&quot; 字符串（具体清单以网关当期目录为准）；
-2) 路由表：任务类型 -&gt; 候选模型列表（按优先级排序，前一个失败才用后一个）；
-3) 客户端侧 fallback 适用于任何 OpenAI 兼容网关；OpenRouter 自身也支持
-   服务端 fallback（请求里传按序候选列表），二选一即可。
-
-依赖：pip install openai&gt;=1.0
-环境变量：OPENROUTER_API_KEY 或 AGENT_LLM_API_KEY
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import os
-
-from openai import OpenAI
-
-client = OpenAI(
-    base_url=os.environ.get(&quot;OPENROUTER_BASE_URL&quot;, &quot;https://openrouter.ai/api/v1&quot;),
-    api_key=os.environ.get(&quot;OPENROUTER_API_KEY&quot;,
-                           os.environ.get(&quot;AGENT_LLM_API_KEY&quot;, &quot;&quot;)),
-    default_headers={&quot;HTTP-Referer&quot;: &quot;https://example.com&quot;,
-                     &quot;X-Title&quot;: &quot;agentic-book-ch16&quot;},
-)
-
-ROUTE_TABLE: dict[str, list[str]] = {
-    # 每个任务类型一条降级链：能力档从高到低 / 价格从贵到便宜
-    &quot;chat&quot;:       [&quot;openai/gpt-4o-mini&quot;],
-    &quot;hard_reasoning&quot;: [&quot;anthropic/claude-3.5-sonnet&quot;, &quot;openai/gpt-4o&quot;,
-                       &quot;openai/gpt-4o-mini&quot;],
-    &quot;budget_rag&quot;: [&quot;meta-llama/llama-3.1-8b-instruct&quot;, &quot;openai/gpt-4o-mini&quot;],
-}
-
-
-def unified_ask(prompt: str, task_type: str = &quot;chat&quot;,
-                timeout_s: float = 30.0) -&gt; tuple[str, str]:
-    &quot;&quot;&quot;沿候选链逐个尝试，返回 (答案, 实际使用的模型)；全部失败抛出最后一个异常。&quot;&quot;&quot;
-    last_error: Exception | None = None
-    for slug in ROUTE_TABLE.get(task_type, ROUTE_TABLE[&quot;chat&quot;]):
-        try:
-            resp = client.chat.completions.create(
-                model=slug,
-                messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}],
-                timeout=timeout_s,
-            )
-            return (resp.choices[0].message.content or &quot;&quot;, slug)
-        except Exception as exc:  # 单个候选失败：记账、换下一个
-            last_error = exc
-            print(f&quot;  [fallback] {slug} 失败（{type(exc).__name__}），尝试下一候选&quot;)
-    raise RuntimeError(&quot;候选链上所有模型均失败&quot;) from last_error
-
-
-if __name__ == &quot;__main__&quot;:
-    for task_type, question in [
-        (&quot;chat&quot;, &quot;用一句话解释什么是幂等键。&quot;),
-        (&quot;hard_reasoning&quot;, &quot;三容器均分 8 升水的倒水问题有解吗？给出推理。&quot;),
-        (&quot;budget_rag&quot;, &quot;从下面片段中抽取公司名与日期：片段……&quot;),
-    ]:
-        try:
-            answer, slug = unified_ask(question, task_type)
-        except RuntimeError as exc:
-            print(f&quot;[{task_type}] 全链失败：{exc}&quot;)
-            continue
-        print(f&quot;[{task_type}] 由 {slug} 回答：{answer[:80]}…&quot;)
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：主流程只有三个出口——缓存命中（零成本）、闸门放行（一次 mini 调用）、升级重答（两次调用），每个出口都写账本，这正是图 16-1 的代码化。两处值得注意的设计：其一，升级时把 mini 草稿附在提示里让 frontier"核查而非重做"，既省 token 又给了 frontier 对照面；其二，frontier 的最终答案同样写进缓存，困难请求的成果下次直接复用——缓存不挑出处。演示区保留 <code>try/except</code> 的错误路径：单条请求失败打印异常继续下一条，这是批处理演示的诚实写法（呼应<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）。温度取 0.2 是为了答案可复现、利于缓存命中；如果你的场景偏创意生成，调高温度的同时要接受相似缓存命中率的下降。</p>
+</blockquote>
+<h3 id="1662-框架差异速览openrouter-风格多模型网关">16.6.2 框架差异速览（OpenRouter 风格多模型网关）</h3>
+<p>OpenRouter 的价值是把"多厂商、多档位"收敛成一个 OpenAI 兼容接口：<code>base_url</code> 指向网关，模型用"厂商/模型名"字符串表达，换模型只是换一个字符串（模型字符串以网关当期目录为准）。把 16.6.1 的级联搬到这类网关上时，各能力的对应关系如下：</p>
+<table>
+<thead>
+<tr>
+<th>16.6.1 中的能力</th>
+<th>网关侧对应做法</th>
+<th>一句话差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>多模型统一调用</td>
+<td><code>client = OpenAI(base_url="https://openrouter.ai/api/v1")</code></td>
+<td>模型字段换成 <code>厂商/模型名</code> 字符串</td>
+</tr>
+<tr>
+<td>分级模型池 PRICES</td>
+<td>网关统一账单、按 key 用量统计</td>
+<td>记账从本地账本上移到网关账单</td>
+</tr>
+<tr>
+<td>级联降档/升级</td>
+<td>路由表按任务类型选档（如 <code>hard_reasoning</code> 链）</td>
+<td>选档策略从代码内嵌移到网关配置</td>
+</tr>
+<tr>
+<td>失败转移</td>
+<td>候选链逐个 fallback（客户端侧或网关服务端 <code>models</code> 数组）</td>
+<td>沿候选列表降级，语义与 try/except 相同</td>
+</tr>
+<tr>
+<td>缓存与置信闸门</td>
+<td>网关不提供，仍需客户端实现</td>
+<td>缓存与判据留在业务侧（网关只管"选谁"）</td>
+</tr>
+</tbody>
+</table>
 <h3 id="1663-生产化改造清单">16.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：级联每级独立超时与重试预算；判据解析失败按"不达标"处理（宁升级不误放）；fail 事件计数上报。</li>
@@ -503,9 +410,9 @@ if __name__ == &quot;__main__&quot;:
 <li>LiteLLM：<a href="https://www.litellm.ai/customers">客户案例页</a>（NVIDIA / Netflix / Okta / AT&amp;T）；开源仓库 <a href="https://github.com/BerriAI/litellm">github.com/BerriAI/litellm</a>。</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch15-agent-communication-a2a.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第15章 智能体间通信</span></a><a class="pager" href="../chapters/ch17-reasoning-techniques.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第17章 推理技术</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#161-模式概述">16.1 模式概述</a></li><li class="toc-l3"><a href="#1611-问题背景为什么需要这个模式">16.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1612-核心机制它如何工作">16.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#162-起源与历史最早是谁提出来的">16.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#163-发挥的作用为什么重要">16.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#164-实际应用与案例">16.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#165-深度讲解">16.5 深度讲解</a></li><li class="toc-l3"><a href="#1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</a></li><li class="toc-l3"><a href="#1652-级联与置信度升级frugalgpt-的账怎么算">16.5.2 级联与置信度升级：FrugalGPT 的账怎么算</a></li><li class="toc-l3"><a href="#1653-模型分级frontier-standard-mini-的档位设计">16.5.3 模型分级：frontier / standard / mini 的档位设计</a></li><li class="toc-l3"><a href="#1654-缓存命中率经济学">16.5.4 缓存命中率经济学</a></li><li class="toc-l3"><a href="#1655-上下文瘦身的优先级先历史再工具再检索">16.5.5 上下文瘦身的优先级：先历史、再工具、再检索</a></li><li class="toc-l3"><a href="#1656-批处理与错峰">16.5.6 批处理与错峰</a></li><li class="toc-l3"><a href="#1657-失效模式反模式与何时不要用">16.5.7 失效模式、反模式与何时不要用</a></li><li class="toc-l2"><a href="#166-工程落地实践代码示例">16.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1661-框架无关实现完整可运行">16.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1662-框架集成实现openai-兼容客户端openrouter-风格的多模型统一路由">16.6.2 框架集成实现（OpenAI 兼容客户端：OpenRouter 风格的多模型统一路由）</a></li><li class="toc-l3"><a href="#1663-生产化改造清单">16.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#167-概览-核心要点-结论">16.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1671-本章小结">16.7.1 本章小结</a></li><li class="toc-l3"><a href="#1672-核心要点">16.7.2 核心要点</a></li><li class="toc-l3"><a href="#1673-结论">16.7.3 结论</a></li><li class="toc-l2"><a href="#168-延伸阅读与参考链接">16.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#161-模式概述">16.1 模式概述</a></li><li class="toc-l3"><a href="#1611-问题背景为什么需要这个模式">16.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1612-核心机制它如何工作">16.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#162-源起它从哪里来">16.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#163-发挥的作用为什么重要">16.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#164-实际应用与案例">16.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#165-深度讲解">16.5 深度讲解</a></li><li class="toc-l3"><a href="#1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</a></li><li class="toc-l3"><a href="#1652-级联与置信度升级frugalgpt-的账怎么算">16.5.2 级联与置信度升级：FrugalGPT 的账怎么算</a></li><li class="toc-l3"><a href="#1653-模型分级frontier-standard-mini-的档位设计">16.5.3 模型分级：frontier / standard / mini 的档位设计</a></li><li class="toc-l3"><a href="#1654-缓存命中率经济学">16.5.4 缓存命中率经济学</a></li><li class="toc-l3"><a href="#1655-上下文瘦身的优先级先历史再工具再检索">16.5.5 上下文瘦身的优先级：先历史、再工具、再检索</a></li><li class="toc-l3"><a href="#1656-批处理与错峰">16.5.6 批处理与错峰</a></li><li class="toc-l3"><a href="#1657-失效模式反模式与何时不要用">16.5.7 失效模式、反模式与何时不要用</a></li><li class="toc-l3"><a href="#1658-怎么用运用判断">16.5.8 怎么用：运用判断</a></li><li class="toc-l2"><a href="#166-工程落地核心源码与讲解">16.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1661-框架无关实现片段式">16.6.1 框架无关实现（片段式）</a></li><li class="toc-l3"><a href="#1662-框架差异速览openrouter-风格多模型网关">16.6.2 框架差异速览（OpenRouter 风格多模型网关）</a></li><li class="toc-l3"><a href="#1663-生产化改造清单">16.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#167-概览-核心要点-结论">16.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1671-本章小结">16.7.1 本章小结</a></li><li class="toc-l3"><a href="#1672-核心要点">16.7.2 核心要点</a></li><li class="toc-l3"><a href="#1673-结论">16.7.3 结论</a></li><li class="toc-l2"><a href="#168-延伸阅读与参考链接">16.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

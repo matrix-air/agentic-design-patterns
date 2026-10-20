@@ -62,75 +62,44 @@
 <p>MCP 与<strong>工具调用/函数调用（function calling）</strong>最容易被混为一谈，但两者处在不同层次：function calling 是模型与推理服务之间的接口约定，回答"模型如何表达'我想调一个函数'"；MCP 是宿主应用与工具提供方之间的协议约定，回答"这些函数从哪来、怎么发现、怎么鉴权、怎么安全地执行"。MCP 定义的工具最终仍要转换成模型上下文里的 function calling schema 才能被模型"看见"。二者是互补的上下层，本书<a href="../chapters/ch03-parallelization.html">第 3 章</a>讨论的工具使用模式讲的是上层语义，MCP 讲的是接入层标准化。</p>
 <p>与<strong>智能体间协作协议（A2A，Agent2Agent）</strong>的分工同样清晰：MCP 解决"智能体↔工具/数据"的纵向连接，A2A 解决"智能体↔智能体"的横向协作。Google 于 2025 年 4 月 9 日发布的 A2A 协议在<a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">官方博客</a>中明确把自己定位为"MCP 的补充而非竞争"；此后 A2A 也进入 Linux 基金会中立治理，与 MCP 同属一个开源生态。实践中常见组合是：一个库存智能体用 MCP 读数据库，发现缺货后通过 A2A 委托采购智能体下单。</p>
 <p>与其他模式的组合：MCP 为<strong>路由</strong>提供动态能力清单，为<strong>多智能体协作</strong>提供统一工具层；<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>的超时、重试、熔断策略落在 MCP 客户端的调用路径上；而工具调用 trace 又是<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>监控模式最重要的信号源之一。</p>
-<h2 id="102-起源与历史最早是谁提出来的">10.2 起源与历史：最早是谁提出来的</h2>
-<p>MCP 的直接思想源头是 LSP，而 LSP 的"协议解耦"思想又可以追溯到更早的客户端-服务器与中间件传统。下表给出从思想源头到事实标准的关键节点。</p>
+<h2 id="102-源起它从哪里来">10.2 源起：它从哪里来</h2>
+<p>MCP 由 Anthropic 于 2024 年 11 月 25 日开源发布，定位"AI 应用的 USB-C"，要解决的正是本章开头 M 个应用接 N 个数据源的集成爆炸——最坏要写 M×N 份胶水代码。直接思想模板是微软 2016 年的 LSP——同类 M×N 困境正是靠"能力实现一次、协议通信一次"塌缩成 M+N 的。此后一年协议走了三步：极简规范站稳；2025 年 3 月起补齐生产化能力，OpenAI 与 Google 先后支持；2025 年末捐入 Linux 基金会完成治理中立，与 LSP、Kubernetes 的"协议先行、治理随后"如出一辙。版本演化见 10.5.8；关键节点如下。</p>
 <table>
 <thead>
 <tr>
 <th>年份月</th>
 <th>事件</th>
-<th>提出者/机构</th>
 <th>出处</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>2016</td>
-<td>发布语言服务器协议 LSP，用 M+N 方案终结编辑器×语言的 M×N 集成，为 MCP 提供直接模板</td>
-<td>Microsoft</td>
+<td>LSP 发布，用 M+N 方案终结编辑器×语言的 M×N 集成，MCP 的先例与模板</td>
 <td><a href="https://microsoft.github.io/language-server-protocol/">LSP 规范与官网</a></td>
 </tr>
 <tr>
-<td>2024-11-05</td>
-<td>MCP 规范初版定稿：stdio 与 HTTP+SSE 两种传输</td>
-<td>Anthropic</td>
-<td><a href="https://modelcontextprotocol.io/specification/2024-11-05">MCP 规范 v2024-11-05</a></td>
-</tr>
-<tr>
 <td>2024-11-25</td>
-<td>MCP 开源发布，同时放出规范与 Python/TypeScript SDK，定位"AI 应用的 USB-C"</td>
-<td>Anthropic</td>
+<td>Anthropic 开源 MCP，规范与双语言 SDK 同步放出</td>
 <td><a href="https://www.anthropic.com/news/model-context-protocol">Anthropic 官方公告</a></td>
 </tr>
 <tr>
 <td>2025-03-26</td>
-<td>规范大版本更新：Streamable HTTP 取代 HTTP+SSE，引入 OAuth 2.1 授权框架与工具注解（read-only/destructive 等）</td>
-<td>Anthropic</td>
-<td><a href="https://modelcontextprotocol.io/specification/2025-03-26">MCP 规范 v2025-03-26</a></td>
-</tr>
-<tr>
-<td>2025-03</td>
-<td>OpenAI 宣布支持 MCP（Agents SDK 等），竞对采用竞对主导的协议</td>
-<td>OpenAI</td>
-<td><a href="https://openai.github.io/openai-agents-python/mcp/">OpenAI Agents SDK MCP 文档</a></td>
-</tr>
-<tr>
-<td>2025-04</td>
-<td>Google DeepMind 宣布在 Gemini 生态支持 MCP，MCP 成为跨厂商事实标准</td>
-<td>Google DeepMind</td>
-<td><a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">A2A 发布公告（2025-04-09）</a></td>
-</tr>
-<tr>
-<td>2025-06-18</td>
-<td>规范更新：引入 Elicitation、结构化工具输出（structuredContent）、强制 RFC 8707 资源指示符、扩充安全考量（混淆代理防护）</td>
-<td>Anthropic</td>
-<td><a href="https://modelcontextprotocol.io/specification/2025-06-18">MCP 规范 v2025-06-18</a></td>
+<td>Streamable HTTP 取代 HTTP+SSE，引入 OAuth 2.1 与工具注解；OpenAI 随即宣布支持</td>
+<td><a href="https://modelcontextprotocol.io/specification/2025-03-26">规范 v2025-03-26</a> / <a href="https://openai.github.io/openai-agents-python/mcp/">OpenAI Agents SDK MCP 文档</a></td>
 </tr>
 <tr>
 <td>2025-11-25</td>
 <td>一周年版规范：异步操作、无状态服务器、服务器身份、官方扩展机制</td>
-<td>Anthropic（MCP 维护团队）</td>
-<td><a href="https://modelcontextprotocol.io/specification/2025-11-25">MCP 规范 v2025-11-25</a> 及 Anthropic 公告</td>
+<td><a href="https://modelcontextprotocol.io/specification/2025-11-25">规范 v2025-11-25</a></td>
 </tr>
 <tr>
 <td>2025-12-09</td>
-<td>Anthropic 将 MCP 捐赠给 Linux 基金会旗下 Agentic AI Foundation（Anthropic、Block、OpenAI 共同创立），完成从中立项目到中立治理的转变</td>
-<td>Anthropic / Linux Foundation</td>
-<td><a href="https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation">双方官方公告</a></td>
+<td>捐入 Linux 基金会 Agentic AI Foundation（Anthropic、Block、OpenAI 共同创立）</td>
+<td><a href="https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation">捐赠公告</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络可概括为三段。第一段（2024 年末）"提出与站稳"：MCP 从 Anthropic 的内部工具集成实践走出，初版规范刻意极简——只有 stdio 与 HTTP+SSE 传输和三类服务端能力，先让生态跑起来。第二段（2025 年 3 至 6 月）"生产化"：Streamable HTTP 让服务器可以部署在标准负载均衡与无状态网关之后，OAuth 2.1 与 RFC 8707 补上企业级授权；OpenAI 与 Google DeepMind 先后宣布支持，协议完成从"Anthropic 的协议"到"行业协议"的跃迁。第三段（2025 年末）"制度化"：规范加入异步任务与官方扩展，项目捐入 Linux 基金会，治理不再绑定单一厂商——"协议先行、治理随后"，与 LSP、Kubernetes 的路径如出一辙。</p>
 <h2 id="103-发挥的作用为什么重要">10.3 发挥的作用：为什么重要</h2>
 <p>第一，它改写了智能体工具层的经济学。M×N 塌缩为 M+N 之后，工具开发者只需实现一次服务器，就能被 Claude、Cursor、VS Code、ChatGPT 等所有支持 MCP 的宿主使用；应用开发者只需实现一次客户端，就能接入整个服务器生态。Anthropic 在<a href="https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation">捐赠公告</a>中给出的量级是：一年内活跃公开 MCP 服务器超过一万个，Python 与 TypeScript SDK 月下载量合计超过九千七百万——<strong>接入越多、生态越大、新接入的边际成本越低的正反馈已经成形</strong>。</p>
 <p>第二，它把"能力发现"变成运行时行为而非编译期决策。智能体可在启动甚至运行中枚举工具，为动态场景（权限变化、新数据源上线、按任务裁剪工具集）提供抓手，也催生了工具检索技术——Anthropic 2025 年推出的 Tool Search 与程序化工具调用，正是为工具数量膨胀到成百上千时控制上下文开销而生。</p>
@@ -175,85 +144,49 @@
 <p>实践中反复出现五类反模式。一是<strong>工具海洋</strong>：把上百个工具全量注入上下文，模型选错率与 token 成本同步飙升——对策是按任务裁剪、分层检索、用工具命名空间分组。二是<strong>粗粒度巨石工具</strong>：<code>do_everything(step: str)</code> 把业务流程藏在服务器的自由文本里，模型失去中途纠错能力，失败只能整体重来——<strong>工具粒度应与"模型可判断的决策单元"对齐</strong>。三是<strong>无超时调用</strong>：工具 hang 住导致整个智能体循环卡死，MCP 客户端必须对每次调用设置超时并定义取消语义。四是<strong>把服务器当数据库直连层</strong>：暴露裸 SQL 执行工具而不加白名单与只读约束，等于把注入风险从应用层搬到了模型层。五是<strong>忽略版本协商</strong>：初始化阶段不锁定协议版本，服务器升级后宿主行为悄然改变——生产环境应显式固定版本并在变更时走回归测试。</p>
 <h3 id="1057-何时不要用-mcp">10.5.7 何时不要用 MCP</h3>
 <p>以下场景直接用更简单的方案更好：单应用自用的三五个内部函数，进程内注册加 function calling 即可；对延迟极敏感的内部调用路径，JSON-RPC 序列化与进程边界开销不可忽略；强 schema 契约的核心服务间通信（支付、订单），RPC 框架与 API 网关远比 MCP 成熟。判别标准一句话：<strong>当"多宿主复用"或"动态发现"是真实需求时才上 MCP，否则它是负资产</strong>。</p>
-<h2 id="106-工程落地实践代码示例">10.6 工程落地：实践代码示例</h2>
-<h3 id="1061-框架无关实现完整可运行">10.6.1 框架无关实现（完整可运行）</h3>
-<p>最小 MCP 服务器，使用官方 Python SDK（PyPI 包名 <code>mcp</code>，本节代码在 <strong>1.28.1</strong> 版实测通过；安装：<code>pip install "mcp[cli]"</code>）。三个工具分别覆盖成功路径、业务失败路径与参数校验路径。</p>
-<pre><code class="language-python">&quot;&quot;&quot;最小 MCP 服务器：三个工具演示成功、业务失败与参数校验路径。
+<h3 id="1058-版本演化两笔定量账与被统一放大的攻击面">10.5.8 版本演化、两笔定量账与被统一放大的攻击面</h3>
+<p>规范的四个版本正好对应部署形态的四个阶段，这是读 MCP 演化最省力的坐标系。v2024-11-05 只有 stdio 与 HTTP+SSE 两种传输——原型与本地工具阶段；v2025-03-26 用 Streamable HTTP 取代 HTTP+SSE 并引入 OAuth 2.1——服务器从"开发者机器上的脚本"走向负载均衡与网关后面的正式服务；v2025-06-18 加入 Elicitation、结构化工具输出（structuredContent）与强制 RFC 8707 资源指示符，扩充混淆代理防护——企业多租户阶段；v2025-11-25 的异步操作、无状态服务器与服务器身份，配上 2025-12-09 捐入 Linux 基金会——基础设施与中立治理阶段。由此可得一条评审方法论：<strong>规范的每个新字段都是上一阶段真实故障的回应</strong>，评估是否跟进升级时，先问"它堵的是哪个洞、我们有没有这个洞"。</p>
+<p>先算第一笔账：M×N 到 M+N 的边际成本。设 10 个宿主接 8 个数据源：定制集成最坏 10×8=80 份"鉴权+schema+解析"胶水代码；MCP 模式下是 10 份客户端 + 8 份服务器 = 18 份，直接省掉 77.5%。这笔账真正的锋利处在边际项：第 9 个数据源上线，定制模式要再写 10 份（每个宿主各一遍），MCP 模式只写 1 份服务器；第 11 个宿主接入，定制模式再加 8 份，MCP 只加 1 份客户端——<strong>边际成本从"对方阵营的规模"变成恒定的 1</strong>。当然要按 10.5.1 的限定反向记账：鉴权、语义质量与运维仍按 N 线性发生，M+N 省的是集成开发，不是治理。</p>
+<p>再算第二笔账：规模本身。Anthropic 在 2025-12-09 <a href="https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation">捐赠公告</a>中给出的量级是：一年内活跃公开 MCP 服务器超过一万个，Python 与 TypeScript SDK 月下载量合计超过九千七百万。这两个数字的另一面就是 10.5.1 的第三项成本：一万个服务器意味着一万个供应链信任决策——规模让"逐个人工审查"彻底失效，治理必须自动化。</p>
+<p>第三个观察最反直觉：大家默认"协议统一=更安全"（边界清晰、审计点集中），2025 年的安全研究补上了另一半真相——<strong>协议统一的同时，攻击面也统一了</strong>。Invariant Labs 2025 年 4 月 1 日发布的<a href="https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks">工具投毒攻击研究</a>（tool poisoning）演示了三条路径：其一，恶意指令藏在工具描述里——用户不可见、模型可见，在其 Cursor 实验中，一个假"加法"工具的描述诱导模型读取 <code>~/.ssh/id_rsa</code> 等敏感文件并经参数外发；其二，"rug pull"——服务器在用户审批通过后悄悄改写描述；其三，跨服务器工具遮蔽（tool shadowing）——恶意服务器借自己的描述改写可信服务器工具的行为，使邮件全部改道攻击者地址。结构性原因值得写在墙上：工具描述会进入模型上下文，而协议层管不到进入上下文之后的语义；M×N 时代攻击者要逐个宿主定制攻击，MCP 时代<strong>一次投毒、全宿主生效</strong>——一个恶意服务器可以被所有宿主加载。对策即 10.5.4 的宿主策略：定义变更触发重审、版本锁定与签名、注入检测、高危组合拦截。</p>
+<p>最后是四个开始失效的边界。其一，M 或 N 很小：单应用自用三五个函数时协议是负资产（详见 10.5.7）。其二，工具数量膨胀到数十个以上：全部定义常驻上下文，token 成本与选错率同步上升，必须转入裁剪与检索治理（10.5.6 的工具海洋）。其三，延迟敏感的进程内热路径：多一跳 JSON-RPC 序列化加进程（或网络）边界的开销不可忽略。其四，开放生态且治理能力跟不上服务器规模时，上面那条被统一的攻击面会反过来惩罚接入速度——<strong>先建治理，再扩生态</strong>。</p>
+<h3 id="1059-怎么用运用判断">10.5.9 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：出现以下任一特征，MCP 值得上——同一批能力要被至少两个宿主（如自研平台与编码助手）复用；能力清单需要运行时动态变化（新数据源上线、按任务裁剪权限）；工具要作为团队资产治理（审计、权限、检索、评审）。三条全不沾，就不要引入。</p>
+<p><strong>与最近替代方案的对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>与 MCP 的关键差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>进程内 function calling（直接注册函数）</td>
+<td>零协议开销、同进程信任；但能力绑定单一应用，换宿主全部重写，回到 M×N</td>
+</tr>
+<tr>
+<td>OpenAPI/REST 直连</td>
+<td>面向人的 API 契约很成熟；但发现、鉴权、调用语义要每对"应用×API"自己粘合，且没有工具注解与确认语义</td>
+</tr>
+<tr>
+<td>自建插件系统/网关</td>
+<td>可深度定制；但等于为本组织重新发明一遍 MCP，还失去公共服务器生态</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：第一步，挑最想跨宿主复用的 3-5 个能力，用官方 SDK 的 FastMCP 装饰器包成 stdio 服务器——直接以 10.6.1 的三片段代码起步，半天内可跑通。第二步，逐条打磨工具描述（它会进 prompt），标注只读/破坏性，跑一次"模型会不会选错、传错参"的最小评测。第三步，需要远程共享时再迁 Streamable HTTP，并同步补齐 10.6.3 清单里的 OAuth 2.1、超时与审计三件——顺序不能反：先治理，后扩张。</p>
+<h2 id="106-工程落地核心源码与讲解">10.6 工程落地：核心源码与讲解</h2>
+<p>本节用官方 Python SDK（PyPI 包名 <code>mcp</code>，本章代码在 <strong>1.28.1</strong> 实测；安装：<code>pip install "mcp[cli]"</code>）搭建一个"同一文件内自举"的端到端演示：脚本运行时把自身作为 stdio 子进程拉起为 MCP 服务器，再以客户端身份完成握手、发现、四类调用路径与资源读取——单条命令 <code>python ch10_mcp_e2e.py</code> 跑通协议全生命周期。主程序拆为三片，<strong>按序拼接到同一个文件里就是完整可运行程序</strong>。</p>
+<h3 id="1061-核心源码按序拼接即完整可运行">10.6.1 核心源码（按序拼接即完整可运行）</h3>
+<p><strong>片段一：服务器侧——两个业务工具覆盖成功、业务失败与策略闸门路径。</strong></p>
+<pre><code class="language-python">&quot;&quot;&quot;MCP 端到端演示：同一文件内自举 FastMCP 服务器 + 客户端完整生命周期。
 
-运行方式（作为 stdio 服务器被宿主拉起）：
-    python ch10_mcp_server.py
-也可用官方调试器：
-    mcp dev ch10_mcp_server.py
-依赖：pip install &quot;mcp[cli]&quot;   # 在 mcp==1.28.1 上实测
-&quot;&quot;&quot;
-from typing import Any
-
-from mcp.server.fastmcp import FastMCP
-
-mcp = FastMCP(&quot;demo-tools&quot;, instructions=&quot;演示用工具集：查询订单、退款、单位换算。&quot;)
-
-
-@mcp.tool()
-def get_order(order_id: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;按订单号查询订单状态。
-
-    Args:
-        order_id: 订单号，格式为 ORD-数字。
-    &quot;&quot;&quot;
-    # 业务失败路径：不抛异常，而是返回结构化的&quot;业务错误&quot;，
-    # 让模型能读到原因并决定下一步（重试/道歉/换参数）。
-    if not order_id.startswith(&quot;ORD-&quot;):
-        return {&quot;ok&quot;: False, &quot;error&quot;: f&quot;订单号格式非法: {order_id!r}，应为 ORD-&lt;数字&gt;&quot;}
-    if order_id == &quot;ORD-404&quot;:
-        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;订单不存在，请确认订单号&quot;}
-    return {&quot;ok&quot;: True, &quot;order_id&quot;: order_id, &quot;status&quot;: &quot;shipped&quot;, &quot;amount_cny&quot;: 129.0}
-
-
-@mcp.tool()
-def refund(order_id: str, confirm: bool = False) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;为订单退款（破坏性操作：必须显式 confirm=True 才会执行）。
-
-    Args:
-        order_id: 订单号。
-        confirm: 二次确认开关，模拟&quot;人工确认&quot;闸门。
-    &quot;&quot;&quot;
-    if not confirm:
-        # 策略闸门：破坏性操作未确认时拒绝执行，返回可读原因。
-        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;退款是破坏性操作，必须 confirm=True 才能执行&quot;}
-    if not order_id.startswith(&quot;ORD-&quot;):
-        return {&quot;ok&quot;: False, &quot;error&quot;: f&quot;订单号格式非法: {order_id!r}&quot;}
-    return {&quot;ok&quot;: True, &quot;refunded&quot;: order_id, &quot;amount_cny&quot;: 129.0}
-
-
-@mcp.tool()
-def convert_temperature(celsius: float) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;摄氏温度转华氏温度。参数校验失败时抛 ValueError（协议层工具错误路径）。
-
-    Args:
-        celsius: 摄氏温度，必须在 -273.15 到 10000 之间。
-    &quot;&quot;&quot;
-    if celsius &lt; -273.15:
-        # 抛异常 =&gt; MCP 协议返回 isError=True 的工具结果，
-        # 模型会看到错误文本而不是令宿主崩溃。
-        raise ValueError(f&quot;温度低于绝对零度: {celsius}&quot;)
-    return {&quot;celsius&quot;: celsius, &quot;fahrenheit&quot;: round(celsius * 9 / 5 + 32, 2)}
-
-
-if __name__ == &quot;__main__&quot;:
-    # stdio 传输：宿主以子进程方式拉起本脚本，经标准输入输出交换 JSON-RPC。
-    mcp.run(transport=&quot;stdio&quot;)
-</code></pre>
-<h3 id="1062-框架集成实现官方-sdk同文件内自举服务器客户端端到端演示">10.6.2 框架集成实现（官方 SDK：同文件内自举"服务器+客户端"端到端演示）</h3>
-<p>下面这个脚本把服务器与 MCP 客户端装进同一个文件：运行时把自身作为 stdio 子进程拉起，完成握手、工具发现、成功调用、业务失败、协议错误与资源读取，在 <code>mcp==1.28.1</code> 实测可直接 <code>python ch10_mcp_e2e.py</code> 运行；最后一段（可选）把 MCP 工具接到真实模型做一次最小的"模型选工具"循环，需配置环境变量，未配置自动跳过。</p>
-<pre><code class="language-python">&quot;&quot;&quot;MCP 端到端演示：同一文件内实现 FastMCP 服务器 + 客户端自举调用。
-
-依赖：pip install &quot;mcp[cli]&quot;   # 在 mcp==1.28.1 上实测通过
+依赖：pip install &quot;mcp[cli]&quot;    # 本章代码在 mcp==1.28.1 实测通过
 运行：python ch10_mcp_e2e.py
-（可选的模型循环需要环境变量 AGENT_LLM_API_KEY，未设置则跳过该步。）
 &quot;&quot;&quot;
 import asyncio
 import json
-import os
 import sys
 from typing import Any
 
@@ -261,33 +194,35 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.server.fastmcp import FastMCP
 
-# ---------- 第一部分：服务器定义（与 10.6.1 相同的工具集） ----------
-mcp = FastMCP(&quot;demo-tools&quot;)
+mcp = FastMCP(&quot;demo-tools&quot;, instructions=&quot;演示工具集：查询订单、退款、温度换算。&quot;)
 
 
 @mcp.tool()
 def get_order(order_id: str) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;按订单号查询订单状态。order_id 需以 ORD- 开头。&quot;&quot;&quot;
+    &quot;&quot;&quot;按订单号查询订单状态。order_id 以 ORD- 开头；ORD-404 是预置的&quot;不存在&quot;样例。&quot;&quot;&quot;
     if not order_id.startswith(&quot;ORD-&quot;):
-        return {&quot;ok&quot;: False, &quot;error&quot;: f&quot;订单号格式非法: {order_id!r}&quot;}
+        return {&quot;ok&quot;: False, &quot;error&quot;: f&quot;订单号格式非法: {order_id!r}&quot;}  # 业务失败：返回结构化错误而非抛异常
     if order_id == &quot;ORD-404&quot;:
-        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;订单不存在&quot;}
-    return {&quot;ok&quot;: True, &quot;order_id&quot;: order_id, &quot;status&quot;: &quot;shipped&quot;}
+        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;订单不存在，请确认订单号&quot;}
+    return {&quot;ok&quot;: True, &quot;order_id&quot;: order_id, &quot;status&quot;: &quot;shipped&quot;, &quot;amount_cny&quot;: 129.0}
 
 
 @mcp.tool()
 def refund(order_id: str, confirm: bool = False) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;退款（破坏性操作，必须 confirm=True）。&quot;&quot;&quot;
+    &quot;&quot;&quot;退款（破坏性操作：必须显式 confirm=True 才执行，模拟人工确认闸门）。&quot;&quot;&quot;
     if not confirm:
-        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;退款必须 confirm=True&quot;}
+        return {&quot;ok&quot;: False, &quot;error&quot;: &quot;退款是破坏性操作，必须 confirm=True 才能执行&quot;}  # 策略闸门
     if not order_id.startswith(&quot;ORD-&quot;):
         return {&quot;ok&quot;: False, &quot;error&quot;: f&quot;订单号格式非法: {order_id!r}&quot;}
-    return {&quot;ok&quot;: True, &quot;refunded&quot;: order_id}
-
-
-@mcp.tool()
+    return {&quot;ok&quot;: True, &quot;refunded&quot;: order_id, &quot;amount_cny&quot;: 129.0}
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一片定义 MCP 实例与两个业务工具。<code>FastMCP</code> 用装饰器把普通函数变成 MCP 工具：函数签名与类型标注自动转成 JSON Schema 参数定义，docstring 自动成为工具描述——而<strong>工具描述是 prompt 的一部分</strong>（10.5.3），要像评审提示词一样评审它。两个工具刻意示范了同一种错误哲学：<strong>业务失败不抛异常，返回结构化错误</strong>——模型能读到原因并自行决定重试、道歉还是换参数；若改成抛异常，客户端只会拿到 <code>isError=True</code> 的失败标记，丢失决策信息。<code>refund</code> 的 <code>confirm</code> 参数是"人工确认闸门"的最小实现：破坏性操作缺确认就拒绝并说明放行条件，对应 10.5.4 的策略关卡。读者适配自己场景时只改函数体与 docstring，协议层一行不用动。</p>
+</blockquote>
+<p><strong>片段二：资源原语与客户端侧——协议生命周期与四类调用路径的完整走查。</strong></p>
+<pre><code class="language-python">@mcp.tool()
 def convert_temperature(celsius: float) -&gt; dict[str, Any]:
-    &quot;&quot;&quot;摄氏转华氏。低于绝对零度抛 ValueError。&quot;&quot;&quot;
+    &quot;&quot;&quot;摄氏转华氏。低于绝对零度抛 ValueError =&gt; 协议层工具错误（isError=True）。&quot;&quot;&quot;
     if celsius &lt; -273.15:
         raise ValueError(f&quot;温度低于绝对零度: {celsius}&quot;)
     return {&quot;celsius&quot;: celsius, &quot;fahrenheit&quot;: round(celsius * 9 / 5 + 32, 2)}
@@ -295,119 +230,86 @@ def convert_temperature(celsius: float) -&gt; dict[str, Any]:
 
 @mcp.resource(&quot;config://app&quot;)
 def get_config() -&gt; str:
-    &quot;&quot;&quot;应用配置资源：宿主可直接读取，无需模型决策。&quot;&quot;&quot;
+    &quot;&quot;&quot;应用配置资源：宿主直接读取，不经模型决策。&quot;&quot;&quot;
     return json.dumps({&quot;env&quot;: &quot;demo&quot;, &quot;max_refund_cny&quot;: 500}, ensure_ascii=False)
 
 
-# ---------- 第二部分：客户端调用流程 ----------
 async def client_demo() -&gt; None:
     # 把本文件作为 stdio 服务器子进程拉起（生产中服务器是独立进程/独立服务）。
-    server_params = StdioServerParameters(command=sys.executable, args=[__file__, &quot;--serve&quot;])
-    async with stdio_client(server_params) as (read, write):
+    params = StdioServerParameters(command=sys.executable, args=[__file__, &quot;--serve&quot;])
+    async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
-            # 1) 初始化：协议版本与能力协商。
-            init = await session.initialize()
+            init = await session.initialize()                # 1) 初始化：协议版本与能力协商
             print(f&quot;[握手] 协议版本={init.protocolVersion} 服务器={init.serverInfo.name}&quot;)
-
-            # 2) 发现：动态枚举工具与资源。
-            tools = await session.list_tools()
+            tools = await session.list_tools()               # 2) 发现：动态枚举能力清单
             print(f&quot;[发现] 工具: {[t.name for t in tools.tools]}&quot;)
-
-            # 3) 成功路径。
             r1 = await session.call_tool(&quot;get_order&quot;, {&quot;order_id&quot;: &quot;ORD-1001&quot;})
-            print(f&quot;[成功] get_order -&gt; {r1.content[0].text}&quot;)
-
-            # 4) 业务失败路径：工具正常返回，但业务层报错（isError=False）。
+            print(f&quot;[成功] {r1.content[0].text}&quot;)
             r2 = await session.call_tool(&quot;get_order&quot;, {&quot;order_id&quot;: &quot;ORD-404&quot;})
-            print(f&quot;[业务失败] get_order -&gt; {r2.content[0].text}&quot;)
-
-            # 5) 协议工具错误路径：工具抛异常 =&gt; isError=True。
+            print(f&quot;[业务失败] {r2.content[0].text}&quot;)        # isError=False：业务错误随文本返回
             r3 = await session.call_tool(&quot;convert_temperature&quot;, {&quot;celsius&quot;: -300})
-            print(f&quot;[工具错误] isError={r3.isError} -&gt; {r3.content[0].text}&quot;)
-
-            # 6) 策略闸门路径：破坏性操作未经确认被拒，随后确认通过。
+            print(f&quot;[工具错误] isError={r3.isError} {r3.content[0].text}&quot;)
             r4 = await session.call_tool(&quot;refund&quot;, {&quot;order_id&quot;: &quot;ORD-1001&quot;})
-            print(f&quot;[未确认] refund -&gt; {r4.content[0].text}&quot;)
+            print(f&quot;[未确认] {r4.content[0].text}&quot;)
             r5 = await session.call_tool(&quot;refund&quot;, {&quot;order_id&quot;: &quot;ORD-1001&quot;, &quot;confirm&quot;: True})
-            print(f&quot;[已确认] refund -&gt; {r5.content[0].text}&quot;)
-
-            # 7) 资源读取：不经模型，宿主直接消费。
-            resources = await session.list_resources()
-            if resources.resources:
-                uri = resources.resources[0].uri
-                res = await session.read_resource(uri)
-                print(f&quot;[资源] {uri} -&gt; {res.contents[0].text}&quot;)
-
-            # 8)（可选）模型选工具回路：演示 10.5.3 的&quot;两道翻译&quot;。
-            #    第一道：MCP 工具定义 -&gt; function calling schema（自动转换）；
-            #    第二道：模型的 tool call -&gt; session.call_tool -&gt; 结果回填给模型。
-            if os.environ.get(&quot;AGENT_LLM_API_KEY&quot;):
-                mcp_tool = next(t for t in tools.tools if t.name == &quot;get_order&quot;)
-                oa_tool = {
-                    &quot;type&quot;: &quot;function&quot;,
-                    &quot;function&quot;: {
-                        &quot;name&quot;: mcp_tool.name,
-                        &quot;description&quot;: mcp_tool.description or &quot;&quot;,
-                        &quot;parameters&quot;: mcp_tool.inputSchema,
-                    },
-                }
-                messages: list[dict[str, Any]] = [
-                    {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;帮我查一下订单 ORD-404 的状态。&quot;}
-                ]
-                first = llm_chat(messages, tools=[oa_tool])
-                if first.tool_calls:
-                    call = first.tool_calls[0]
-                    args = json.loads(call.function.arguments)
-                    print(f&quot;[模型] 选择工具 {call.function.name}，参数 {args}&quot;)
-                    result = await session.call_tool(call.function.name, args)  # 真实协议调用
-                    messages += [
-                        {&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: first.content or &quot;&quot;,
-                         &quot;tool_calls&quot;: [t.model_dump() for t in first.tool_calls]},
-                        {&quot;role&quot;: &quot;tool&quot;, &quot;tool_call_id&quot;: call.id,
-                         &quot;content&quot;: result.content[0].text},
-                    ]
-                    final = llm_chat(messages)
-                    print(f&quot;[模型] 最终回答: {final.content}&quot;)
-            else:
-                print(&quot;[跳过] 未设置 AGENT_LLM_API_KEY，跳过模型选工具演示。&quot;)
-
-
-def llm_chat(messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None,
-             temperature: float = 0.0):
-    &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量），返回完整消息对象。&quot;&quot;&quot;
-    from openai import OpenAI
-
-    client = OpenAI(
-        base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-        api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    )
-    model = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
-    kwargs: dict[str, Any] = {&quot;model&quot;: model, &quot;messages&quot;: messages, &quot;temperature&quot;: temperature}
-    if tools:
-        kwargs[&quot;tools&quot;] = tools
-    return client.chat.completions.create(**kwargs).choices[0].message
-
-
-def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
-    &quot;&quot;&quot;纯文本问答形式的模型接入辅助函数。&quot;&quot;&quot;
-    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
-        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-    ]
-    return llm_chat(messages, temperature=temperature).content or &quot;&quot;
-
-
-async def main() -&gt; None:
+            print(f&quot;[已确认] {r5.content[0].text}&quot;)
+            resources = await session.list_resources()       # 3) 资源：宿主直读，不经模型
+            res = await session.read_resource(resources.resources[0].uri)
+            print(f&quot;[资源] {res.contents[0].text}&quot;)
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>convert_temperature</code> 演示与片段一相反的错误哲学——<strong>协议性错误（参数越界）用抛异常表达</strong>：SDK 捕获异常后作为 <code>isError=True</code> 的工具结果返回，宿主不崩溃、模型看到错误文本。两种风格并存是为了划清界线：模型可自行纠正的业务问题用返回值，不该重试的调用错误用异常。<code>@mcp.resource</code> 是 Resources 原语：URI 寻址、宿主直接读取、不占模型注意力（10.5.2 的三类原语分工）。<code>client_demo</code> 是协议生命周期的完整走查：<code>stdio_client</code> 把本脚本拉起为子进程——想接任何第三方服务器，改 <code>command/args</code> 两个参数即可；<code>initialize()</code> 完成规范定义的版本与能力协商；<code>list_tools()</code> 是动态发现，服务器更新后重新调用即可，宿主无需重新部署。随后四组调用覆盖成功、业务失败、协议错误、闸门拒绝加确认放行四条路径，<code>isError</code> 的两种取值在输出里都能看到。</p>
+</blockquote>
+<p><strong>片段三：入口——一次进程、两个角色。</strong></p>
+<pre><code class="language-python">async def main() -&gt; None:
     await client_demo()
 
 
 if __name__ == &quot;__main__&quot;:
     if &quot;--serve&quot; in sys.argv:
-        # 子进程模式：充当 MCP 服务器。注意 mcp.run 自己管理事件循环，
-        # 必须从同步入口调用，不能包在 asyncio.run() 里（否则报嵌套事件循环错误）。
+        # 子进程模式：充当 MCP 服务器。mcp.run 自管事件循环，必须从同步入口调用，
+        # 不能包进 asyncio.run()（否则报嵌套事件循环错误）。
         mcp.run(transport=&quot;stdio&quot;)
     else:
         asyncio.run(main())
 </code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：入口的分支是这个演示最容易被忽略、也最值得学走的技巧：<strong>同一文件，两个角色</strong>——宿主以 <code>--serve</code> 参数拉起子进程时，走 <code>mcp.run(transport="stdio")</code> 充当服务器；用户直接运行时，走 <code>asyncio.run(main())</code> 充当客户端，一次运行就能看到完整回路。注释里的坑要记住：<code>mcp.run</code> 内部自管事件循环，必须从同步上下文调用，包进 <code>asyncio.run()</code> 会报嵌套事件循环错误。生产部署时，把服务器拆成独立进程或服务、客户端换成你自己的宿主逻辑即可——这两条分支正是拆分的天然切缝。</p>
+</blockquote>
+<h3 id="1062-框架差异速览">10.6.2 框架差异速览</h3>
+<p>各框架不需要你手写 10.6.1 的客户端生命周期，它们把这段代码托管掉了。同一台 MCP 服务器在四个主流宿主框架里的挂载方式：</p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>挂载 MCP 的入口</th>
+<th>与本章实现的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI Agents SDK</td>
+<td><code>MCPServerStdio</code> / <code>MCPServerSse</code> / <code>MCPServerStreamableHttp</code>，以 <code>mcp_servers=[...]</code> 挂到 Agent</td>
+<td>工具发现、schema 转换与调用由 SDK 自动完成，本节 client_demo 的手工生命周期被托管</td>
+</tr>
+<tr>
+<td>LangGraph / LangChain</td>
+<td>langchain-mcp-adapters 的 <code>MultiServerMCPClient.get_tools()</code></td>
+<td>把 MCP 工具转换为 LangChain 原生工具后再进图，多服务器一次聚合</td>
+</tr>
+<tr>
+<td>CrewAI</td>
+<td>crewai-tools 的 <code>MCPServerAdapter</code>（<code>with</code> 上下文管理器）</td>
+<td>适配器托管连接生命周期；目前仅透出 tools 原语，prompts/resources 不支持</td>
+</tr>
+<tr>
+<td>Google ADK</td>
+<td><code>MCPToolset</code>（<code>google.adk.tools.mcp_tool.mcp_toolset</code>）放进 Agent 的 <code>tools</code> 列表</td>
+<td>工具集随会话自动初始化与关闭，可用 <code>tool_filter</code> 裁剪暴露面</td>
+</tr>
+</tbody>
+</table>
+<p>官方文档入口：<a href="https://openai.github.io/openai-agents-python/mcp/">OpenAI Agents SDK MCP</a>、<a href="https://github.com/langchain-ai/langchain-mcp-adapters">langchain-mcp-adapters</a>、<a href="https://docs.crewai.com/en/mcp/overview">CrewAI MCP 集成</a>、<a href="https://google.github.io/adk-docs/tools/mcp-tools/">ADK MCP 工具</a>。</p>
 <h3 id="1063-生产化改造清单">10.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>认证与授权</strong>：远程服务器按规范实现 OAuth 2.1 资源服务器（RFC 9728 元数据），客户端强制 RFC 8707 资源指示符绑定令牌受众；禁止任何形式的令牌透传。</li>
@@ -458,9 +360,9 @@ if __name__ == &quot;__main__&quot;:
 <li>Google A2A 协议发布公告（2025-04-09，定位为 MCP 补充）：<a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch09-learning-adaptation.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第9章 学习与适应</span></a><a class="pager" href="../chapters/ch11-goal-monitoring.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第11章 目标设定与监控</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#101-模式概述">10.1 模式概述</a></li><li class="toc-l3"><a href="#1011-问题背景为什么需要这个模式">10.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1012-核心机制它如何工作">10.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1013-与相邻模式的关系与组合">10.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#102-起源与历史最早是谁提出来的">10.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#103-发挥的作用为什么重要">10.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#104-实际应用与案例">10.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#105-深度讲解">10.5 深度讲解</a></li><li class="toc-l3"><a href="#1051-mnmn这笔账到底省在哪又不省在哪">10.5.1 M×N→M+N：这笔账到底省在哪，又不省在哪</a></li><li class="toc-l3"><a href="#1052-协议解剖json-rpc-之上三对原语的分工逻辑">10.5.2 协议解剖：JSON-RPC 之上，三对原语的分工逻辑</a></li><li class="toc-l3"><a href="#1053-与-function-calling-的分层关系一次调用要过两道翻译">10.5.3 与 function calling 的分层关系：一次调用要过两道翻译</a></li><li class="toc-l3"><a href="#1054-安全模型混淆代理工具描述注入与审计">10.5.4 安全模型：混淆代理、工具描述注入与审计</a></li><li class="toc-l3"><a href="#1055-变体谱系与工程权衡">10.5.5 变体谱系与工程权衡</a></li><li class="toc-l3"><a href="#1056-失效模式与反模式">10.5.6 失效模式与反模式</a></li><li class="toc-l3"><a href="#1057-何时不要用-mcp">10.5.7 何时不要用 MCP</a></li><li class="toc-l2"><a href="#106-工程落地实践代码示例">10.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1061-框架无关实现完整可运行">10.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1062-框架集成实现官方-sdk同文件内自举服务器客户端端到端演示">10.6.2 框架集成实现（官方 SDK：同文件内自举"服务器+客户端"端到端演示）</a></li><li class="toc-l3"><a href="#1063-生产化改造清单">10.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#107-概览-核心要点-结论">10.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#108-延伸阅读与参考链接">10.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#101-模式概述">10.1 模式概述</a></li><li class="toc-l3"><a href="#1011-问题背景为什么需要这个模式">10.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1012-核心机制它如何工作">10.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1013-与相邻模式的关系与组合">10.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#102-源起它从哪里来">10.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#103-发挥的作用为什么重要">10.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#104-实际应用与案例">10.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#105-深度讲解">10.5 深度讲解</a></li><li class="toc-l3"><a href="#1051-mnmn这笔账到底省在哪又不省在哪">10.5.1 M×N→M+N：这笔账到底省在哪，又不省在哪</a></li><li class="toc-l3"><a href="#1052-协议解剖json-rpc-之上三对原语的分工逻辑">10.5.2 协议解剖：JSON-RPC 之上，三对原语的分工逻辑</a></li><li class="toc-l3"><a href="#1053-与-function-calling-的分层关系一次调用要过两道翻译">10.5.3 与 function calling 的分层关系：一次调用要过两道翻译</a></li><li class="toc-l3"><a href="#1054-安全模型混淆代理工具描述注入与审计">10.5.4 安全模型：混淆代理、工具描述注入与审计</a></li><li class="toc-l3"><a href="#1055-变体谱系与工程权衡">10.5.5 变体谱系与工程权衡</a></li><li class="toc-l3"><a href="#1056-失效模式与反模式">10.5.6 失效模式与反模式</a></li><li class="toc-l3"><a href="#1057-何时不要用-mcp">10.5.7 何时不要用 MCP</a></li><li class="toc-l3"><a href="#1058-版本演化两笔定量账与被统一放大的攻击面">10.5.8 版本演化、两笔定量账与被统一放大的攻击面</a></li><li class="toc-l3"><a href="#1059-怎么用运用判断">10.5.9 怎么用：运用判断</a></li><li class="toc-l2"><a href="#106-工程落地核心源码与讲解">10.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1061-核心源码按序拼接即完整可运行">10.6.1 核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#1062-框架差异速览">10.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#1063-生产化改造清单">10.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#107-概览-核心要点-结论">10.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#108-延伸阅读与参考链接">10.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>

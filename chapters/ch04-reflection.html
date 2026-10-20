@@ -58,8 +58,8 @@
 <div class="fig-caption" id="fig-4-1">图 4-1：反思循环的最小闭环——批评驱动修订，多重停止闸门兜底（硬闸：最大轮数与成本预算；软闸：评审通过与分数收敛）</div>
 <h3 id="413-与相邻模式的关系与组合">4.1.3 与相邻模式的关系与组合</h3>
 <p>反思与提示链的关系是"带反馈回边的链"：提示链是单向无环结构，反思引入循环——这既是力量来源，也是必须配停止条件的原因。反思与工具使用的关系是反馈来源：代码解释器、搜索引擎这些<a href="../chapters/ch05-tool-use.html">第 5 章</a>的工具，正是外部反馈反思的反馈器，工具结果比模型自评可靠得多。反思与记忆的关系在 Reflexion 里最清楚：语言化自我反思写入情景记忆，跨任务、跨尝试复用。反思与多智能体的关系是批评者独立化：把评审者做成带不同系统提示、甚至不同模型的智能体，可部分缓解模型偏爱自己输出的倾向。最后，反思与规划互为前哨：执行失败后的复盘为<a href="../chapters/ch06-planning.html">第 6 章</a>的重规划提供证据——先搞清哪里错了，再决定怎么重排。</p>
-<h2 id="42-起源与历史最早是谁提出来的">4.2 起源与历史：最早是谁提出来的</h2>
-<p>"模型检查并修正自己的输出"作为思想，最早在训练侧落地。Anthropic 的 Constitutional AI 论文把"批评—修订"（critique-revise）循环用于改造训练数据：模型依据一组原则批评自己的回答，再依据批评修订出更好的回答，用两版回答构成偏好对，替代人工撰写的对比数据——这确立了"自我批评可以作为训练信号"的可行性。三个月后，两篇把循环搬到推理期的工作在同一个 arXiv 编号段（2303）里先后出现，方向却截然不同：Self-Refine 在单个任务内部迭代打磨一份输出，Reflexion 则让智能体在多次尝试之间积累教训。两个月后的 CRITIC 补上关键一刀：用实验证明纯自反思有明确能力边界，并给出工具增强的修正方案；此后的工作（如 CoVe）多是主线上的变体深化。</p>
+<h2 id="42-源起它从哪里来">4.2 源起：它从哪里来</h2>
+<p>"模型检查并修正自己的输出"最早在训练侧落地：2022 年 12 月，Anthropic 的 Constitutional AI 用"批评—修订"循环让模型依据一组原则自我批评、再据批评修订，以两版回答构成偏好数据，证明自我批评可充当训练信号。三个月后循环被搬进推理期，且在同一个 arXiv 编号段（2303）里出现两个方向：Self-Refine 在单个任务内部迭代打磨一份输出；Reflexion 把单位放大为整条尝试轨迹，把失败教训存入情景记忆供下次尝试复用。两个月后的 CRITIC 补上关键一刀：实验证明纯自反思有明确能力边界，并给出工具增强的修正方案；此后的工作（如 CoVe）多是主线上的变体深化。</p>
 <table>
 <thead>
 <tr>
@@ -72,37 +72,36 @@
 <tbody>
 <tr>
 <td>2022年12月</td>
-<td>Constitutional AI 提出"批评—修订"循环，用自我批评生成训练数据，是无人工标注偏好数据的先声</td>
+<td>Constitutional AI：训练期"批评—修订"先声</td>
 <td>Bai et al.（Anthropic）</td>
 <td><a href="https://arxiv.org/abs/2212.08073">arXiv:2212.08073</a></td>
 </tr>
 <tr>
 <td>2023年3月</td>
-<td>Self-Refine：同一模型自生成—自反馈—自修订迭代，多任务平均提升约 5%~20%</td>
-<td>Madaan et al.（CMU/AllenAI/Princeton/Microsoft）</td>
+<td>Self-Refine：单任务自生成—自反馈—自修订</td>
+<td>Madaan et al.（CMU/AllenAI 等）</td>
 <td><a href="https://arxiv.org/abs/2303.17651">arXiv:2303.17651</a>（NeurIPS 2023）</td>
 </tr>
 <tr>
 <td>2023年3月</td>
-<td>Reflexion：语言化自我反思存入情景记忆供后续尝试使用，HumanEval 达 91% pass@1</td>
+<td>Reflexion：跨轨迹语言化反思存入情景记忆</td>
 <td>Shinn et al.（Northeastern/MIT）</td>
 <td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>（NeurIPS 2023）</td>
 </tr>
 <tr>
 <td>2023年5月</td>
-<td>CRITIC：用工具（搜索/代码解释器）提供外部反馈纠错；证明纯自反思对模型不会的问题会越改越错</td>
+<td>CRITIC：工具外部反馈纠错，划出自反思边界</td>
 <td>Gou et al.</td>
 <td><a href="https://arxiv.org/abs/2305.11738">arXiv:2305.11738</a>（ICLR 2024）</td>
 </tr>
 <tr>
 <td>2023年9月</td>
-<td>CoVe：先起草、再计划验证问题、独立作答、最后合并修订，显著降低长文幻觉</td>
+<td>CoVe：计划验证问题、独立作答降幻觉</td>
 <td>Dhuliawala et al.（Meta AI）</td>
 <td><a href="https://arxiv.org/abs/2309.11495">arXiv:2309.11495</a>（ACL 2024 Findings）</td>
 </tr>
 </tbody>
 </table>
-<p>这条时间线的演化逻辑很清晰：训练期先声（Constitutional AI）证明自我批评信号可用；推理期单任务循环（Self-Refine）证明免训练即可提质；跨轨迹循环（Reflexion）把单位从"一份输出"扩大到"一段尝试历史"；外部反馈（CRITIC）画出边界——<strong>模型内部没有正确答案时，反馈必须来自外部</strong>。四步走完，反思从论文技巧变成工程标配：主流 agent 框架普遍把批评—修订做成内置节点，生产系统的差别只在批评维度怎么定、停止闸怎么设。</p>
 <h2 id="43-发挥的作用为什么重要">4.3 发挥的作用：为什么重要</h2>
 <p>第一重作用是免训练提质：Self-Refine 的实验量级是平均约 5%~20% 的提升，代价只是几次额外调用；对不能微调闭源模型的团队，这是唯一低成本的质量杠杆。第二重作用是错误预算管理：与其让评审员逐份审阅所有输出，不如让反思循环先拦掉大部分问题，人工只复核仍标红的少数案例——<strong>审核人力从"全量"降到"例外"</strong>，这是多数团队采用反思的真实动机。第三重作用是为训练供数：批评—修订的成对输出是现成的偏好数据，可回流偏好优化训练，让"推理期的拐杖"内化为"模型的能力"，Constitutional AI 展示的正是这条路。第四重作用在可观测性：结构化批评记录了系统为什么错、错在哪一步，生产排障时比最终输出的对错更有信息量——大量"模型错了"的案例，根因其实是任务没说清。</p>
 <h2 id="44-实际应用与案例">4.4 实际应用与案例</h2>
@@ -163,10 +162,13 @@
 </tbody>
 </table>
 <p>三条线不是互斥选项，生产系统常常按错误类型分流：格式与逻辑走自反思，事实与计算走工具反馈，反复失败的同类任务走跨轨迹记忆。分流的前提是先回答"这类错误谁有能力判定"，答案决定路线。</p>
+<p>把演化线收拢回这里看会更清楚：训练期先声（Constitutional AI）证明自我批评信号可用；推理期单任务循环（Self-Refine）证明免训练即可提质；跨轨迹循环（Reflexion）把反思单位从"一份输出"扩大到"一段尝试历史"；外部反馈（CRITIC）画出边界——<strong>模型内部没有正确答案时，反馈必须来自外部</strong>。四步走完，反思从论文技巧变成工程标配：主流 agent 框架普遍把批评—修订做成内置节点，生产系统的差别只在批评维度怎么定、停止闸怎么设。</p>
 <h3 id="452-为什么自己改自己会有用">4.5.2 为什么"自己改自己"会有用</h3>
 <p>直觉上，让模型检查自己的输出像是让作者给自己审稿，应当无效；实验却反复显示有效，原因在生成与审查的信息处理方式差异。生成是单向不可撤销的：自回归模型一旦写下前文，后续所有 token 都以它为条件，早期的错误选择会被不断放大和"合理化"——这正是不加处理的幻觉成因。审查则是全局重读：前后对照、在心里执行、与任务原文逐条比对。同一个权重，两种注意力分布，效果近似两个角色。另一个常被低估的变量是反馈提示的具体化程度："检查一下有没有问题"几乎不产生增益，"列出所有未处理的边界输入，并标注行号"能显著改善修订质量。<strong>自反思的收益大头不来自"反思"这个动作，而来自提示迫使模型执行的系统性检查流程</strong>——这对提示设计的指导意义比"加个反思节点"大得多。</p>
 <h3 id="453-反思何时失效天花板偏见与过度修改">4.5.3 反思何时失效：天花板、偏见与过度修改</h3>
-<p><strong>失效模式一：能力天花板。</strong> CRITIC 的实验给出了反思模式最重要的边界：<strong>对于模型本来就不会的问题，纯自反思不仅无益，反而有害——会越改越错</strong>。机制不难理解：修订需要"正确信号"指引方向，信号不在模型内部时，改动只是在相邻错误之间游走；更糟的是每轮修订都伴随"我在改进"的过程感，循环越长输出越显得自信，错误却未必减少。工程推论：上线反思前先测基线能力——如果模型在目标领域裸跑的准确率本身很低（如极冷门领域的事实问答），自反思只会粉饰错误，必须先引入外部知识源，即转入第二条线。</p>
+<p><strong>失效模式一：能力天花板。</strong> CRITIC 的实验给出了反思模式最重要的边界：<strong>对于模型本来就不会的问题，纯自反思不仅无益，反而有害——会越改越错</strong>。机制不难理解：修订需要"正确信号"指引方向，信号不在模型内部时，改动只是在相邻错误之间游走；更糟的是每轮修订都伴随"我在改进"的过程感，循环越长输出越显得自信，错误却未必减少。</p>
+<p>最锋利的定量证据来自 Huang 等人的《Large Language Models Cannot Self-Correct Reasoning Yet》（<a href="https://arxiv.org/abs/2310.01798">arXiv:2310.01798</a>，ICLR 2024，注意它与 CRITIC 是两篇不同论文，别被相近主题混淆）。该文定义了"内在自纠"（intrinsic self-correction）——不给任何外部反馈、纯靠模型自身重答，结论是<strong>所有模型、所有推理基准，自纠后准确率全部下降</strong>：GPT-4 在 GSM8K 上从基线 95.5% 经两轮自纠降到 89.0%，CommonSenseQA 从 82.0% 降到 80.0%，HotpotQA 从 49.0% 降到 43.0%；GPT-3.5 在 CommonSenseQA 上更从 75.8% 崩到 41.8%。文章还有三条更扎心的元发现：此前报告自纠有效的工作（RCI、Reflexion）依赖"答案是否正确"的先知标签，标签一撤提升消失；同等推理成本下，多智能体互评（debate）并不比自洽性采样（self-consistency）更优；Self-Refine 的部分增益源于初稿提示本身次优——把反馈提示里的任务信息并进初稿提示，自纠同样变成负收益。</p>
+<p>这条边界<strong>只对"无外部反馈的纯自纠"成立，外部反馈线（CRITIC）不在其列</strong>：验证信号来自工具而非模型自身，修订方向由外部正确性而非内部偏好指引。Reflexion 的 91% pass@1 同理——Huang 等人把它归入"依赖 oracle 标签"一类，其反馈来自单元测试执行结果这一外部信号；离开有可执行判据的领域，Reflexion 式提升能否保持要打个问号。工程推论：上线反思前先测基线能力——如果模型在目标领域裸跑的准确率本身很低（如极冷门领域的事实问答），自反思只会粉饰错误，必须先引入外部知识源，即转入第二条线。边界条件可以总结为四条：基线能力低则自纠有害；无外部反馈则推理类任务必降；表达、格式、指令遵循类任务最稳（模型有能力自查）；成本随轮数线性翻倍。</p>
 <p><strong>失效模式二：自我强化偏见。</strong> <strong>模型给自己输出打分时普遍偏高，批评偏软</strong>——"整体不错，只需微调"是最常见的无效评审。CoVe 的 factored 变体是针对它的结构性解法：验证环节看不到原稿，偏见失去附着的载体。工程上有三个补充手段：换模型当评审（用另一家族模型做批评者，偏见相关性低）；程序化闸门（能写测试的就不让模型自评通过）；批评强制引用（每条批评须引用原文位置与具体建议，空泛批评解析即拒）。</p>
 <p><strong>失效模式三：过度修改。</strong> 没有收敛闸的循环会把正确的部分也改掉：修订模型面对"继续改进"的指令，倾向于制造可见改动证明努力，用词替换、结构重排轮番上演，文风漂移，正确的事实被"改写"成错误。对抗手段是把"保持不变"写进修订提示并纳入评审维度——评审不仅检查问题是否解决，也检查未被判错部分是否原样保留。</p>
 <p><strong>失效模式四：收益方差。</strong> 反思的提升幅度在不同任务、模型、轮数之间波动很大，论文平均数不能直接外推到你的任务。上线前必须用自己的数据做批量 A/B：同样的输入，跑"一次生成"与"反思 N 轮"两组，比较通过率与总成本，而非单例观感。跳过这一步直接上线，是在为未知的效果支付确定的成本。</p>
@@ -175,135 +177,114 @@
 <p>三个反模式：其一，无上限的"再改一遍"；其二，把反思轮数当质量证据（"我们跑了五轮反思"不是质量证明，终评分数与下游验收才是）；其三，批评维度不聚焦，每轮修不同的点、永不收敛——解法是把维度清单固化在提示里，每轮只允许报清单内的问题。</p>
 <h3 id="455-何时不要用">4.5.5 何时不要用</h3>
 <p>四类场景应直接放弃反思。可程序化校验的输出直接跑测试，模型自评纯属多余；延迟敏感的实时链路（对话首响、流式补全）受不了多轮串行调用；一次性低价值输出（随手摘要、内部草稿）成本超过收益；最根本的一类是<strong>基线能力不足的任务——模型裸跑都做不好的事，自己检查自己也做不好</strong>，先补外部知识或换更强的模型，再谈反思。</p>
-<h2 id="46-工程落地实践代码示例">4.6 工程落地：实践代码示例</h2>
-<h3 id="461-框架无关实现完整可运行">4.6.1 框架无关实现（完整可运行）</h3>
-<p>下面的实现带完整停止条件与错误路径：批评解析失败时降级为保守评审而非崩溃；分数不再提升即停止；终轮用一次不带历史的独立评审做最终判定。</p>
-<pre><code class="language-python">&quot;&quot;&quot;反思模式：generate -&gt; critique -&gt; refine 循环的框架无关实现。
+<h3 id="456-怎么用运用判断">4.5.6 怎么用：运用判断</h3>
+<p><strong>适用信号</strong>：①错误代价高、但无法程序化校验——文风、论证完整性、隐含要求遵循，这类"程序判不了、人审太贵"的维度是反思的主场；②模型在目标维度裸跑基线已达标，缺的只是"系统性再检查一遍"；③任务允许 2~4 倍的延迟与成本预算；④同类任务反复出现、失败教训值得沉淀——这是跨轨迹线的信号。</p>
+<p>与最近替代方案的对比：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>与反思的关键差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自洽性多采样（self-consistency）</td>
+<td>同成本采 N 个答案取多数，无批评无修订；Huang 等人的实验显示推理任务上它不劣于多智能体互评，应作为默认基线先跑赢它再谈反思</td>
+</tr>
+<tr>
+<td>简单重试</td>
+<td>失败后不带批评重新生成：便宜，但对系统性缺陷无效，只适合偶发性错误</td>
+</tr>
+<tr>
+<td>程序化校验（测试 / schema / 执行器）</td>
+<td>能写判据就不该用模型自评：确定性反馈完胜，反思只兜程序判不了的那部分维度</td>
+</tr>
+</tbody>
+</table>
+<p><strong>落地三步</strong>：①先测基线与反馈源——目标维度裸跑准确率如何、有没有可程序化判定的通道，这个答案决定走三条变体线中的哪一条；②把批评维度、四道停止闸（轮数 / 预算 / 通过 / 收敛）与"未被判错部分保持原样"写进提示与代码，本章 4.6 的三个片段就是现成骨架；③用自己的数据做批量 A/B——单次生成对比反思 N 轮，比较通过率与总成本，收益为正才上线。</p>
+<h2 id="46-工程落地核心源码与讲解">4.6 工程落地：核心源码与讲解</h2>
+<h3 id="461-框架无关实现片段-讲解">4.6.1 框架无关实现（片段 + 讲解）</h3>
+<p>主程序按原文件顺序拆成三个片段：模型接入与评审数据结构、批评与修订（含错误路径）、主循环与停止条件。<strong>三片按序拼接即完整可运行程序</strong>，依赖与环境变量见片 1 文档串。</p>
+<pre><code class="language-python">&quot;&quot;&quot;反思模式：generate -&gt; critique -&gt; refine 循环（三片按序拼接即完整可运行程序）。
 
-依赖：pip install openai
-环境变量：
+依赖：pip install openai；环境变量：
   AGENT_LLM_BASE_URL  OpenAI 兼容接口地址（默认 https://api.openai.com/v1）
   AGENT_LLM_API_KEY   API Key（必填）
   AGENT_LLM_MODEL     模型名（默认 gpt-4o-mini）
 &quot;&quot;&quot;
-from __future__ import annotations
-
 import json
 import os
 from dataclasses import dataclass, field
 
 from openai import OpenAI
 
-client = OpenAI(
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-)
+client = OpenAI(base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+                api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;])
 MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
 
 
 def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
     &quot;&quot;&quot;调用一次大模型，返回文本回复。&quot;&quot;&quot;
-    messages = []
-    if system:
-        messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
-    messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
-    resp = client.chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature
-    )
+    msgs = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]
+    resp = client.chat.completions.create(model=MODEL, messages=msgs, temperature=temperature)
     return resp.choices[0].message.content or &quot;&quot;
 
 
 @dataclass
 class Critique:
-    &quot;&quot;&quot;一轮结构化评审的结果。&quot;&quot;&quot;
-
+    &quot;&quot;&quot;一轮结构化评审：分数驱动收敛判定，问题列表驱动修订。&quot;&quot;&quot;
     passed: bool
     score: int  # 0-100
     issues: list[str] = field(default_factory=list)
     raw: str = &quot;&quot;
-
-
-def parse_critique(text: str) -&gt; Critique:
-    &quot;&quot;&quot;把模型输出的评审解析为 Critique。
-
-    错误路径：模型不一定按格式输出。解析失败时降级为&quot;未通过、0 分&quot;的
-    保守评审，让循环走修订分支，而不是让整个程序崩溃。
-    &quot;&quot;&quot;
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：这一片做两件事。llm() 是全书共用的最小接入封装——把 system 与 user 拼成消息列表，读者换模型只需改 base_url 与 MODEL 两个环境变量。Critique 用 dataclass 固定 passed / score / issues 三个字段：分数供收敛判定比较，问题列表供修订逐条消费——<strong>批评必须先结构化，才能被程序解析并驱动控制流</strong>；raw 保留模型原始输出，排障时比解析结果更有信息量。</p>
+</blockquote>
+<pre><code class="language-python">def parse_critique(text: str) -&gt; Critique:
+    &quot;&quot;&quot;把评审输出解析为 Critique。错误路径：解析失败降级为 0 分待修订，不让循环崩溃。&quot;&quot;&quot;
+    fence = chr(96) * 3  # markdown 代码围栏（chr 构造，防裸反引号截断文档）
     cleaned = text.strip()
     try:
-        fence = chr(96) * 3  # markdown 代码围栏（chr 构造，防裸反引号截断文档）
-        if cleaned.startswith(fence):  # 容错：剥掉 markdown 代码块
-            cleaned = cleaned.strip(chr(96))
-            if cleaned.startswith(&quot;json&quot;):
-                cleaned = cleaned[4:]
+        if cleaned.startswith(fence):  # 容错：剥掉模型自带的代码围栏
+            cleaned = cleaned.strip(chr(96)).lstrip(&quot;json&quot;)
         data = json.loads(cleaned)
-        return Critique(
-            passed=bool(data[&quot;passed&quot;]),
-            score=max(0, min(100, int(data[&quot;score&quot;]))),
-            issues=[str(x) for x in data.get(&quot;issues&quot;, [])],
-            raw=cleaned,
-        )
+        return Critique(bool(data[&quot;passed&quot;]), max(0, min(100, int(data[&quot;score&quot;]))),
+                        [str(x) for x in data.get(&quot;issues&quot;, [])], cleaned)
     except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-        return Critique(
-            passed=False,
-            score=0,
-            issues=[f&quot;评审输出不可解析，请重新输出：{text[:200]}&quot;],
-            raw=text,
-        )
+        return Critique(False, 0, [f&quot;评审输出不可解析，请重新输出：{text[:200]}&quot;], text)
 
 
-CRITIQUE_SYSTEM = (
-    &quot;你是以挑剔著称的代码评审员。只报告事实问题，不奉承，&quot;
-    &quot;每条意见必须指出具体位置和修改建议。&quot;
-)
+CRITIQUE_SYSTEM = (&quot;你是以挑剔著称的代码评审员。只报告事实问题，不奉承，&quot;
+                   &quot;每条意见必须指出具体位置和修改建议。&quot;)
 
 
 def critique_answer(task: str, answer: str, focus: str) -&gt; Critique:
-    &quot;&quot;&quot;让模型以评审者身份检查草稿，聚焦 focus 列出的维度。&quot;&quot;&quot;
-    prompt = f&quot;&quot;&quot;请评审下面这份针对任务的解答。
-
-【任务】{task}
-
-【解答】
-{answer}
-
-【评审维度（只报这几点，不得发散）】{focus}
-
-只输出一个 JSON 对象，不要输出任何其他内容：
-{{&quot;passed&quot;: true或false, &quot;score&quot;: 0到100的整数, &quot;issues&quot;: [&quot;问题1（位置+修改建议）&quot;, ...]}}&quot;&quot;&quot;
+    &quot;&quot;&quot;让模型以评审者身份检查草稿；focus 限定维度，防止批评发散导致循环不收敛。&quot;&quot;&quot;
+    prompt = (f&quot;请评审下面这份解答。【任务】{task}\n【解答】\n{answer}\n&quot;
+              f&quot;【评审维度（只报这几点，不得发散）】{focus}\n&quot;
+              '只输出一个 JSON 对象：{&quot;passed&quot;: true或false, &quot;score&quot;: 0到100整数, '
+              '&quot;issues&quot;: [&quot;问题1（位置+修改建议）&quot;, ...]}')
     return parse_critique(llm(prompt, system=CRITIQUE_SYSTEM, temperature=0.1))
 
 
 def refine_answer(task: str, answer: str, critique: Critique) -&gt; str:
-    &quot;&quot;&quot;根据评审意见修订解答：逐条解决被判错的部分，未被判错的原样保留。&quot;&quot;&quot;
-    issues = &quot;\n&quot;.join(f&quot;- {i}&quot; for i in critique.issues)
-    fallback = &quot;-（无具体意见，请自查逻辑与边界）&quot;  # 预先取出，兼容 Python 3.10 的 f-string 引号限制
-    prompt = f&quot;&quot;&quot;请修订下面这份解答。要求：
-1. 逐条解决评审意见，不得遗漏；
-2. 未被评审意见涉及的部分保持原样，禁止改写措辞或调整结构；
-3. 直接输出修订后的完整解答，不要解释。
-
-【任务】{task}
-【当前解答】
-{answer}
-【评审意见】
-{issues or fallback}&quot;&quot;&quot;
+    &quot;&quot;&quot;以批评为条件修订：逐条解决被判错的部分，未被判错的原样保留（防过度修改）。&quot;&quot;&quot;
+    issues = &quot;\n&quot;.join(f&quot;- {i}&quot; for i in critique.issues) or &quot;-（无具体意见，请自查逻辑与边界）&quot;
+    prompt = (f&quot;请修订这份解答：逐条解决评审意见、不得遗漏；未被意见涉及的部分保持原样，&quot;
+              f&quot;禁止改写措辞或调整结构；直接输出修订后的完整解答。\n&quot;
+              f&quot;【任务】{task}\n【当前解答】\n{answer}\n【评审意见】\n{issues}&quot;)
     return llm(prompt, temperature=0.2)
-
-
-def reflect_loop(
-    task: str,
-    focus: str,
-    max_rounds: int = 3,
-    pass_score: int = 85,
-) -&gt; dict:
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：parse_critique 是本章最重要的错误路径——模型不保证按 JSON 回复，解析失败时返回"未通过、0 分"的保守评审而非抛异常，循环走修订分支重试、程序不崩；score 用 max/min 钳到 0-100，防模型给出离谱分数。围栏用 chr(96)*3 构造是本书代码的通用技巧，避免文档里的反引号截断代码块。critique_answer 的 temperature 取 0.1（评审要稳定、不要创造性），提示里"只报这几点，不得发散"落实 4.5.4 的批评聚焦纪律；refine_answer 第二条"未被涉及的部分保持原样"是对失效模式三（过度修改）的直接防御——这两句提示删掉任何一句，循环行为都会明显劣化。</p>
+</blockquote>
+<pre><code class="language-python">def reflect_loop(task: str, focus: str, max_rounds: int = 3, pass_score: int = 85) -&gt; dict:
     &quot;&quot;&quot;generate -&gt; critique -&gt; refine 主循环。
 
-    停止条件（满足其一即停）：
-    1. 软闸：评审通过（passed 且 score &gt;= pass_score）；
-    2. 硬闸：达到最大轮数 max_rounds；
-    3. 收敛闸：本轮分数未超过上一轮，继续修订大概率原地打转。
-    返回值带出分数轨迹与停止原因，便于评估反思的真实收益。
+    停止条件（满足其一即停）：软闸=评审通过；硬闸=最大轮数；
+    收敛闸=本轮分数未超上一轮（继续修订大概率原地打转）。
     &quot;&quot;&quot;
     answer = llm(f&quot;完成任务：{task}\n直接给出解答。&quot;, temperature=0.4)
     history: list[dict] = []
@@ -311,7 +292,6 @@ def reflect_loop(
     for round_no in range(1, max_rounds + 1):
         c = critique_answer(task, answer, focus)
         history.append({&quot;round&quot;: round_no, &quot;score&quot;: c.score, &quot;issues&quot;: c.issues})
-        print(f&quot;[第{round_no}轮评审] score={c.score} passed={c.passed} issues={len(c.issues)}&quot;)
         if c.passed and c.score &gt;= pass_score:
             stop_reason = &quot;评审通过&quot;
             break
@@ -319,152 +299,63 @@ def reflect_loop(
             stop_reason = &quot;分数不再提升，触发收敛闸&quot;
             break
         answer = refine_answer(task, answer, c)
-    # 终轮独立评审：不带任何修订历史，把&quot;过程努力&quot;从验收标准里剔除
+    # 终轮独立评审：不带修订历史，把&quot;过程努力&quot;从验收标准里剔除
     final = critique_answer(task, answer, focus)
-    return {
-        &quot;answer&quot;: answer,
-        &quot;history&quot;: history,
-        &quot;final_score&quot;: final.score,
-        &quot;final_passed&quot;: final.passed,
-        &quot;stop_reason&quot;: stop_reason,
-    }
+    return {&quot;answer&quot;: answer, &quot;scores&quot;: [h[&quot;score&quot;] for h in history],
+            &quot;final_score&quot;: final.score, &quot;final_passed&quot;: final.passed, &quot;stop_reason&quot;: stop_reason}
 
 
 if __name__ == &quot;__main__&quot;:
     result = reflect_loop(
-        task=(
-            &quot;编写 Python 函数 is_balanced(s: str) -&gt; bool，&quot;
-            &quot;判断字符串 s 中的三种括号 ()[]{} 是否正确匹配。&quot;
-        ),
-        focus=(
-            &quot;1) 算法正确性（空串、纯左括号、交叉括号如 ([)] 等边界）；&quot;
-            &quot;2) 代码可运行、有类型标注；3) 有中文 docstring。&quot;
-        ),
+        task=&quot;编写 Python 函数 is_balanced(s: str) -&gt; bool，判断三种括号 ()[]{} 是否正确匹配。&quot;,
+        focus=&quot;1) 算法正确性（空串、纯左括号、交叉括号如 ([)]）；2) 类型标注与中文 docstring；3) 可运行。&quot;,
     )
     print(&quot;停止原因：&quot;, result[&quot;stop_reason&quot;])
-    print(&quot;分数轨迹：&quot;, [h[&quot;score&quot;] for h in result[&quot;history&quot;]], &quot;-&gt; 终评&quot;, result[&quot;final_score&quot;])
+    print(&quot;分数轨迹：&quot;, result[&quot;scores&quot;], &quot;-&gt; 终评&quot;, result[&quot;final_score&quot;])
     print(&quot;最终通过：&quot;, result[&quot;final_passed&quot;])
     print(&quot;最终解答：\n&quot;, result[&quot;answer&quot;])
 </code></pre>
-<h3 id="462-框架集成实现langgraphcheckpoint-循环">4.6.2 框架集成实现（LangGraph，checkpoint 循环）</h3>
-<p><a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> 把反思循环表达为"带条件边与回边的状态图"，checkpointer 保存每步状态，循环可暂停、恢复、回放——这是框架相对裸写的核心增量。以下按 langgraph 0.2.x + langchain-openai 0.2.x 的 API 风格编写，更高版本请以官方文档核对导入路径。</p>
-<pre><code class="language-python">&quot;&quot;&quot;反思模式的 LangGraph 实现：draft -&gt; critique -&gt; refine 状态循环 + checkpoint。
-
-依赖：pip install &quot;langgraph&gt;=0.2&quot; langchain-openai openai
-环境变量同上一节（AGENT_LLM_BASE_URL / AGENT_LLM_API_KEY / AGENT_LLM_MODEL）。
-&quot;&quot;&quot;
-from __future__ import annotations
-
-import json
-import operator
-import os
-from typing import Annotated, TypedDict
-
-from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, START, StateGraph
-
-chat = ChatOpenAI(
-    model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;),
-    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
-    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
-    temperature=0.2,
-)
-
-MAX_ROUNDS = 3
-PASS_SCORE = 85
-
-
-class ReflectionState(TypedDict):
-    &quot;&quot;&quot;循环状态：LangGraph 每个节点读写它，checkpointer 负责持久化。&quot;&quot;&quot;
-
-    task: str
-    draft: str
-    score: int
-    issues: list[str]
-    round: int
-    score_history: Annotated[list[int], operator.add]  # 追加式合并
-    stop_reason: str
-
-
-def draft_node(state: ReflectionState) -&gt; dict:
-    &quot;&quot;&quot;初稿节点。&quot;&quot;&quot;
-    reply = chat.invoke(f&quot;完成任务：{state['task']}\n直接给出解答。&quot;)
-    return {&quot;draft&quot;: reply.content, &quot;round&quot;: 0}
-
-
-def critique_node(state: ReflectionState) -&gt; dict:
-    &quot;&quot;&quot;批评节点：解析失败按错误路径处理，记为 0 分待修订。&quot;&quot;&quot;
-    prompt = (
-        f&quot;评审以下解答，只检查正确性与边界条件。只输出 JSON：&quot;
-        f'{{&quot;passed&quot;: bool, &quot;score&quot;: 0-100整数, &quot;issues&quot;: [&quot;...&quot;]}}\n'
-        f&quot;任务：{state['task']}\n解答：\n{state['draft']}&quot;
-    )
-    try:
-        data = json.loads(chat.invoke(prompt).content.strip().strip(&quot;`&quot;).lstrip(&quot;json&quot;))
-        score, issues, passed = int(data[&quot;score&quot;]), list(data[&quot;issues&quot;]), bool(data[&quot;passed&quot;])
-    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-        score, issues, passed = 0, [&quot;评审输出不可解析，需修订重写&quot;], False
-    return {
-        &quot;score&quot;: score,
-        &quot;issues&quot;: issues,
-        &quot;round&quot;: state[&quot;round&quot;] + 1,
-        &quot;score_history&quot;: [score],
-        &quot;stop_reason&quot;: &quot;评审通过&quot; if passed and score &gt;= PASS_SCORE else &quot;&quot;,
-    }
-
-
-def refine_node(state: ReflectionState) -&gt; dict:
-    &quot;&quot;&quot;修订节点：以批评为条件重写。&quot;&quot;&quot;
-    issues = &quot;\n&quot;.join(f&quot;- {i}&quot; for i in state[&quot;issues&quot;]) or &quot;- 无具体意见，请自查边界&quot;
-    reply = chat.invoke(
-        f&quot;修订解答：逐条解决问题，未被判错的部分保持原样。\n&quot;
-        f&quot;任务：{state['task']}\n当前解答：\n{state['draft']}\n问题：\n{issues}&quot;
-    )
-    return {&quot;draft&quot;: reply.content}
-
-
-def should_refine(state: ReflectionState) -&gt; str:
-    &quot;&quot;&quot;条件边：通过则结束；超轮数或分数不升则收敛退出；否则继续修订。&quot;&quot;&quot;
-    if state[&quot;stop_reason&quot;] == &quot;评审通过&quot;:
-        return END
-    if state[&quot;round&quot;] &gt;= MAX_ROUNDS:
-        return END
-    hist = state[&quot;score_history&quot;]
-    if state[&quot;round&quot;] &gt; 1 and hist[-1] &lt;= hist[-2]:
-        return END  # 收敛闸：分数不再提升
-    return &quot;refine&quot;
-
-
-def build_graph():
-    g = StateGraph(ReflectionState)
-    g.add_node(&quot;draft&quot;, draft_node)
-    g.add_node(&quot;critique&quot;, critique_node)
-    g.add_node(&quot;refine&quot;, refine_node)
-    g.add_edge(START, &quot;draft&quot;)
-    g.add_edge(&quot;draft&quot;, &quot;critique&quot;)
-    g.add_conditional_edges(&quot;critique&quot;, should_refine, {&quot;refine&quot;: &quot;refine&quot;, END: END})
-    g.add_edge(&quot;refine&quot;, &quot;critique&quot;)  # 回边：反思循环的本质
-    return g.compile(checkpointer=MemorySaver())
-
-
-if __name__ == &quot;__main__&quot;:
-    app = build_graph()
-    config = {
-        &quot;configurable&quot;: {&quot;thread_id&quot;: &quot;demo-thread-1&quot;},
-        &quot;recursion_limit&quot;: 25,  # 图级步数上限，兜底防失控循环
-    }
-    result = app.invoke(
-        {&quot;task&quot;: &quot;编写函数 count_vowels(s)，统计字符串中元音字母个数，含类型标注与 docstring。&quot;},
-        config=config,
-    )
-    print(&quot;分数轨迹：&quot;, result[&quot;score_history&quot;], &quot;终评：&quot;, result[&quot;score&quot;])
-    print(&quot;停止原因：&quot;, result[&quot;stop_reason&quot;] or &quot;轮数/收敛闸&quot;)
-    print(&quot;最终草稿：\n&quot;, result[&quot;draft&quot;])
-    # checkpoint 价值演示：同 thread_id 可回放历史状态
-    snap = app.get_state(config)
-    print(&quot;checkpoint 中的轮次：&quot;, snap.values[&quot;round&quot;])
-</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：主循环集中了三个骨架决策。其一，停止闸按"软闸（passed 且 score≥85）—收敛闸（本轮分数不超上一轮）—硬闸（max_rounds=3）"顺序检查，max_rounds=3 与 pass_score=85 对应 4.5.4 说的性价比区间，读者按自己的质量-成本预算改这两个数即可。其二，收敛闸的历史比较是防"原地打转"的关键——分数不升说明修订已无信息增量。其三，循环结束后的终轮独立评审不带任何修订历史，剔除"已经改了这么多"的过程努力感染；返回值带出分数轨迹与停止原因，正是 4.5.3 失效模式四要求的批量 A/B 评估所需的数据。</p>
+</blockquote>
+<h3 id="462-框架差异速览langgraph">4.6.2 框架差异速览（LangGraph）</h3>
+<p>LangGraph 把同一循环表达为"带条件边与回边的状态图"，对应关系如下（按 langgraph 0.2.x + langchain-openai 0.2.x 实测风格，更高版本请以官方文档核对导入路径）：</p>
+<table>
+<thead>
+<tr>
+<th>LangGraph 构件</th>
+<th>在反思循环中的角色</th>
+<th>与裸写实现的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>StateGraph(ReflectionState)</td>
+<td>用 TypedDict 声明循环状态</td>
+<td>状态合并（如 Annotated[list[int], operator.add] 追加式）由框架接管</td>
+</tr>
+<tr>
+<td>add_conditional_edges("critique", fn)</td>
+<td>四道停止闸写成路由函数</td>
+<td>停止条件从 if/break 变为图的条件边</td>
+</tr>
+<tr>
+<td>add_edge("refine", "critique")</td>
+<td>回边即循环本体</td>
+<td>循环结构显式化，可视化与回放免费获得</td>
+</tr>
+<tr>
+<td>compile(checkpointer=MemorySaver())</td>
+<td>每步状态持久化</td>
+<td>同 thread_id 可暂停、恢复、回放，生产可换持久后端</td>
+</tr>
+<tr>
+<td>config["recursion_limit"]=25</td>
+<td>图级步数上限</td>
+<td>循环失控有框架级兜底，与业务停止闸互补</td>
+</tr>
+</tbody>
+</table>
 <h3 id="463-生产化改造清单">4.6.3 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：批评 JSON 解析失败降级为"待修订"而非中断；连续 2 次解析失败直接放弃反思、带上人工复核标记返回原稿。</li>
@@ -515,9 +406,9 @@ if __name__ == &quot;__main__&quot;:
 <li>Cursor《AI 代码审查》官方指南（Bugbot）：https://cursor.com/cn/guides/ai-code-review</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch03-parallelization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第3章 并行化</span></a><a class="pager" href="../chapters/ch05-tool-use.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第5章 工具使用</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#41-模式概述">4.1 模式概述</a></li><li class="toc-l3"><a href="#411-问题背景为什么需要这个模式">4.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#412-核心机制它如何工作">4.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#413-与相邻模式的关系与组合">4.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#42-起源与历史最早是谁提出来的">4.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#43-发挥的作用为什么重要">4.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#44-实际应用与案例">4.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#45-深度讲解">4.5 深度讲解</a></li><li class="toc-l3"><a href="#451-三条变体线反馈从哪里来">4.5.1 三条变体线：反馈从哪里来</a></li><li class="toc-l3"><a href="#452-为什么自己改自己会有用">4.5.2 为什么"自己改自己"会有用</a></li><li class="toc-l3"><a href="#453-反思何时失效天花板偏见与过度修改">4.5.3 反思何时失效：天花板、偏见与过度修改</a></li><li class="toc-l3"><a href="#454-停止条件设计">4.5.4 停止条件设计</a></li><li class="toc-l3"><a href="#455-何时不要用">4.5.5 何时不要用</a></li><li class="toc-l2"><a href="#46-工程落地实践代码示例">4.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#461-框架无关实现完整可运行">4.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#462-框架集成实现langgraphcheckpoint-循环">4.6.2 框架集成实现（LangGraph，checkpoint 循环）</a></li><li class="toc-l3"><a href="#463-生产化改造清单">4.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#47-概览-核心要点-结论">4.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#471-本章小结">4.7.1 本章小结</a></li><li class="toc-l3"><a href="#472-核心要点">4.7.2 核心要点</a></li><li class="toc-l3"><a href="#473-结论">4.7.3 结论</a></li><li class="toc-l2"><a href="#48-延伸阅读与参考链接">4.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#41-模式概述">4.1 模式概述</a></li><li class="toc-l3"><a href="#411-问题背景为什么需要这个模式">4.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#412-核心机制它如何工作">4.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#413-与相邻模式的关系与组合">4.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#42-源起它从哪里来">4.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#43-发挥的作用为什么重要">4.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#44-实际应用与案例">4.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#45-深度讲解">4.5 深度讲解</a></li><li class="toc-l3"><a href="#451-三条变体线反馈从哪里来">4.5.1 三条变体线：反馈从哪里来</a></li><li class="toc-l3"><a href="#452-为什么自己改自己会有用">4.5.2 为什么"自己改自己"会有用</a></li><li class="toc-l3"><a href="#453-反思何时失效天花板偏见与过度修改">4.5.3 反思何时失效：天花板、偏见与过度修改</a></li><li class="toc-l3"><a href="#454-停止条件设计">4.5.4 停止条件设计</a></li><li class="toc-l3"><a href="#455-何时不要用">4.5.5 何时不要用</a></li><li class="toc-l3"><a href="#456-怎么用运用判断">4.5.6 怎么用：运用判断</a></li><li class="toc-l2"><a href="#46-工程落地核心源码与讲解">4.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#461-框架无关实现片段-讲解">4.6.1 框架无关实现（片段 + 讲解）</a></li><li class="toc-l3"><a href="#462-框架差异速览langgraph">4.6.2 框架差异速览（LangGraph）</a></li><li class="toc-l3"><a href="#463-生产化改造清单">4.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#47-概览-核心要点-结论">4.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#471-本章小结">4.7.1 本章小结</a></li><li class="toc-l3"><a href="#472-核心要点">4.7.2 核心要点</a></li><li class="toc-l3"><a href="#473-结论">4.7.3 结论</a></li><li class="toc-l2"><a href="#48-延伸阅读与参考链接">4.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
