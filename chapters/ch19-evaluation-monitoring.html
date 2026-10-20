@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第19章 评估与监控 · 智能体设计模式</title>
+<meta name="description" content="用分层评估体系（单点断言、场景回归、在线 A/B）与 LLM 裁判、黄金集、CI 门禁和在线监控三件套，让智能体系统的质量从感觉变成可度量、可回归、可告警的工程事实。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第四部分 · 高级架构</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a class="active" href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第四部分 · 高级架构</div>
+      <h1>第19章 评估与监控 <span class="en-title">Evaluation and Monitoring</span></h1>
+      <p class="chapter-summary">用分层评估体系（单点断言、场景回归、在线 A/B）与 LLM 裁判、黄金集、CI 门禁和在线监控三件套，让智能体系统的质量从感觉变成可度量、可回归、可告警的工程事实。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：为智能体系统建立"离线可回归 + 在线可观测"的双回路度量体系——离线用黄金集、程序断言与 LLM 裁判给出可比分数并卡住发布，在线用 trace/metric/eval 三件套持续盯着真实流量的质量、成本与延迟。
+<strong>解决什么问题</strong>：智能体行为由概率模型驱动，每次改动（提示词、模型版本、工具实现）都可能让某类任务悄悄变差；没有评估体系，质量回归只能靠用户投诉发现 ｜ <strong>适用场景</strong>：任何要持续迭代的智能体产品、批量作业系统、多版本模型路由，以及"改了一版提示词，到底变好还是变坏"的每一个工程决策 ｜ <strong>核心机制</strong>：评估金字塔分层 → 判据设计（断言/裁判）→ 黄金集管理与防污染 → CI 门禁 → 在线 trace/metric/eval ｜ <strong>代价</strong>：评估本身消耗 token 与人力；裁判有系统性偏差需要消偏；黄金集会过时、会被污染；监控增加链路开销。</p>
+</blockquote>
+<h2 id="191-模式概述">19.1 模式概述</h2>
+<h3 id="1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</h3>
+<p>传统软件的质量问题在编译器和测试套件里基本就解决了：代码要么编译通过，要么测试断言成立或不成立。智能体系统把这一切推翻了。第一，输出是自然语言，"对"与"错"之间隔着大片灰色地带——一份客服回复语法无错、格式漂亮，但答非所问。第二，行为是非确定的：同一段提示词今天跑通，明天换个采样结果就失败，单次运行什么也证明不了。第三，系统由"提示词 + 模型版本 + 工具实现 + 检索语料"多个部件复合而成，改任何一件都可能引发连锁质量变化，而提示词的改动恰恰是最高频的——团队每周都在改提示词，却很少有人每周都在验证提示词。</p>
+<p>后果在工程上表现为两种典型事故。其一是<strong>静默回归</strong>：为了让"数学题场景"表现更好，团队在系统提示里加了一句"解题时一步步推理"，结果闲聊场景的回复全变成了机械的分步说教，两周后用户流失数据才暴露问题。其二是<strong>无法比较</strong>：模型供应商发布了新版本，价格便宜三成，团队想切换，却拿不出"新旧版本在我们业务任务上的对比数据"，只能凭感觉决策——感觉往往是错的。评估与监控模式的立场是：<strong>质量必须成为可度量、可回归、可比较的工程事实，与功能代码受同等的版本管理与门禁约束</strong>。第 11 章的目标监控管的是"这一次执行有没有跑偏"，本章管的是"这个系统整体上变好还是变坏"——前者是运行时控制，后者是工程治理。</p>
+<h3 id="1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</h3>
+<p>机制可以概括为"一座金字塔 + 一个双回路"。<strong>评估金字塔</strong>把评估手段按成本与置信度分层：塔基是<strong>单点断言</strong>（针对单个案例的程序化检查，快、便宜、确定，如"输出是合法 JSON""引用编号存在于源文档"）；中层是<strong>场景回归</strong>（在一个有代表性的任务集合上批量跑完整智能体，计算通过率与分维度得分，回答"这版改动让系统整体变好还是变坏"）；塔尖是<strong>在线 A/B</strong>（真实流量分桶对照，以业务指标裁决，是唯一能回答"用户是否真的受益"的手段）。层数越往上，越接近真相，也越贵、越慢、风险越高，所以好的实践是"塔基高频、塔尖低频"。</p>
+<p><strong>双回路</strong>指离线与在线的闭环。离线回路：从线上采样或人工构造<strong>黄金集</strong>（带参考答案或评分标准的任务集），每次改动后在黄金集上跑回归，分数低于阈值则 CI 门禁拦截发布。在线回路：生产流量的每条执行轨迹被记录为 <strong>trace</strong>（结构化的调用链），从 trace 聚合出 <strong>metric</strong>（成功率、成本、延迟分位值），并按比例抽样做 <strong>eval</strong>（程序断言或 LLM 裁判打分），eval 结果与业务指标共同构成发布后监控。在线发现的坏案例经过人工标注回流黄金集——这是评估体系自我进化的关键一环，也直接喂养第 9 章的学习与适应机制。</p>
+<p>判定手段上，本章与全书其余部分有一个重要交集：<strong>LLM-as-judge</strong>。程序断言覆盖不了语义质量（"这个摘要忠实吗"），人工标注太贵太慢，于是用强模型按评分规则（rubric）给输出打分。它灵活到几乎任何语义维度都能评，但它是一个有系统性偏差的裁判，必须配套消偏手段（19.5.2 节详解）。</p>
+<h3 id="1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</h3>
+<p>与<strong>目标设定与监控</strong>（第 11 章）是"点与面"：第 11 章的判据、trace、metric、eval 四件套在单次任务尺度上运转，本章把它们在系统尺度上组织成评估金字塔与 CI 门禁；第 11 章的完成判据往往是本章场景回归中单个案例的判分函数。与<strong>异常处理</strong>（第 12 章）的接口在监控侧：在线 metric 的异常（成功率骤降、p95 延迟飙升）是熔断与降级的触发源。与<strong>学习与适应</strong>（第 9 章）是上下游：在线评估发现的坏案例是优化提示词、微调与 few-shot 库的原料，而学习产出的新版本必须回到本章的场景回归里验证——没有评估闭环的"学习"无法区分改进与过拟合。与<strong>人机协同</strong>（第 13 章）的接口在标定环节：LLM 裁判的结论需要定期抽样人工复核以校准，争议样本升级人工标注。与<strong>多智能体/A2A</strong>（第 7、15 章）的关系在归因：多角色系统的失败定位需要按角色切分的 trace，本章的观测约定（19.5.5 节）为此提供结构。</p>
+<h2 id="192-起源与历史最早是谁提出来的">19.2 起源与历史：最早是谁提出来的</h2>
+<p>评估这件事的学术史几乎与 NLP 同龄，但 LLM 时代的评估体系有三条清晰的转折线：从"任务专用指标"到"综合评测套件"，从"静态榜单"到"人类偏好竞技场"，以及从"评模型"到"评智能体系统"。工程侧的可观测性则直接继承了微服务时代 OpenTelemetry 的遗产。</p>
+<table>
+<thead>
+<tr>
+<th>年份月</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2018-04</td>
+<td>GLUE：九项语言理解任务统一评测，模型首次在"考试"上互相比较（2019-05 追加更难的 SuperGLUE）</td>
+<td>Alex Wang 等（NYU/UW/DeepMind）</td>
+<td>arXiv:1804.07461；arXiv:1905.00537</td>
+</tr>
+<tr>
+<td>2020-09</td>
+<td>MMLU：57 学科多项选择，考"世界知识"而非语言技巧，成为预训练模型标配考卷</td>
+<td>Dan Hendrycks 等（UC Berkeley 等）</td>
+<td>arXiv:2009.03300（ICLR 2021）</td>
+</tr>
+<tr>
+<td>2021-07</td>
+<td>HumanEval 与 pass@k：代码生成改用"单元测试通过"这一函数正确性判据</td>
+<td>Mark Chen 等（OpenAI，Codex 论文）</td>
+<td>arXiv:2107.03374</td>
+</tr>
+<tr>
+<td>2022-11</td>
+<td>HELM：提出"整体评估"方法论——一个模型×多场景×多指标×多扰动，评估从单一分数走向多维剖面</td>
+<td>Percy Liang 等（Stanford CRFM）</td>
+<td>arXiv:2211.09110</td>
+</tr>
+<tr>
+<td>2023-03</td>
+<td>Chatbot Arena：基于匿名对战与人类偏好投票的 Elo 排行，动态、抗污染的评估范式</td>
+<td>Wei-Lin Chiang 等（LMSYS/UC Berkeley）</td>
+<td>arXiv:2303.15061</td>
+</tr>
+<tr>
+<td>2023-06</td>
+<td>MT-Bench / LLM-as-judge：系统验证"强模型当裁判"与人类偏好的一致性，并命名位置偏差等已知问题</td>
+<td>Lianmin Zheng 等（LMSYS）</td>
+<td>arXiv:2306.05685（NeurIPS 2023）</td>
+</tr>
+<tr>
+<td>2023-08</td>
+<td>AgentBench：首个面向智能体多环境（操作系统、数据库、网页、游戏等）的综合评测</td>
+<td>Xiao Liu 等（清华 THUDM 等）</td>
+<td>arXiv:2308.03688（ICLR 2024）</td>
+</tr>
+<tr>
+<td>2023-09</td>
+<td>RAGAS：把 RAG 评估拆解为忠实度、答案相关性、上下文精确率/召回率等可计算维度</td>
+<td>Shahul Es 等</td>
+<td>arXiv:2309.15217（EACL 2024）</td>
+</tr>
+<tr>
+<td>2023-10</td>
+<td>SWE-bench：以真实 GitHub issue 为任务的软件工程基准，"改测试作弊"问题进入视野</td>
+<td>Carlos Jimenez 等（普林斯顿）</td>
+<td>arXiv:2310.06770（ICLR 2024）</td>
+</tr>
+<tr>
+<td>2023-11</td>
+<td>GAIA：466 道对人类容易（92%）对 AI 难的通用助手任务，测试集答案私有化抗污染</td>
+<td>Grégoire Mialon 等（Meta AI/Hugging Face）</td>
+<td>arXiv:2311.12983（ICLR 2024）</td>
+</tr>
+<tr>
+<td>2023</td>
+<td>LLM 可观测性工具落地：LangSmith 发布、Langfuse 开源，trace/eval 数据集产品化</td>
+<td>LangChain / Langfuse</td>
+<td>各官方发布</td>
+</tr>
+<tr>
+<td>2024 起</td>
+<td>OpenTelemetry GenAI 语义约定推进，gen_ai.* 属性族统一各框架的遥测数据</td>
+<td>OpenTelemetry 社区</td>
+<td>OTel 官方规范（持续修订）</td>
+</tr>
+<tr>
+<td>2024-06</td>
+<td>τ-bench：评测智能体在工具调用对话中的领域合规与用户模拟交互，引入 pass^k 指标</td>
+<td>Shunyu Yao 等（Sierra/普林斯顿）</td>
+<td>arXiv:2406.12045</td>
+</tr>
+</tbody>
+</table>
+<p>演化脉络有三条主线。<strong>判据线</strong>：BLEU 类重叠指标的失灵（同义改写被罚、流畅错误得分）推动了两个方向——要么把判据交给可执行测试（HumanEval 的单元测试、SWE-bench 的测试套件），要么交给另一个模型（LLM-as-judge）；后者由 MT-Bench 工作完成了第一次系统性验证与偏差命名。<strong>环境线</strong>：静态考卷（MMLU）很快被背题与饱和侵蚀，于是评估转向动态（Arena 的持续对战）、转向环境（AgentBench 的多场景、SWE-bench 的真实仓库）、转向私有化（GAIA 的答案保密、τ-bench 的用户模拟器），本质都是同一场对抗：<strong>让"考过试"不能再替代"有能力"</strong>。<strong>工程线</strong>：微服务时代的观测标准（OpenTelemetry）被移植到 LLM 领域，GenAI 语义约定把 prompt、completion、token 用量、工具调用纳入统一遥测，使智能体系统的质量数据可以汇入企业既有观测设施，而不是自建孤岛。</p>
+<h2 id="193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</h2>
+<p>第一，它把迭代从赌博变成工程。智能体系统的改动频率远高于传统软件（提示词、检索配置、模型版本都可能周更），每次改动都埋着回归风险。有了场景回归与 CI 门禁，"改坏了"在合并前就被拦下，而不是上线后由用户发现——这与单元测试之于传统代码的价值完全同构，只是判据更贵、更软、更需要消偏。</p>
+<p>第二，它让多目标决策有了共同语言。智能体系统永远在多个目标间权衡：质量、成本、延迟、安全。没有统一度量，这些讨论沦为各说各话的立场之争；有了分维度的评估剖面（HELM 方法论的核心思想），团队可以量化"多花 20% 成本换 3 个点的质量"是否值得，路由决策（第 2 章）与资源感知优化（第 16 章）也因此有了输入。</p>
+<p>第三，它是在线系统安全运行的哨兵。模型供应商悄悄更新、上游 API 行为漂移、语料库被污染、某类流量突然劣化——这些都不是离线测试能预见的事件，只有在线监控三件套能在第一时间发出信号。评估体系还是安全模式（第 18 章）的验证器：护栏有没有效、攻击面有没有扩大，都要靠对抗性评估集来回答。</p>
+<h2 id="194-实际应用与案例">19.4 实际应用与案例</h2>
+<p><strong>RAG 客服系统的分维度评估</strong>。场景：企业知识库问答机器人每次更新检索配置都要验证质量。做法：用 RAGAS 式维度拆解（忠实度、答案相关性、上下文精确率/召回率）构建评估流水线，忠实度用 LLM 裁判判"每个论断是否被检索片段支撑"，上下文指标程序化计算。关键设计点：忠实度一票否决（编造比不答更伤信任），其余维度看加权分；黄金集按问题类型分层，每层独立报告，避免全局均值掩盖某类问题的塌方。</p>
+<p><strong>编码智能体的回归验证</strong>。场景：内部代码修复 agent 每周迭代。做法：从历史工单采样构造几十个"仓库快照 + issue + 测试"的任务，每次改动全量重跑，统计解决率与回归数。关键设计点：判据是测试通过且 diff 未触碰测试文件（防"改测试作弊"，SWE-bench 揭示的经典漏洞）；任务按难度分级，区分"变强了"与"只是运气好"。</p>
+<p><strong>对话产品的灰度与在线 A/B</strong>。场景：新提示词版本要上线。做法：先过离线回归，再按 5%→25%→50% 灰度放量，A/B 组对比任务完成率、人工转接率、用户负反馈率。关键设计点：在线 eval 按比例抽样（如 2%）用裁判模型打分，成本可控；任何一组指标跌破基线置信区间立即回滚——回滚按钮永远比论证会便宜。</p>
+<p><strong>批量摘要作业的质量抽检</strong>。场景：每日数万篇文档的摘要流水线。做法：程序断言做塔基（长度区间、必含要素、无占位符），LLM 裁判按 2% 抽样做塔身，异常批次触发加密抽检。关键设计点：裁判分数按批次聚合而非逐条告警，避免裁判自身噪声制造狼来了效应。</p>
+<p><strong>模型切换决策</strong>。场景：供应商发新模型，价格减半。做法：在自建黄金集上跑新旧模型对照（同一套提示词、多次采样报均值与方差），按任务类型切分，产出"哪些任务可切、哪些必须留守"的迁移矩阵。关键设计点：成本优势必须换算成"每任务质量成本"再比较；裁判模型保持不变，避免"换选手同时换裁判"。</p>
+<h2 id="195-深度讲解">19.5 深度讲解</h2>
+<h3 id="1951-评估金字塔分层配比与预算分配">19.5.1 评估金字塔：分层、配比与预算分配</h3>
+<p>评估金字塔的三层不是三种工具，而是三种<strong>经济学</strong>。塔基（单点断言）单次成本趋近于零、毫秒级、完全确定，因此可以每次提交都跑、每个输出都跑；它能抓住格式错误、越界内容、引用造假这类"结构性失败"，但对"答非所问"无能为力。塔身（场景回归）单次成本是"黄金集规模 × 单任务推理成本"，分钟到小时级，置信度高，适合每次发布前跑；它的盲区是黄金集本身——集合里没有的场景，回归测不出问题。塔尖（在线 A/B）单次成本最高（可能影响真实用户），周期以天计，但它测量的是最终真相：不是"裁判认为更好"，而是"用户用行为投票"。</p>
+<p>配比原则是<strong>自下而上递减频率、自上而下递减容忍度</strong>：塔基每次改动跑（CI 里分钟级），塔身每次发布跑（可能带抽样以控成本），塔尖每季度或重大改动跑一次。预算分配上有一条常被违反的原则：<strong>黄金集的建设投入应远大于裁判调优的投入</strong>——团队容易陷入"反复调裁判提示词让分数好看"的局部优化，而评估体系的有效性上限由黄金集的代表性决定。另一条实践经验：三层不是串行审批而是<strong>漏斗</strong>——塔基拦截 80% 的低级回归让塔身聚焦语义质量，塔身拦下的语义回归减少塔尖暴露给用户的伤害，每层的过滤器特性不同，缺任何一层都会把某类失败直通到生产。</p>
+<h3 id="1952-llm-as-judge偏差来源与消偏工程">19.5.2 LLM-as-judge：偏差来源与消偏工程</h3>
+<p>LLM 裁判的价值由 Zheng 等人的 MT-Bench 工作确立：强模型在成对比较任务上与人类偏好的一致率可以超过 80%，接近人类标注者之间的一致率。但一致性高的前提是<strong>裁判显著强于选手</strong>；裁判与选手能力越接近，偏差越明显。工程上必须管理四类系统性偏差。</p>
+<p><strong>位置偏差</strong>：成对比较时，裁判对呈现位置有稳定偏好（MT-Bench 实验中 GPT-4 裁判显著偏爱第一个答案）。对策是<strong>换序取平均</strong>：同一对答案以两种顺序各判一次，两次都判 A 优才算 A 胜，冲突记平局；或取两次得分的均值。这个技巧成本翻倍但几乎是必需的——单次比较的胜负顺序里混着大量位置噪声。更彻底的做法是三局两胜加随机占位（答案随机映射到位置 A/B），把残余偏差变成噪声而非方向性错误。</p>
+<p><strong>冗长偏差</strong>：裁判系统性地偏爱更长的答案——长度本身成了质量信号，诱导被评系统学会"啰嗦"。对策有三：按维度拆分 rubric，把"简洁性"设为显式评分项而非让长度隐式影响总分；在裁判指令中显式声明"长度不计入质量，重复内容应扣分"；必要时做长度配对（比较前把两答案截断到相近长度）。<strong>自我偏好</strong>：模型偏爱与自己风格相近的输出，用 GPT 家族模型评 GPT 家族选手时最明显；对策是裁判与执行者使用不同家族的模型，至少不同版本。<strong>判分尺度漂移</strong>：让裁判直接输出 1-10 分，分数会随上下文、随时间漂移，跨版本不可比。对策是<strong>成对比较优先</strong>（只输出相对判断，天然免疫绝对尺度漂移）；必须用绝对分时，提供锚定样例（"这是 9 分的样例、这是 5 分的样例"）并把 rubric 写成可核对的判据清单而非形容词。</p>
+<p>消偏之外还有两条底线。<strong>裁判不能只输出结论</strong>：要求它逐条引用 rubric 给出理由再给分（先理由后结论），理由本身是可审计的证据，也为人工复核提供抓手。<strong>裁判需要定期标定</strong>：抽样若干裁判结论交人工复核，计算一致率；一致率跌破阈值（如 85%）说明裁判或 rubric 已经漂移，评估分数应视为不可信。一个实用的标定技巧：在评估集中混入"已知优劣"的对照样本（人工标注过），裁判判错对照样本的次数就是它的实时体检报告。</p>
+<h3 id="1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</h3>
+<p>黄金集（golden set / 评估数据集）是整个体系的度量基准，它自身的管理比评估算法更值得投入。<strong>分层结构</strong>是第一原则：冒烟层（10-20 条，秒级，验证链路通不通）、回归层（100-500 条，覆盖各任务类型与历史事故案例）、挑战层（对抗样本、边界案例、已知难例，用于观察退化而非卡门禁）。每条样本包含：输入、判据（参考答案或 rubric）、元数据（任务类型、难度、来源、加入时间）。<strong>版本化</strong>是第二原则：黄金集与代码一样进版本管理，评估结果必须绑定"代码版本 × 数据集版本 × 裁判版本"三元组，否则任何跨时间的分数比较都是刻舟求剑。</p>
+<p><strong>防污染</strong>（decontamination）是 LLM 时代评估的独特课题：训练数据里出现过考题，分数就变成记忆力的度量。SWE-bench 论文专门讨论了这一问题（其任务来自公开仓库，作者做了提交时间切分与去重），GAIA 更进一步把测试集答案完全私有化。生产系统的对策按强度递进：公开基准只作参考不作门禁；自建黄金集绝不进入任何公开语料，并在系统提示与 RAG 语料中加入金丝雀串（canary string）以检测泄漏；测试用例与参考答案对执行 agent 保密（第 11 章的"不许改测试"约束在此重申——判据对被测者可见的那天，就是判据死亡之日）。<strong>保鲜</strong>是第三原则：黄金集会自然腐化——任务类型随业务漂移，旧案例被新版本反复"学习"。机制上要建立单向流入：在线监控发现的坏案例（用户负反馈、人工改写、裁判低分）经人工标注后进入回归层；定期（如每季度）淘汰过时案例并审视各类型覆盖度。黄金集的大小以"全量回归一次的成本可承受"为准，宁小而准、不到大而杂。</p>
+<h3 id="1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</h3>
+<p>门禁的本质是<strong>把质量分数变成发布流程的一等公民</strong>，与单元测试同级。设计门禁要回答四个问题。一是<strong>卡什么指标</strong>：核心维度设硬阈值（如忠实度均值不低于基线减 1 分），次要维度只记录不拦截；绝对阈值不如<strong>相对基线</strong>（与本版本相比下降超过 x% 即拦），后者能随系统演进自动校准。二是<strong>噪声怎么处理</strong>：非确定性输出意味着单次跑分有方差。对策是关键指标多次采样（每个案例跑 3-5 次报均值），并把采样方差计入判定——新版本均值微升但方差翻倍，通常应视为退化。统计上，小样本黄金集的分数差异要过显著性检验再下结论，两个版本 3% 的差距在 100 个案例上大概率是噪声。三是<strong>失败了怎么办</strong>：门禁失败分两型——确定性失败（断言不过、语法错误）直接打回；边缘失败（分数临界）允许标记例外并强制人工审批，但要留痕，例外不能静默累积成常态。四是<strong>门禁自身会不会腐化</strong>：阈值与 rubric 变更必须走与代码同样的评审流程，且"放宽门禁让这次改动通过"的每一次都应触发警报——门禁被业务压力侵蚀是这类体系最常见的死法。</p>
+<p>成本上，回归不必每次全量：CI 日常跑冒烟层加抽样回归（如每类型抽 20%），夜间或发布前跑全量。判分顺序也有讲究——先跑程序断言再跑 LLM 裁判，让免费判据先把结构性失败筛掉，裁判预算只花在语义判定上。</p>
+<h3 id="1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</h3>
+<p><strong>trace 是地基</strong>。每条执行轨迹应含：请求上下文、每步的模型调用（提示词摘要、模型版本、token 用量）、工具调用（名称、参数摘要、返回状态、耗时）、错误与降级事件。格式上不要自造标准——OpenTelemetry 的 GenAI 语义约定正在把 <code>gen_ai.system</code>、<code>gen_ai.request.model</code>、<code>gen_ai.usage.input_tokens</code> 这类属性名标准化，按它的形状存 trace，可以无缝汇入 Langfuse、LangSmith 或企业既有观测后端。trace 的价值在<strong>可回放</strong>：任何一条坏案例都应能凭 trace 完整复原执行过程。</p>
+<p><strong>metric 是仪表盘</strong>。质量类：任务完成率、裁判抽检均分、人工转接率、用户负反馈率。成本类：每任务 token 消耗与金额，按任务类型切片。延迟类：<strong>分位值而非均值</strong>——p50 回答"典型用户体验"，p95/p99 回答"最差的 5% 用户有多惨"；智能体系统延迟分布是重尾的（多步执行、重试、工具超时叠加），均值会被大量快请求掩埋少数灾难请求，用均值做 SLO 是最常见的观测错误。延迟还要按"步"分解：端到端 30 秒的任务，是模型慢、工具慢还是步数变多？只有分步 trace 能回答。metric 的另一个原则是<strong>切片</strong>：按任务类型、模型版本、用户群、时段切分看，全局均值几乎总是骗人的——某类任务从 90% 掉到 60%，被其他类型的 95% 平均后只剩一个无害的 88%。</p>
+<p><strong>eval 是终审</strong>。在线 eval 是抽样执行的质量判定：按比例（1%-5%）抽样，程序断言全量跑（便宜），裁判打分按抽样率跑。在线 eval 的独有价值是<strong>发现离线想不到的失败模式</strong>：黄金集来自过去的想象，线上流量藏着未来的意外。抽样策略上，均匀抽样之外要做<strong>定向加抽</strong>——新版本上线初期、异常指标触发的时段、特定任务类型，抽样率动态上调。</p>
+<h3 id="1956-失效模式反模式与何时不需要">19.5.6 失效模式、反模式与何时不需要</h3>
+<p>五种典型失效。<strong>Goodhart 陷阱</strong>：度量成为目标后失真——团队优化裁判分数而非真实质量，模型学会迎合裁判的 rubric（写得冗长、堆砌要点）。对策是定期轮换 rubric 措辞、混入对抗样本、以在线指标为最终裁决。<strong>裁判共谋</strong>：被评系统与裁判同源（同模型家族、甚至同一提示词模板），分数系统性虚高。<strong>门禁疲劳</strong>：门禁失败太频繁，团队养成"强制合并"的习惯，门禁名存实亡——这通常说明阈值或黄金集需要修，而不是门禁该废。<strong>指标空转</strong>：采集了大量 trace 与 metric 却无人消费，观测成本纯支出；观测体系要有明确的"谁看、看什么、超阈值谁行动"。<strong>过时基准幻觉</strong>：继续用早已饱和的公开榜单（如 MMLU 高分趋同）作为升级依据，测不出真实差距。</p>
+<p>反模式清单：用单次运行的成功宣称改进（非确定性下毫无意义）；全局均值代替分层报告；裁判与被评系统同模型且不消偏；黄金集三年不更新；只测 happy path 不含对抗与边界；把评估报告做成"发新闻稿"（挑好看的维度）而非"体检报告"。何时可以不用：一次性脚本与纯实验代码（评估成本高于价值）；单用户个人工具（用户自己就是裁判）；以及纯确定性的传统代码路径——那部分应该用单元测试，别套用本章的重型机器。</p>
+<h2 id="196-工程落地实践代码示例">19.6 工程落地：实践代码示例</h2>
+<h3 id="1961-框架无关实现完整可运行">19.6.1 框架无关实现（完整可运行）</h3>
+<p>一个带消偏的 LLM-as-judge 评估器：程序断言先行（免费判据筛结构性失败），rubric 打分与成对比较双模式，成对比较强制换序取平均消位置偏差，裁判解析失败降级到确定性启发式。演示任务是比较两个摘要提示词版本在样例文档上的产出。本例在 Python 3.10+ 下语法实测；配置 <code>AGENT_LLM_API_KEY</code> 后走真实模型，未配置时自动切换到确定性 mock（便于读者先跑通全流程再接模型）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;LLM-as-judge 评估器：rubric 打分 + 换序消偏成对比较（框架无关实现）。
+
+依赖：pip install openai
+运行前设置环境变量（未设置时以确定性 mock 运行，便于先验证流程）：
+    export AGENT_LLM_API_KEY=...            # 可选
+    export AGENT_LLM_BASE_URL=...           # 可选，OpenAI 兼容网关
+    export AGENT_LLM_MODEL=...              # 可选，默认 gpt-4o-mini
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+import os
+import re
+from dataclasses import dataclass, field
+
+FENCE = chr(96) * 3  # 代码围栏标记，用 chr(96) 构造避免与本文档冲突
+
+
+# ---------------- 统一模型接入 ----------------
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。&quot;&quot;&quot;
+    if not os.environ.get(&quot;AGENT_LLM_API_KEY&quot;):
+        return mock_llm(prompt)  # 未配置密钥：确定性 mock，保证流程可验证
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+        api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+    )
+    model = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+    ]
+    resp = client.chat.completions.create(
+        model=model, messages=messages, temperature=temperature
+    )
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+def mock_llm(prompt: str) -&gt; str:
+    &quot;&quot;&quot;确定性 mock：按请求类型生成稳定输出，仅用于无密钥时跑通流程。&quot;&quot;&quot;
+    h = hash(prompt) % 100
+    if &quot;回答A&quot; in prompt and &quot;回答B&quot; in prompt:      # 成对比较请求
+        winner = &quot;A&quot; if h % 2 == 0 else &quot;B&quot;
+        tie = h % 7 == 0
+        return json.dumps({&quot;winner&quot;: &quot;tie&quot; if tie else winner, &quot;reason&quot;: &quot;mock 判定&quot;})
+    if &quot;总结&quot; in prompt:                              # 候选生成请求
+        body = prompt.split(&quot;：\n&quot;, 1)[1] if &quot;：\n&quot; in prompt else prompt
+        limit = 60 if &quot;两句话&quot; in prompt else 90
+        return body[:limit]                           # 截取原文作确定性&quot;摘要&quot;（数字必有依据）
+    return json.dumps(  # rubric 打分请求
+        {&quot;faithfulness&quot;: 3 + h % 3, &quot;coverage&quot;: 2 + h % 4, &quot;conciseness&quot;: 2 + h % 4,
+         &quot;reason&quot;: &quot;mock 打分&quot;}
+    )
+
+
+# ---------------- 数据结构 ----------------
+@dataclass
+class Rubric:
+    &quot;&quot;&quot;评分规则：每个维度一条可核对的判据，裁判须逐条引用后给分。&quot;&quot;&quot;
+    dimensions: dict[str, str] = field(default_factory=lambda: {
+        &quot;faithfulness&quot;: &quot;摘要中的每个论断是否都能在原文中找到依据（编造=1分）&quot;,
+        &quot;coverage&quot;: &quot;原文的关键信息点被覆盖的比例&quot;,
+        &quot;conciseness&quot;: &quot;无重复、无注水；长度不单独计分，冗余才扣分&quot;,
+    })
+
+
+def strip_fence(raw: str) -&gt; str:
+    &quot;&quot;&quot;剥掉模型可能自行添加的 json 围栏标记。&quot;&quot;&quot;
+    text = raw.strip()
+    if text.startswith(FENCE):
+        text = text.split(&quot;\n&quot;, 1)[1] if &quot;\n&quot; in text else &quot;&quot;
+    if text.endswith(FENCE):
+        text = text[: -len(FENCE)]
+    return text.strip()
+
+
+# ---------------- 评估器 ----------------
+class JudgeEvaluator:
+    &quot;&quot;&quot;塔身评估：程序断言 -&gt; rubric 绝对打分 -&gt; 成对比较（换序消偏）。&quot;&quot;&quot;
+
+    def __init__(self, rubric: Rubric):
+        self.rubric = rubric
+        self.judge_calls = 0          # 成本核算：裁判调用计数
+        self.judge_failures = 0       # 裁判失效计数（降级触发源）
+
+    # ---- 塔基：程序断言（免费、确定，先跑）----
+    @staticmethod
+    def programmatic_checks(text: str, source: str) -&gt; list[str]:
+        failures = []
+        if not (20 &lt;= len(text) &lt;= 400):
+            failures.append(f&quot;长度越界：{len(text)} 字&quot;)
+        if re.search(r&quot;TODO|占位|省略&quot;, text):
+            failures.append(&quot;含占位符&quot;)
+        numbers_in_text = set(re.findall(r&quot;\d+&quot;, text))
+        numbers_in_source = set(re.findall(r&quot;\d+&quot;, source))
+        if numbers_in_text - numbers_in_source:
+            failures.append(f&quot;出现原文没有的数字：{numbers_in_text - numbers_in_source}&quot;)
+        return failures
+
+    # ---- rubric 绝对打分（1-5 分制，带锚定说明与降级）----
+    def score(self, text: str, source: str) -&gt; dict:
+        system = (
+            &quot;你是严格的评估裁判。逐维度核对判据后打 1-5 分，先给理由再给分。&quot;
+            &quot;只输出 JSON：{\&quot;&lt;维度&gt;\&quot;: &lt;1-5分&gt;, ..., \&quot;reason\&quot;: \&quot;一句话总评\&quot;}&quot;
+        )
+        rubric_text = &quot;\n&quot;.join(f&quot;- {k}：{v}&quot; for k, v in self.rubric.dimensions.items())
+        prompt = f&quot;原文：\n{source}\n\n待评摘要：\n{text}\n\n评分规则：\n{rubric_text}&quot;
+        try:
+            data = json.loads(strip_fence(llm(prompt, system=system, temperature=0.0)))
+            self.judge_calls += 1
+            dims = {k: int(data[k]) for k in self.rubric.dimensions if k in data}
+            if len(dims) == len(self.rubric.dimensions):
+                return {&quot;scores&quot;: dims, &quot;reason&quot;: str(data.get(&quot;reason&quot;, &quot;&quot;))}
+            raise ValueError(f&quot;缺维度：{set(self.rubric.dimensions) - set(dims)}&quot;)
+        except Exception as exc:
+            self.judge_failures += 1
+            # 降级：确定性启发式（长度接近原文 1/3 给中评），保证评估链路不中断
+            ratio = len(text) / max(len(source), 1)
+            fallback = min(5, max(1, round(5 - abs(ratio - 0.33) * 8)))
+            return {&quot;scores&quot;: {k: fallback for k in self.rubric.dimensions},
+                    &quot;reason&quot;: f&quot;[裁判失效降级 {self.judge_failures} 次] {exc}&quot;}
+
+    # ---- 成对比较：换序取平均，消位置偏差 ----
+    def pairwise(self, text_a: str, text_b: str, context: str) -&gt; dict:
+        system = (
+            &quot;你是成对比较裁判。基于给定背景判断哪个回答更好，忽略位置与长度，&quot;
+            &quot;只输出 JSON：{\&quot;winner\&quot;: \&quot;A|B|tie\&quot;, \&quot;reason\&quot;: \&quot;一句话理由\&quot;}&quot;
+        )
+        prompt = f&quot;背景：{context}\n\n回答A：\n{text_a}\n\n回答B：\n{text_b}&quot;
+
+        def one_order(p: str) -&gt; str:
+            self.judge_calls += 1
+            data = json.loads(strip_fence(llm(p, system=system, temperature=0.0)))
+            return str(data[&quot;winner&quot;])
+
+        try:
+            w1 = one_order(prompt)
+            swapped = prompt.replace(&quot;回答A&quot;, &quot;@@TMP@@&quot;).replace(&quot;回答B&quot;, &quot;回答A&quot;)
+            swapped = swapped.replace(&quot;@@TMP@@&quot;, &quot;回答B&quot;)
+            w2 = {&quot;A&quot;: &quot;B&quot;, &quot;B&quot;: &quot;A&quot;, &quot;tie&quot;: &quot;tie&quot;}[one_order(swapped)]  # 还原到原始标签
+        except (KeyError, json.JSONDecodeError) as exc:
+            self.judge_failures += 1
+            return {&quot;winner&quot;: &quot;unknown&quot;, &quot;reason&quot;: f&quot;裁判解析失败：{exc}&quot;}
+
+        if w1 == w2:
+            return {&quot;winner&quot;: w1, &quot;reason&quot;: &quot;换序一致，判定可信&quot;}
+        return {&quot;winner&quot;: &quot;tie&quot;, &quot;reason&quot;: &quot;换序不一致（位置偏差所致），记平局&quot;}
+
+
+# ---------------- 演示 ----------------
+SOURCE = (
+    &quot;公司季度报告：本季度营收 1200 万元，同比增长 18%。核心业务线用户数达 45 万。&quot;
+    &quot;成本方面，云支出下降 9%，主要来自缓存优化。下季度计划扩展东南亚市场，&quot;
+    &quot;预算 300 万元。风险提示：汇率波动可能影响海外收入。&quot;
+)
+
+PROMPT_V1 = &quot;请总结以下文本：\n{src}&quot;
+PROMPT_V2 = &quot;请用不超过两句话总结以下文本的关键数字与计划，不要添加原文没有的信息：\n{src}&quot;
+
+if __name__ == &quot;__main__&quot;:
+    ev = JudgeEvaluator(Rubric())
+    candidates = {}
+    for name, tpl in [(&quot;v1&quot;, PROMPT_V1), (&quot;v2&quot;, PROMPT_V2)]:
+        raw = llm(tpl.format(src=SOURCE), temperature=0.2)
+        hard = ev.programmatic_checks(raw, SOURCE)
+        soft = ev.score(raw, SOURCE)
+        candidates[name] = raw
+        print(f&quot;[{name}] 程序断言：{'通过' if not hard else hard}&quot;)
+        print(f&quot;[{name}] rubric 得分：{soft['scores']}（{soft['reason']}）&quot;)
+
+    verdict = ev.pairwise(candidates[&quot;v1&quot;], candidates[&quot;v2&quot;], context=&quot;公司季度报告摘要&quot;)
+    print(f&quot;\n成对比较（换序消偏）：胜者={verdict['winner']}（{verdict['reason']}）&quot;)
+    print(f&quot;裁判调用 {ev.judge_calls} 次，失效降级 {ev.judge_failures} 次&quot;)
+</code></pre>
+<h3 id="1962-框架集成实现opentelemetry-genai-风格-trace-埋点">19.6.2 框架集成实现（OpenTelemetry GenAI 风格 trace 埋点）</h3>
+<p>生产中的标准做法是给执行链路打 OTel span，按 GenAI 语义约定填 <code>gen_ai.*</code> 属性，导出到 Langfuse/Jaeger 等后端。下面用零依赖的轻量实现演示这套埋点的形状（属性命名遵循 OTel GenAI 约定的风格），并演示"trace → metric → 抽样 eval"的聚合。完整可运行；接入真实后端时把 <code>_export</code> 换成 <code>opentelemetry-sdk</code> 的 exporter 或 Langfuse SDK 即可。</p>
+<pre><code class="language-python">&quot;&quot;&quot;OpenTelemetry GenAI 风格 trace 埋点：span 树 + metric 聚合 + 抽样 eval 钩子。
+
+依赖：无（纯标准库）。生产替换点见 _export 注释。
+运行：python ch19_trace.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import os
+import random
+import time
+import uuid
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Span:
+    &quot;&quot;&quot;一条执行轨迹节点：对应 OTel 的一个 span，属性按 GenAI 语义约定命名。&quot;&quot;&quot;
+    name: str
+    trace_id: str
+    attributes: dict = field(default_factory=dict)
+    start_ns: int = field(default_factory=time.perf_counter_ns)
+    end_ns: int = 0
+    children: list[&quot;Span&quot;] = field(default_factory=list)
+
+    def duration_ms(self) -&gt; float:
+        return (self.end_ns - self.start_ns) / 1e6 if self.end_ns else 0.0
+
+
+class GenAITracer:
+    &quot;&quot;&quot;最小 trace 收集器：嵌套 span + 原样导出。生产中替换为 OTel exporter。&quot;&quot;&quot;
+
+    def __init__(self, sample_eval_rate: float = 0.5):
+        self.roots: list[Span] = []
+        self._stack: list[Span] = []
+        self.sample_eval_rate = sample_eval_rate   # 在线 eval 抽样率
+        self.eval_results: list[dict] = []
+
+    @contextmanager
+    def span(self, name: str, **attrs):
+        s = Span(name=name, trace_id=uuid.uuid4().hex[:8], attributes=dict(attrs))
+        if self._stack:
+            s.trace_id = self._stack[-1].trace_id  # 子 span 沿用父 trace
+            self._stack[-1].children.append(s)
+        else:
+            self.roots.append(s)
+        self._stack.append(s)
+        try:
+            yield s
+        finally:
+            s.end_ns = time.perf_counter_ns()
+            self._stack.pop()
+
+    def maybe_eval(self, span: Span, answer: str, judge) -&gt; None:
+        &quot;&quot;&quot;按抽样率对产出的 trace 做在线 eval（judge 返回 1-5 分）。&quot;&quot;&quot;
+        if random.random() &lt; self.sample_eval_rate:
+            score = judge(answer)
+            self.eval_results.append({&quot;span&quot;: span.name, &quot;score&quot;: score})
+            span.attributes[&quot;gen_ai.evaluation.score&quot;] = score
+
+    def _export(self) -&gt; None:
+        # 生产替换点：换成 opentelemetry.sdk.trace.export 或 langfuse.sdk 上报。
+        # 此处本地打印，保持零依赖可运行。
+        def render(s: Span, depth: int) -&gt; None:
+            gen = {k: v for k, v in s.attributes.items() if k.startswith(&quot;gen_ai.&quot;)}
+            print(&quot;  &quot; * depth + f&quot;{s.name} [{s.duration_ms():.1f}ms] {gen}&quot;)
+            for c in s.children:
+                render(c, depth + 1)
+
+        for r in self.roots:
+            render(r, 0)
+
+
+# ---------------- 模拟业务链路：检索 -&gt; 生成 -&gt; 巡检 ----------------
+def fake_retrieve(query: str) -&gt; list[str]:
+    time.sleep(0.01)
+    return [f&quot;doc#{hash(query) % 90 + 10}：季度营收 1200 万元，同比增长 18%&quot;]
+
+
+def fake_generate(context: list[str]) -&gt; str:
+    time.sleep(0.02)
+    return f&quot;根据 {context[0].split('：')[0]}，本季度营收同比增长 18%。&quot;
+
+
+def simple_judge(answer: str) -&gt; int:
+    &quot;&quot;&quot;玩具裁判：含具体数字给 4 分，含模糊词扣分。生产中换 LLM 裁判。&quot;&quot;&quot;
+    base = 4 if &quot;18%&quot; in answer else 2
+    return max(1, base - (1 if any(w in answer for w in (&quot;大概&quot;, &quot;可能&quot;)) else 0))
+
+
+if __name__ == &quot;__main__&quot;:
+    random.seed(42)
+    tracer = GenAITracer(sample_eval_rate=1.0)  # 演示用全采样，生产建议 0.01-0.05
+
+    for i, query in enumerate([&quot;本季度营收如何&quot;, &quot;同比增长多少&quot;, &quot;云支出情况&quot;]):
+        with tracer.span(&quot;agent.run&quot;, **{
+            &quot;gen_ai.system&quot;: &quot;demo-agent&quot;, &quot;gen_ai.request.model&quot;: &quot;gpt-4o-mini&quot;,
+            &quot;session.id&quot;: f&quot;s-{i}&quot;,
+        }) as run:
+            with tracer.span(&quot;retrieval.search&quot;, query=query) as r:
+                docs = fake_retrieve(query)
+                r.attributes[&quot;doc.count&quot;] = len(docs)
+            with tracer.span(&quot;llm.chat&quot;, **{
+                &quot;gen_ai.prompt&quot;: query,
+                &quot;gen_ai.usage.input_tokens&quot;: 120, &quot;gen_ai.usage.output_tokens&quot;: 30,
+            }) as call:
+                answer = fake_generate(docs)
+                call.attributes[&quot;gen_ai.completion&quot;] = answer[:50]
+            tracer.maybe_eval(run, answer, simple_judge)
+
+    tracer._export()
+    scores = [e[&quot;score&quot;] for e in tracer.eval_results]
+    if scores:
+        print(f&quot;\n[metric] 抽样 eval 均分={sum(scores) / len(scores):.2f}（n={len(scores)}）&quot;)
+        print(f&quot;[metric] eval 结果将随 trace 一并汇入监控后端：{os.getenv('OTEL_EXPORTER', 'stdout')}&quot;)
+</code></pre>
+<h3 id="1963-生产化改造清单">19.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：裁判输出解析失败必须降级（启发式或跳过）并计数，禁止让评估流水线因裁判抖动而整体失败；裁判失效率进监控。</li>
+<li><strong>超时与并发</strong>：黄金集回归用有界并发跑（如 8 路），单案例设超时；超时计入失败而非崩溃。</li>
+<li><strong>缓存</strong>：以"案例 ID + 被测版本 + 裁判版本"为键缓存裁判结论，重复回归不重复付费；被测版本变更才失效。</li>
+<li><strong>可观测</strong>：评估体系自身也要可观测——裁判调用数、成本、失效率、黄金集各层耗时做成看板，评估流水线挂了要有告警。</li>
+<li><strong>成本控制</strong>：抽样分层（塔基全量、裁判抽样）；成对比较换序只在关键维度启用；长文本先截断或分段再评。</li>
+<li><strong>数据卫生</strong>：黄金集进版本管理并设访问控制；金丝雀串检测泄漏；对执行 agent 保密参考答案；坏案例回流走人工标注闸门。</li>
+<li><strong>裁判治理</strong>：裁判与执行模型异源；定期人工标定一致率；rubric 变更走评审；对照样本常驻评估集做裁判体检。</li>
+<li><strong>门禁纪律</strong>：阈值绑定基线相对比较；例外合并强制留痕并告警；分数必须绑定"代码×数据集×裁判"三元组版本。</li>
+<li><strong>在线联动</strong>：metric 异常（成功率、p95、eval 均分）接告警与自动回滚；降级事件（第 12 章）打标进 trace，降级率超阈值同样告警。</li>
+</ul>
+<h2 id="197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</h2>
+<h3 id="本章小结">本章小结</h3>
+<p>评估与监控把智能体系统的质量从"感觉"变成"工程事实"：评估金字塔用三经济学分层（断言高频免费、回归发布前把关、A/B 终审真相），LLM-as-judge 补上语义判据但必须消位置偏差、控冗长偏差并定期人工标定，黄金集按分层、版本化、防污染、保鲜四原则管理，CI 门禁把分数变成发布流程的一等公民，在线 trace/metric/eval 三件套以分位值与切片盯住真实流量。评估不是开发完成后的附加题，而是与提示词、代码同等地位的系统构件——它决定了一个团队能不能安全地快速迭代。</p>
+<h3 id="核心要点">核心要点</h3>
+<ul>
+<li>评估金字塔三层是三种经济学：塔基每次改动跑，塔身每次发布跑，塔尖低频高置信；缺任何一层都会让某类失败直通生产。</li>
+<li>LLM-as-judge 适用前提是裁判显著强于选手；成对比较换序取平均消位置偏差，rubric 显式列"简洁性"消冗长偏差，裁判与执行模型异源消自我偏好。</li>
+<li>绝对分数会漂移，成对相对判断不会；必须用绝对分时给锚定样例。</li>
+<li>黄金集是体系的度量基准：分层（冒烟/回归/挑战）、版本化（代码×数据×裁判三元组）、防污染（答案保密、金丝雀串）、保鲜（坏案例单向回流）。</li>
+<li>门禁用相对基线而非绝对阈值；非确定性输出要多次采样并计方差；门禁例外必须留痕，"为过门禁而放宽门禁"要告警。</li>
+<li>延迟看 p50/p95/p99 而非均值，重尾分布下均值会说谎；metric 必须按任务类型切片，全局均值掩盖局部塌方。</li>
+<li>trace 按 OTel GenAI 语义约定的形状存，保证可回放、可汇入标准观测后端；每条坏案例都要能凭 trace 复原。</li>
+<li>Goodhart 陷阱是体系的终极敌人：定期轮换 rubric、混入对抗样本、以在线真实指标为最终裁决。</li>
+</ul>
+<h3 id="结论">结论</h3>
+<p>一个智能体团队的迭代速度上限，不由模型能力决定，而由评估体系的置信度决定——敢不敢合并、敢不敢上线、敢不敢切模型，背后都是"我们的分数可信吗"。评估与监控模式的全部工程细节（消偏、防污染、分位值、门禁纪律）都在回答同一个问题：如何让度量在噪声、偏差与博弈权衡的围攻下依然指向真相。把这个体系搭好，第 9 章的学习与适应才有安全的燃料，前十八章的每一个模式才有被验证的机会。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch18-guardrails-safety.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第18章 护栏机制</span></a><a class="pager" href="../chapters/ch20-prioritization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第20章 优先级排序</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#191-模式概述">19.1 模式概述</a></li><li class="toc-l3"><a href="#1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#192-起源与历史最早是谁提出来的">19.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#194-实际应用与案例">19.4 实际应用与案例</a></li><li class="toc-l2"><a href="#195-深度讲解">19.5 深度讲解</a></li><li class="toc-l3"><a href="#1951-评估金字塔分层配比与预算分配">19.5.1 评估金字塔：分层、配比与预算分配</a></li><li class="toc-l3"><a href="#1952-llm-as-judge偏差来源与消偏工程">19.5.2 LLM-as-judge：偏差来源与消偏工程</a></li><li class="toc-l3"><a href="#1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</a></li><li class="toc-l3"><a href="#1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</a></li><li class="toc-l3"><a href="#1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</a></li><li class="toc-l3"><a href="#1956-失效模式反模式与何时不需要">19.5.6 失效模式、反模式与何时不需要</a></li><li class="toc-l2"><a href="#196-工程落地实践代码示例">19.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1961-框架无关实现完整可运行">19.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1962-框架集成实现opentelemetry-genai-风格-trace-埋点">19.6.2 框架集成实现（OpenTelemetry GenAI 风格 trace 埋点）</a></li><li class="toc-l3"><a href="#1963-生产化改造清单">19.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

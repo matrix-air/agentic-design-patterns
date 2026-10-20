@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第20章 优先级排序 · 智能体设计模式</title>
+<meta name="description" content="把多任务竞争下的"先做哪个"从直觉变成算法——以四类稀缺资源为约束，用依赖、截止期、价值密度等信号定序，支持动态重排与预算耗尽时的优雅降级。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第四部分 · 高级架构</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a class="active" href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第四部分 · 高级架构</div>
+      <h1>第20章 优先级排序 <span class="en-title">Prioritization</span></h1>
+      <p class="chapter-summary">把多任务竞争下的"先做哪个"从直觉变成算法——以四类稀缺资源为约束，用依赖、截止期、价值密度等信号定序，支持动态重排与预算耗尽时的优雅降级。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：当多个任务竞争有限的上下文、token、时间与资金时，用显式的优先级信号（依赖深度、截止时间、价值、风险、成本）为任务定序或重排，并在资源耗尽时按价值保全原则优雅降级。
+<strong>解决什么问题</strong>：智能体面对任务队列时默认行为是先进先出或随手抓取，导致高价值任务饿死、紧急任务错过、预算耗尽时死在鸡毛蒜皮上 ｜ <strong>适用场景</strong>：多工单并行处理、长任务队列的自治运行、带预算约束的批量作业、多智能体共享资源池、任何"做不完所有事"的真实系统 ｜ <strong>核心机制</strong>：资源建模 → 优先级信号打分 → 依赖拓扑定合法执行序 → 静态排序或动态抢占 → 预算感知降级 ｜ <strong>代价</strong>：打分函数本身是新的维护面；动态重排带来饥饿与震荡风险；降级路径需要预先设计与演练。</p>
+</blockquote>
+<h2 id="201-模式概述">20.1 模式概述</h2>
+<h3 id="2011-问题背景为什么需要这个模式">20.1.1 问题背景：为什么需要这个模式</h3>
+<p>传统程序处理任务队列的问题早被工程界解决：消息队列按序消费，实时系统按截止期调度，操作系统按优先级抢占。智能体系统把老问题装进了新容器：任务不再是同质的字节流，而是异质的自然语言指令——每个任务的工期、价值、风险都不同且不可精确预知；资源也不再只有 CPU 时间，而是四种性质迥异的稀缺品。默认行为几乎必然失败：<strong>先进先出</strong>让一个两分钟的小咨询卡在一个两小时的研究任务后面；<strong>随手抓取</strong>（LLM 在上下文里看到什么就做什么）让花哨的低价值任务挤掉枯燥的高价值任务；<strong>一视同仁</strong>让所有任务共享预算，结果预算耗尽时高价值任务只完成了一半。</p>
+<p>比排序更根本的问题是<strong>放弃的艺术</strong>。资源永远不够，任何排序算法最终都会遇到"剩下的任务做不完"。没有优先级排序的系统在资源耗尽时的行为是随机的：可能恰好停在大事上，也可能把最后的预算花在装饰性小活上。优先级排序模式同时回答两个问题：<strong>资源够用时按什么顺序做</strong>（排序），<strong>资源不够用时舍弃什么</strong>（降级）。二者共享同一套价值判断——排序就是预演放弃。</p>
+<h3 id="2012-核心机制它如何工作">20.1.2 核心机制：它如何工作</h3>
+<p>机制分四步。<strong>第一步：资源建模</strong>。明确本系统的稀缺资源及其预算：上下文窗口（一次能装多少任务状态）、token/资金预算（还能调用多少次模型）、墙钟时间（哪些事有 deadline）、并发额度（多少任务能同时跑）。<strong>第二步：信号打分</strong>。每个任务带五个优先级信号：依赖深度（多少任务等它完成，阻塞别人者先行）、截止时间（距 deadline 的松弛量）、价值（完成后的收益，常需人工或业务规则赋予）、风险（失败或做错的代价与概率）、成本（预计消耗的资源）。<strong>第三步：定合法执行序</strong>。依赖关系构成有向图，先做拓扑排序（环即报错）得到偏序，再在每一"波"就绪任务里按优先级分排序——拓扑序保证正确性，优先级保证效率。<strong>第四步：执行与重排</strong>。静态方案一次排序后顺序执行，简单可预测；动态方案每完成一个任务就重算剩余队列（新任务到达、截止期逼近、上游失败都可能改变排序），必要时允许高优先级任务抢占低优先级任务。</p>
+<p>预算耗尽时的<strong>优雅降级</strong>是收尾机制：每个关键任务预配降级阶梯（完整版→简化版→占位回复），当剩余预算不足以跑完整版时，自动选择"剩余预算内价值最高"的执行档位，并在产出中打降级标记。降级的排序原则是<strong>价值保全</strong>：宁可所有任务都完成在 70% 质量，也不要一半任务 100%、一半任务 0%。</p>
+<h3 id="2013-与相邻模式的关系与组合">20.1.3 与相邻模式的关系与组合</h3>
+<p>与<strong>并行化</strong>（第 3 章）是"定序与并发"的分工：拓扑排序产出的每一波就绪任务正是并行化的输入——依赖图决定"谁必须等谁"，波内任务并行执行，并行宽度由并发额度这一稀缺资源决定。LLMCompiler 的任务 DAG 并行调度是二者结合的代表。与<strong>资源感知优化</strong>（第 16 章）是"排序与定价"的配合：本章把成本作为排序信号之一，第 16 章决定每个任务用哪个档位的模型执行——联合起来才是完整的预算管理（"先做哪个"+"每个用多贵的模型"）。与<strong>规划</strong>（第 6 章）的关系在层次上：规划把单个目标展开成任务 DAG，本章决定 DAG 上任务的执行顺序与资源分配。与<strong>异常处理</strong>（第 12 章）的接口在预算上：任务失败消耗的重试预算必须计入其成本信号，防止"失败任务靠无限重试霸占预算"。与<strong>多智能体</strong>（第 7 章）的关系在资源共享：多个 agent 竞争同一模型配额或工具限流时，需要一个全局仲裁者按本章机制分配——先来先服务在多 agent 场景下退化为随机。</p>
+<h2 id="202-起源与历史最早是谁提出来的">20.2 起源与历史：最早是谁提出来的</h2>
+<p>优先级排序的学术根源分散在三个传统里：运筹学与图论（依赖与定序）、实时系统（截止期调度）、决策科学（价值与紧急性的权衡）。工程队列设施则由云计算时代的消息队列与任务系统奠定，agent 时代出现了第一批原生实验。</p>
+<table>
+<thead>
+<tr>
+<th>年份月</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1950s 末</td>
+<td>PERT 网络技术：用任务依赖图与关键路径管理大型工程，拓扑定序思想的工程源头</td>
+<td>美国海军 Polaris 计划等</td>
+<td>PERT 项目实践</td>
+</tr>
+<tr>
+<td>1962-11</td>
+<td>拓扑排序算法：偏序任务集到合法全序的通用方法（今称 Kahn 算法），被调度系统沿用至今</td>
+<td>Arthur B. Kahn（西屋电气）</td>
+<td><em>Communications of the ACM</em> 5(11):558-562</td>
+</tr>
+<tr>
+<td>1973</td>
+<td>EDF（最早截止期优先）：证明单处理器上动态截止期调度可使所有可满足任务集按时完成</td>
+<td>C. L. Liu, James W. Layland</td>
+<td><em>Journal of the ACM</em>《Scheduling Algorithms for Multiprogramming in a Hard-Real-Time Environment》</td>
+</tr>
+<tr>
+<td>1989</td>
+<td>艾森豪威尔矩阵普及："重要×紧急"四象限进入大众管理实践（思想源自艾森豪威尔的演讲）</td>
+<td>Stephen Covey《高效能人士的七个习惯》</td>
+<td>Simon &amp; Schuster</td>
+</tr>
+<tr>
+<td>2002</td>
+<td>UCB 算法：多臂老虎机置信界策略的有限时间 regret 分析，预算分配问题的数学基座</td>
+<td>Peter Auer, Nicolò Cesa-Bianchi, Paul Fischer</td>
+<td><em>Machine Learning</em> 47(2-3)</td>
+</tr>
+<tr>
+<td>2006-11</td>
+<td>AWS SQS 上线：托管消息队列成为云时代任务分发的默认基础设施</td>
+<td>Amazon</td>
+<td>AWS 服务发布</td>
+</tr>
+<tr>
+<td>2009</td>
+<td>Celery 开源：Python 生态最广泛使用的分布式任务队列，优先级/重试/路由成标配</td>
+<td>Ask Solem</td>
+<td>GitHub 开源</td>
+</tr>
+<tr>
+<td>2014-10 起</td>
+<td>Airflow 诞生（Airbnb 内部启动，2015-06 正式公告，2019-01 成 Apache 顶级项目）：以 DAG 为第一等公民的工作流调度</td>
+<td>Maxime Beauchemin（Airbnb）</td>
+<td>Apache Airflow 官方项目史</td>
+</tr>
+<tr>
+<td>2023-04</td>
+<td>BabyAGI：任务队列式 agent 的流行早期形态（OpenAI API + 向量库驱动循环），其"无优先级、无终止控制"缺陷被社区广泛指出，反证了本章的必要性</td>
+<td>Yohei Nakajima</td>
+<td>GitHub 开源</td>
+</tr>
+<tr>
+<td>2023-12</td>
+<td>LLMCompiler：把 LLM 调用编排为任务 DAG 并行执行，降低延迟与成本</td>
+<td>Sehoon Kim 等（UC Berkeley 等）</td>
+<td>arXiv:2312.04511</td>
+</tr>
+</tbody>
+</table>
+<p>演化脉络可以读作"调度对象的持续抽象化"。实时系统调度的是有精确工期的进程，EDF 给出了最优性保证；消息队列调度的是同质消息，先进先出加上优先级字段够用；工作流引擎（Airflow）调度的是带依赖的批作业，DAG 成为一等公民。多臂老虎机一脉（Robbins 1952 年奠基的序列实验设计，经 UCB 到 Thompson Sampling）则处理更软的问题：<strong>价值未知时如何在探索与利用之间分配有限预算</strong>——这正是 agent 任务"价值不可预知"场景的数学模型。agent 时代的新困难在于工期与价值都需要估计：BabyAGI 证明了"先能跑"很容易，LLMCompiler 证明了"依赖图+并行"能省钱省时，而两者都没有回答"高价值任务如何不被饿死"——这个问题没有新答案，只有老智慧的新应用：把截止期、价值密度、预算约束显式建模，交给几十年前就成熟的调度理论。</p>
+<h2 id="203-发挥的作用为什么重要">20.3 发挥的作用：为什么重要</h2>
+<p>第一，它把有限资源对准最高价值。智能体系统的边际成本是真实的（token 即金钱），排序错误的代价可以直接换算：把预算花在价值密度 0.1 的任务上而不做价值密度 2.0 的任务，等于烧掉了 20 倍的潜在价值。对自治运行的系统（无人值守跑队列），排序就是系统"人格"的体现——它决定了系统在没人盯着时优先讨好谁。</p>
+<p>第二，它提供了可解释的资源仲裁。多任务、多 agent、多租户共享资源时，"为什么先做 A 后做 B"必须可回答，否则就是黑箱偏袒。显式的打分函数（依赖、截止期、价值、风险、成本）让仲裁有据可查、可审计、可调参——这既是工程需要也是治理需要。第 16 章的资源感知优化提供每个任务的"价格"，本章提供"出价顺序"，二者合起来才构成完整的资源市场。</p>
+<p>第三，它定义了系统失败时的姿态。没有降级设计的系统在预算耗尽时崩溃或烂尾；有降级设计的系统在同样预算下交出一份"所有承诺都兑现但部分打了折"的答卷。对面向用户的系统，前者是事故，后者是体验。优雅降级与人在回路（第 13 章）衔接：降级触发的任务自动升级为人工待办，形成闭环。</p>
+<h2 id="204-实际应用与案例">20.4 实际应用与案例</h2>
+<p><strong>客服工单分级处理</strong>。场景：单 agent 消化不断涌入的工单队列。做法：工单按 SLA（VIP 客户 1 小时、普通 24 小时）映射截止期，价值按客户等级与订单金额加权，EDF 式排序处理；高峰期预算吃紧时，低价值工单先降级为模板回复 + 人工待办。关键设计点：截止期相同才比价值，避免"重要但不急"永远压过"急"；每张降级工单必须进人工队列，防止降级变成遗忘。</p>
+<p><strong>深度研究 agent 的子问题分配</strong>。场景：一个研究报告任务分解出几十个子问题，token 预算有限。做法：规划阶段输出 DAG（部分子问题依赖前置结论），拓扑分波执行；每个子问题按"对最终报告的贡献度 × 信息增益估计 / 预计 token"打价值密度，低密度子问题自动降为跳过或一句话带过。关键设计点：预算消耗过半时触发重估——已获得的发现会改变剩余子问题的价值排序（这正是动态重排的场景）。</p>
+<p><strong>编码修复机器人</strong>。场景：机器人盯仓库 issue 列表自主修复。做法：依赖深度信号体现为"阻塞多少下游 issue"（从代码依赖图可算），截止期来自 issue 的里程碑标签，风险来自改动文件的核心度；每天为机器人设定 CI 时长预算，预算内按分数排序修。关键设计点：连续两次修复失败的 issue 自动降权（成本信号在惩罚它），防止机器人死磕一个坑。</p>
+<p><strong>批量文档处理流水线</strong>。场景：数万份合同的批量摘要，夜间窗口有限。做法：文档按"涉及金额 × 是否临近到期"定优先级，拓扑信号来自"这份合同的结论被后续分析引用"；窗口按 p95 工期（评估体系实测，见第 19 章）估算能做多少，排不进窗口的最低优先级文档自动发"已受理、次日出"回执。关键设计点：用实测工期分布而非拍脑袋估计做容量规划，低估 20% 的工期意味着 20% 的任务被承诺又违约。</p>
+<p><strong>多 agent 共享模型配额</strong>。场景：三个业务 agent 共享每分钟令牌限额。做法：全局仲裁者按"任务 SLA 距离 × 业务权重"给每个待执行调用出价，限流触发时价低者等待。关键设计点：要防饥饿（等待超时自动抬价，即老化机制）；仲裁决策全部打日志，争议时 可回放。</p>
+<p><strong>个人助理 agent 的日程缓冲</strong>。场景：助理 agent 管理用户的一天，随时插入新请求。做法：艾森豪威尔象限做粗分类（重要且紧急→立即、重要不紧急→排期、紧急不重要→降级给模板、不重要不紧急→拒绝或攒批），象限之内再按价值密度精排。关键设计点：粗分类供人理解（用户要能看懂为什么），精排供机器执行，两层各有受众。</p>
+<h2 id="205-深度讲解">20.5 深度讲解</h2>
+<h3 id="2051-四类稀缺资源性质不同管理方式不同">20.5.1 四类稀缺资源：性质不同，管理方式不同</h3>
+<p><strong>上下文窗口</strong>是最特殊的资源：它不是"消耗型"而是"挤占型"——同一时刻在处理的任务越多，每个任务能分到的上下文越少，质量随之下降。它的管理策略是控制并发宽度而非排队长度：宁可队列里排一百个任务，也不要二十个任务共享一个窗口。<strong>token/资金预算</strong>是消耗型资源，特点是不可逆、单价可变（第 2 章路由与第 16 章资源感知决定每个任务用什么价位的模型）；它的管理靠预算账户：每个任务领取预算、消耗记账、超支熔断，账户体系让"今天还剩多少"成为可查询状态而非感觉。<strong>墙钟时间</strong>的特点是它对所有人流逝速度相同但 deadline 是外部强加的；它的管理靠松弛量（slack = deadline - 预计完工时间）而非剩余时间本身——一个还剩两小时但需要三小时的任务，比还剩十分钟但只需五分钟的任务紧急得多。<strong>并发额度</strong>（工具限流、API 速率）的特点是"不用即浪费"：窗口内的闲置额度不可存储，因此高并发额度应优先供给不确定的任务（多试几次的探索型任务），低并发额度留给确定性任务。</p>
+<p>四类资源互相转换：花更多 token（并行采样多方案）可以省墙钟时间；压缩上下文（摘要历史，第 8 章）可以腾出并发空间。排序算法不必显式优化这种兑换，但预算账户应允许任务间转移——"这个任务值得多花 2 倍 token 换提前 1 小时"应当是可表达的决策。</p>
+<h3 id="2052-优先级信号五元组打分函数的设计与陷阱">20.5.2 优先级信号五元组：打分函数的设计与陷阱</h3>
+<p>五个信号的合成没有万能公式，但有设计纪律。<strong>依赖深度</strong>通常不该进打分函数而应进拓扑结构——"阻塞很多任务"的正确处理方式是让它尽早进入就绪波次，而不是给它虚高分数（分数会诱导它插队到已就绪的紧急任务前面，但它的紧急性并不因此改变）。<strong>截止时间</strong>用松弛量度量，且应设为"一票否决级"的信号：松弛量为负（注定迟到）的任务要么立即降级（改为道歉回复 + 人工跟进），要么直接放弃并通知，让它占据队列只会拖累其他任务。<strong>价值</strong>是最难获取的信号：人工赋值（1-5 星）在组织内可行但主观；业务规则（金额、SLA、客户等级）客观但僵化；第 9 章的学习与适应提供第三条路——从历史完成记录里学"哪类任务的实际价值高"。<strong>风险</strong>常被忽略：失败代价不对称时（错误回复会触怒 VIP），期望价值要打折扣（价值 × 成功概率）；失败概率可以从第 19 章的评估数据里查表。<strong>成本</strong>与价值合成<strong>价值密度</strong>（价值/预计成本），这是资源受限场景的核心比值——它回答"每花一分预算买回多少价值"。</p>
+<p>合成时的三个陷阱。一是<strong>量纲混乱</strong>：把 1-5 的价值分与小时计的工期直接四则运算，结果随单位漂移；先各自归一化再合成。二是<strong>虚假精度</strong>：给估计值算到小数点后两位，掩盖了"工期估计本身就是猜的"这一事实；排序对单调变换不敏感，用粗糙但稳定的分数足够，精度焦虑应转化为对最不确定任务的抽样重估。三是<strong>静态快照</strong>：任务入队时打一次分终身使用，而队列是动态的——截止期在逼近、预算在消耗、上游结果在改变下游价值；重排频率应与信号变化速度匹配（20.5.3）。</p>
+<h3 id="2053-静态排序动态重排与抢占的代价">20.5.3 静态排序、动态重排与抢占的代价</h3>
+<p>静态排序（一次排序、顺序执行）的优点是可预测、可审计、实现简单，缺点是对变化失明：新到的紧急任务要排到队尾，上游失败后下游任务仍按原计划空转。动态重排（每步重算就绪队列）捕获这些变化，但引入三个经典调度病理。<strong>饥饿</strong>：高价值任务源源不断时，低价值任务永远轮不上——对策是老化机制（等待时间计入优先级，等待越久分数越高），Auer 等人的 UCB 分析给了理论参照：给"不确定"本身分配预算（log 项），保证每个任务被访问的频率有下界。<strong>震荡</strong>：两个任务分数接近且交替领先时，动态重排可能在二者间来回切换，浪费上下文（每次切换都要重载任务状态）——对策是迟滞带（分数差超过阈值才交换）与最小驻留时间。<strong>优先级反转</strong>：低优先级任务持有高优先级任务需要的资源（比如占着工具锁），高优先级任务反被阻塞——操作系统的解法（优先级继承）在 agent 场景对应为：被阻塞的高优任务应触发阻塞源的提权。抢占（中断正在执行的低优任务）在 agent 场景代价高于操作系统：任务状态要序列化回存、上下文要切换，且被抢占的任务未必能干净地半途暂停。实践取舍是<strong>波间抢占</strong>：不中断执行中的任务，但在每个拓扑波次之间重算队列——这已能覆盖 90% 的重排需求，代价仅为每个波次一次排序。</p>
+<h3 id="2054-拓扑排序正确性的地基">20.5.4 拓扑排序：正确性的地基</h3>
+<p>Kahn 算法（1962 年发表，PERT 网络分析的副产品）至今是标准解：反复摘除入度为零的节点，摘不完全即有环。工程要点有三。<strong>环检测是错误路径不是理论细节</strong>：LLM 生成的任务依赖（第 6 章规划器的输出）出现"A 依赖 B、B 依赖 A"并不罕见，必须在排序阶段报错并定位环上的任务，而不是死循环。<strong>波次即并行边界</strong>：拓扑排序天然给出分层（第一波是所有无依赖任务，第二波是仅依赖第一波的任务……），每层内部无依赖可全并行——这就是第 3 章并行化与 LLMCompiler 式 DAG 调度的执行模型。<strong>拓扑序与优先级的合成方式</strong>是"波内排序"：拓扑序负责合法性（跨波不可乱序），优先级分只在同一波内决定先后——不要让优先级跨波插队，那等于破坏依赖。动态加入任务时不必全图重排：增量更新受影响节点的入度与波次即可，任务量在百级以下时全量重排也足够便宜。</p>
+<h3 id="2055-预算耗尽时的优雅降级">20.5.5 预算耗尽时的优雅降级</h3>
+<p>降级设计的核心是<strong>预先承诺的放弃</strong>。每个重要任务预配降级阶梯：完整执行（价值 1.0、成本 1.0）→ 简化执行（如换小模型、减采样次数，价值约 0.6、成本约 0.3）→ 占位产出（模板回复 + 人工待办，价值 0.2、成本趋零）。预算监控器持续对账：当剩余预算不足以让队列中所有任务走完当前档位时，按价值保全原则重新分配——通常的规则是"先保广度后保深度"：让所有任务至少达到简化档，再让剩余预算给高密度任务升级完整档。这与"头任务吃满预算、尾任务颗粒无收"的自然行为形成对照，后者正是没有降级设计的系统在预算耗尽时的默认结局。</p>
+<p>降级的工程纪律：<strong>降级必须打标</strong>（产出与 trace 标注 degraded 与原因，第 12 章与第 19 章的观测约定在此交汇），否则降级悄然成为常态而无人知晓；<strong>降级不是静默丢弃</strong>（用户侧要么收到降级产出并被告知，要么收到明确的"已转人工"）；<strong>降级路径要演练</strong>（与第 12 章的故障演练同理——从没跑过的降级代码等于不存在）。最后一条是反直觉的：<strong>有时正确动作是砍掉整个任务</strong>而非降级——价值密度低到连简化档都不值得时，占位产出只是给失败化妆，直接报告"本预算下未执行、原因、恢复条件"更诚实。</p>
+<h3 id="2056-失效模式与反模式">20.5.6 失效模式与反模式</h3>
+<p>五种典型失效。<strong>打分函数腐化</strong>：业务演变后打分权重没人记得当初为什么这么设，也没人敢改——对策是把权重配置化、每次调整留变更记录，并把"排序决策回放"做成例行审计。<strong>截止期通胀</strong>：业务方学会把所有 deadline 都标成"今天"以抢占队列——对策是截止期与外部事件绑定（SLA 系统而非人工输入），过期惩罚与信用机制。<strong>价值信号寻租</strong>：任务提交者高报价值——对策是事后校准（完成后的实际价值回填，长期高报者的赋值降权）。<strong>降级依赖症</strong>：系统发现降级总是能过，逐渐常态化降级以省成本——对策是监控降级率并设上限告警（第 19 章）。<strong>拓扑洁癖</strong>：为不存在依赖的任务硬造依赖以图省心，DAG 退化为链表，并行度归零——依赖应来自数据流的真实约束。</p>
+<p>反模式清单：先进先出冒充排序（队首阻塞）；所有任务同一优先级（等于没有）；优先级只有高低两档（分辨率不足以仲裁真实冲突）；重排无迟滞（震荡烧上下文）；预算只算 token 不算时间与并发；降级阶梯没写就用（临场现想的降级就是没有降级）。何时可以不用：单任务系统（无可排序之物）；任务天然同质且都重要（批处理、按序消化即可）；资源充裕到排序成本超过排序收益——但生产系统的经验是第三种情况比想象中罕见。</p>
+<h2 id="206-工程落地实践代码示例">20.6 工程落地：实践代码示例</h2>
+<h3 id="2061-框架无关实现完整可运行">20.6.1 框架无关实现（完整可运行）</h3>
+<p>一个融合 Kahn 拓扑排序、EDF 截止期松弛、价值密度与预算感知降级的调度器：波内按"价值密度 × 截止期松弛"动态重排，预算不足时自动走任务各自的降级阶梯，依赖成环报错定位。纯算法演示不依赖模型调用；<code>llm()</code> 保留为可选的工期/价值估计器接口（配置密钥后自动启用）。Python 3.10+ 实测通过。</p>
+<pre><code class="language-python">&quot;&quot;&quot;DAG + 截止期 + 价值密度的优先级调度器，带预算感知优雅降级（框架无关实现）。
+
+依赖：pip install openai（可选，仅当用 LLM 估计工期时需要）
+运行：python ch20_scheduler.py（纯算法演示，无密钥也能跑）
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from typing import Callable
+
+
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。
+
+    本章调度器中为可选组件：配置 AGENT_LLM_API_KEY 后可让模型估计任务工期，
+    未配置时调度器使用人工提供的确定性估计值，全流程不受影响。
+    &quot;&quot;&quot;
+    if not os.environ.get(&quot;AGENT_LLM_API_KEY&quot;):
+        raise RuntimeError(&quot;未配置模型密钥：调度器回退到人工估计值&quot;)
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+        api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+    )
+    model = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+    ]
+    resp = client.chat.completions.create(
+        model=model, messages=messages, temperature=temperature
+    )
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+@dataclass
+class Task:
+    &quot;&quot;&quot;调度单元：依赖 + 截止期 + 价值 + 两档成本/价值（完整档与降级档）。&quot;&quot;&quot;
+    tid: str
+    deps: list[str]
+    est: float                # 完整档预计工期（分钟）
+    deadline: float           # 截止时刻（相对开始的分钟数）
+    value: int                # 完整档价值 1-5
+    cost: float | None = None # 完整档成本（分钟制资源），默认等于 est
+    run: Callable[[], str] | None = None           # 完整执行
+    run_degraded: Callable[[], str] | None = None  # 降级执行（更便宜、价值更低）
+    degraded_value: int = 1   # 降级档价值
+
+    @property
+    def full_cost(self) -&gt; float:
+        return self.cost if self.cost is not None else self.est
+
+
+class CycleError(Exception):
+    &quot;&quot;&quot;依赖图存在环：定位并报告环上任务。&quot;&quot;&quot;
+
+
+class Scheduler:
+    &quot;&quot;&quot;波次调度：拓扑定合法性，波内按 价值密度×截止松弛 动态重排，预算感知降级。&quot;&quot;&quot;
+
+    def __init__(self, tasks: dict[str, Task], budget: float, hysteresis: float = 0.5):
+        self.tasks = tasks
+        self.budget = budget            # 总预算（分钟制资源）
+        self.hysteresis = hysteresis    # 迟滞带：分数差低于它不交换，防震荡
+        self.now = 0.0
+        self.log: list[str] = []
+
+    # ---- Kahn 算法：拓扑分波 + 环检测 ----
+    def topo_waves(self) -&gt; list[list[str]]:
+        indeg = {t: 0 for t in self.tasks}
+        succ: dict[str, list[str]] = {t: [] for t in self.tasks}
+        for tid, task in self.tasks.items():
+            for d in task.deps:
+                if d not in self.tasks:
+                    raise KeyError(f&quot;任务 {tid} 依赖不存在的 {d}&quot;)
+                succ[d].append(tid)
+                indeg[tid] += 1
+        wave, waves = [t for t, n in indeg.items() if n == 0], []
+        while wave:
+            waves.append(sorted(wave))
+            nxt: list[str] = []
+            for t in wave:
+                for s in succ[t]:
+                    indeg[s] -= 1
+                    if indeg[s] == 0:
+                        nxt.append(s)
+            wave = nxt
+        if sum(len(w) for w in waves) != len(self.tasks):
+            stuck = sorted(t for t, n in indeg.items() if n &gt; 0)
+            raise CycleError(f&quot;依赖成环，无法调度，环上任务：{stuck}&quot;)
+        return waves
+
+    # ---- 优先级分：价值密度 × 截止期松弛（松弛为负→一票否决级紧急） ----
+    def score(self, task: Task) -&gt; float:
+        slack = task.deadline - self.now - task.est
+        density = task.value / max(task.est, 0.1)
+        urgency = 10.0 if slack &lt;= 0 else 1.0 + 1.0 / (1.0 + slack / 60.0)
+        return density * urgency
+
+    def run(self) -&gt; dict:
+        waves = self.topo_waves()
+        done: set[str] = set()
+        results: dict[str, str] = {}
+        for wave in waves:
+            pending = sorted(wave)                     # 波内动态重排：每步重算分数
+            while pending:
+                ranked = sorted(pending, key=lambda t: -self.score(self.tasks[t]))
+                pick = ranked[0]
+                if len(ranked) &gt; 1:                    # 迟滞带：与次名差距过小则维持现序
+                    second = self.tasks[ranked[1]]
+                    if self.score(second) &gt; self.score(self.tasks[pick]) + self.hysteresis:
+                        pick = ranked[1]
+                task = self.tasks[pick]
+                # 预算对账：完整档放不下 → 降级档；降级档也放不下 → 放弃并上报
+                if task.full_cost &lt;= self.budget:
+                    out, mode = task.run(), &quot;完整&quot;
+                    spend, got = task.full_cost, task.value
+                elif task.run_degraded and task.est * 0.3 &lt;= self.budget:
+                    out, mode = task.run_degraded(), &quot;降级&quot;
+                    spend, got = task.est * 0.3, task.degraded_value
+                else:
+                    self.log.append(f&quot;[放弃] {pick}：剩余预算 {self.budget:.0f} 分钟不足以执行任何档位&quot;)
+                    pending.remove(pick)
+                    continue
+                self.budget -= spend
+                self.now += spend
+                results[pick] = out
+                done.add(pick)
+                self.log.append(
+                    f&quot;[{mode}] {pick}（价值{got}，耗时{spend:.0f}分，&quot;
+                    f&quot;剩余预算{self.budget:.0f}，距截止{task.deadline - self.now:+.0f}分）&quot;
+                )
+                pending.remove(pick)
+        return {&quot;results&quot;: results, &quot;remaining_budget&quot;: self.budget, &quot;log&quot;: self.log}
+
+
+# ---------------- 演示：发布准备日 ----------------
+if __name__ == &quot;__main__&quot;:
+    tasks: dict[str, Task] = {
+        &quot;slides&quot;: Task(&quot;slides&quot;, [], est=90, deadline=300, value=3,
+                       run=lambda: &quot;完整版幻灯片&quot;, run_degraded=lambda: &quot;要点提纲版幻灯片&quot;,
+                       degraded_value=2),
+        &quot;test&quot;: Task(&quot;test&quot;, [], est=30, deadline=180, value=5,
+                     run=lambda: &quot;全量回归通过&quot;),
+        &quot;fix&quot;: Task(&quot;fix&quot;, [&quot;test&quot;], est=60, deadline=240, value=5,
+                    run=lambda: &quot;bug 已修复并复测&quot;,
+                    run_degraded=lambda: &quot;临时热修复，完整修复建 issue 跟进&quot;,
+                    degraded_value=3),
+        &quot;blog&quot;: Task(&quot;blog&quot;, [&quot;slides&quot;], est=45, deadline=600, value=2,
+                     run=lambda: &quot;发布长文&quot;, run_degraded=lambda: &quot;改为社媒短帖&quot;,
+                     degraded_value=1),
+        &quot;lunch&quot;: Task(&quot;lunch&quot;, [], est=40, deadline=210, value=2,
+                      run=lambda: &quot;完整午休&quot;),
+    }
+    sched = Scheduler(tasks, budget=200)
+    print(f&quot;拓扑分波：{sched.topo_waves()}\n&quot;)
+    out = sched.run()
+    for line in out[&quot;log&quot;]:
+        print(line)
+    print(f&quot;\n结果：{out['results']}&quot;)
+    assert &quot;fix&quot; in out[&quot;results&quot;] and &quot;test&quot; in out[&quot;results&quot;], &quot;高价值链路必须完成&quot;
+    try:
+        Scheduler({&quot;a&quot;: Task(&quot;a&quot;, [&quot;b&quot;], est=1, deadline=9, value=1, run=lambda: &quot;&quot;),
+                   &quot;b&quot;: Task(&quot;b&quot;, [&quot;a&quot;], est=1, deadline=9, value=1, run=lambda: &quot;&quot;)},
+                  budget=10).topo_waves()
+    except CycleError as e:
+        print(f&quot;\n环检测验证：{e}&quot;)
+</code></pre>
+<h3 id="2062-框架集成实现langgraph-send-api拓扑波次并行调度">20.6.2 框架集成实现（LangGraph Send API：拓扑波次并行调度）</h3>
+<p>LangGraph 的 <code>Send</code> API 允许一个节点在运行时向下游节点派发任意数量的并行实例，正好承接本章"拓扑分波、波内并行"的执行模型：dispatcher 按已完成集合算出当前波的就绪任务，用 <code>Send</code> 并行派发；worker 执行后汇入追加式状态；collect 判断是否还有波次。在 <strong>langgraph==1.2.12</strong> 实测通过（依赖顺序已用断言验证，无需模型调用）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;LangGraph Send API：拓扑波次并行调度（langgraph==1.2.12 实测）。
+
+依赖：pip install langgraph
+运行：python ch20_langgraph_waves.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import operator
+from typing import Annotated, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+from langgraph.types import Send
+
+TASKS = {  # 依赖图：波1={a,b} 波2={c,d} 波3={e}
+    &quot;a&quot;: {&quot;deps&quot;: []}, &quot;b&quot;: {&quot;deps&quot;: []},
+    &quot;c&quot;: {&quot;deps&quot;: [&quot;a&quot;, &quot;b&quot;]}, &quot;d&quot;: {&quot;deps&quot;: [&quot;a&quot;]},
+    &quot;e&quot;: {&quot;deps&quot;: [&quot;c&quot;, &quot;d&quot;]},
+}
+
+
+class St(TypedDict):
+    ready: list[str]                               # 当前波就绪任务（dispatch 覆写）
+    results: Annotated[list[str], operator.add]    # 追加式执行结果
+    executed: Annotated[list[str], operator.add]   # 追加式已完成清单
+
+
+def dispatch(state: St) -&gt; dict:
+    &quot;&quot;&quot;Kahn 分波：从已完成集合推导当前波的就绪任务（生产中此处按优先级排序）。&quot;&quot;&quot;
+    done = set(state[&quot;executed&quot;])
+    ready = [t for t in TASKS
+             if t not in done and all(d in done for d in TASKS[t][&quot;deps&quot;])]
+    print(f&quot;[dispatch] 本波派发：{ready}（已完成：{sorted(done)}）&quot;)
+    return {&quot;ready&quot;: ready}
+
+
+def fan_out(state: St):
+    &quot;&quot;&quot;Send API：为每个就绪任务派发一个并行 worker 实例（空列表=本波无任务）。&quot;&quot;&quot;
+    return [Send(&quot;worker&quot;, {&quot;tid&quot;: t}) for t in state[&quot;ready&quot;]]
+
+
+def worker(task: dict) -&gt; dict:
+    print(f&quot;  [worker] 执行 {task['tid']}&quot;)
+    return {&quot;results&quot;: [f&quot;{task['tid']}:ok&quot;], &quot;executed&quot;: [task[&quot;tid&quot;]]}
+
+
+def collect(state: St) -&gt; dict:
+    return {}                                      # 汇合点：仅等待所有 worker 完成
+
+
+def more_waves(state: St) -&gt; str:
+    if len(set(state[&quot;executed&quot;])) &lt; len(TASKS):
+        return &quot;dispatch&quot;                          # 未完成 → 回到 dispatch 开新波
+    return END
+
+
+g = StateGraph(St)
+g.add_node(&quot;dispatch&quot;, dispatch)
+g.add_node(&quot;worker&quot;, worker)
+g.add_node(&quot;collect&quot;, collect)
+g.add_edge(START, &quot;dispatch&quot;)
+g.add_conditional_edges(&quot;dispatch&quot;, fan_out, [&quot;worker&quot;])
+g.add_edge(&quot;worker&quot;, &quot;collect&quot;)
+g.add_conditional_edges(&quot;collect&quot;, more_waves, [&quot;dispatch&quot;, END])
+app = g.compile()
+
+if __name__ == &quot;__main__&quot;:
+    out = app.invoke({&quot;ready&quot;: [], &quot;results&quot;: [], &quot;executed&quot;: []})
+    print(f&quot;\n执行结果：{out['results']}&quot;)
+    assert set(out[&quot;executed&quot;]) == set(TASKS), &quot;全部任务应被执行&quot;
+    idx = out[&quot;results&quot;].index
+    assert idx(&quot;a:ok&quot;) &lt; idx(&quot;c:ok&quot;) and idx(&quot;b:ok&quot;) &lt; idx(&quot;c:ok&quot;)
+    assert idx(&quot;c:ok&quot;) &lt; idx(&quot;e:ok&quot;) and idx(&quot;d:ok&quot;) &lt; idx(&quot;e:ok&quot;)
+    print(&quot;依赖顺序验证通过：跨波无乱序，波内并行完成。&quot;)
+</code></pre>
+<h3 id="2063-生产化改造清单">20.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：拓扑环、未知依赖、任务执行异常三路都必须显式报错或降级；环报错要列出环上任务，执行异常计入该任务的风险信号与重试预算。</li>
+<li><strong>超时</strong>：每个任务带工期上限，超时按失败处理并触发降级阶梯；调度器自身重排频率设上限，防止病态图导致的排序风暴。</li>
+<li><strong>并发</strong>：波内并行宽度受并发额度约束（信号量）；多 worker 场景下调度决策集中仲裁，避免各自为政。</li>
+<li><strong>状态持久化</strong>：队列、已完成集合、预算账户落检查点（第 12 章），崩溃后从检查点恢复且已执行任务凭幂等记录跳过。</li>
+<li><strong>可观测</strong>：每条调度决策记录"当时分数、被跳过的候选、原因"，支持回放审计；队列长度、等待时间分位、降级率为一等指标。</li>
+<li><strong>预算治理</strong>：token、时间、并发三类预算分账户记账；预算消耗速率进监控，异常增速（重试风暴）触发熔断。</li>
+<li><strong>信号校准</strong>：工期与价值估计定期与实测对账（第 19 章的 metric 提供实测值），系统性高估/低估自动校正。</li>
+<li><strong>老化与防饥饿</strong>：等待时间计入优先级；任何任务的等待时长设硬上限，超限强制执行或升级人工。</li>
+<li><strong>成本控制</strong>：重排只在波间进行（波内抢占代价高）；打分函数保持 O(n log n)，任务量上千时增量化。</li>
+</ul>
+<h2 id="207-概览-核心要点-结论">20.7 概览 / 核心要点 / 结论</h2>
+<h3 id="本章小结">本章小结</h3>
+<p>优先级排序把"先做哪个"从直觉升级为算法：先承认四类性质迥异的稀缺资源（上下文窗口挤占型、token/资金消耗型、墙钟时间外部强加型、并发额度易逝型），再用依赖深度、截止松弛、价值、风险、成本五类信号打分；拓扑排序（Kahn，1962）保证执行序的合法性，波内优先级与波间动态重排（借鉴 EDF 的截止期思想与 UCB 的探索预算思想）保证效率与适应性，预算耗尽时按价值保全原则沿预配的降级阶梯优雅收场。这一整套机制的零件全部来自运筹学、实时系统与队列工程几十年的积累，agent 工程的新贡献只是让"工期与价值的估计"也可以外包给模型。</p>
+<h3 id="核心要点">核心要点</h3>
+<ul>
+<li>四类稀缺资源管理方式不同：上下文靠控并发宽度，预算靠账户制记账熔断，时间靠松弛量而非剩余量，并发额度靠"不用即浪费"的分配观。</li>
+<li>依赖深度进拓扑结构而非打分函数；截止期用松弛量度量且松弛为负时一票否决（降级或放弃，不让死任务拖垮队列）。</li>
+<li>价值密度（价值/成本）是资源受限场景的核心比值；价值信号要防寻租，用完成后的实际价值回填校准。</li>
+<li>静态排序可预测，动态重排适应变化；重排要配老化（防饥饿）、迟滞带（防震荡）、波间粒度（避免高代价抢占）。</li>
+<li>Kahn 拓扑排序给出波次结构：波次即并行边界（第 3 章），环是错误路径必须报错定位。</li>
+<li>优雅降级三纪律：预先配置阶梯（完整→简化→占位）、降级必打标并进监控、降级率超阈值告警；价值密度低过占位档时，诚实放弃优于化妆失败。</li>
+<li>BabyAGI 的教训：能跑的任务队列不等于能用的任务队列——无优先级、无终止控制、无预算的自治循环是事故现场。</li>
+<li>与第 16 章合体才是完整资源管理：本章定"先做哪个"，资源感知定"每个用多贵的模型"。</li>
+</ul>
+<h3 id="结论">结论</h3>
+<p>排序就是预演放弃。一个系统怎么给任务排序，暴露了它认为什么重要；一个系统在预算耗尽时牺牲什么，暴露了它的真实价值观。把这套价值观从隐性的随机行为变成显性的、可审计的打分函数与降级阶梯，是智能体系统从玩具走向受托责任体的必要一步——用户把资源和时间交给一个自治系统，理应得到"它会像称职的助理一样分轻重缓急"的保证。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch19-evaluation-monitoring.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第19章 评估与监控</span></a><a class="pager" href="../chapters/ch21-exploration-discovery.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第21章 探索与发现</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#201-模式概述">20.1 模式概述</a></li><li class="toc-l3"><a href="#2011-问题背景为什么需要这个模式">20.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#2012-核心机制它如何工作">20.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#2013-与相邻模式的关系与组合">20.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#202-起源与历史最早是谁提出来的">20.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#203-发挥的作用为什么重要">20.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#204-实际应用与案例">20.4 实际应用与案例</a></li><li class="toc-l2"><a href="#205-深度讲解">20.5 深度讲解</a></li><li class="toc-l3"><a href="#2051-四类稀缺资源性质不同管理方式不同">20.5.1 四类稀缺资源：性质不同，管理方式不同</a></li><li class="toc-l3"><a href="#2052-优先级信号五元组打分函数的设计与陷阱">20.5.2 优先级信号五元组：打分函数的设计与陷阱</a></li><li class="toc-l3"><a href="#2053-静态排序动态重排与抢占的代价">20.5.3 静态排序、动态重排与抢占的代价</a></li><li class="toc-l3"><a href="#2054-拓扑排序正确性的地基">20.5.4 拓扑排序：正确性的地基</a></li><li class="toc-l3"><a href="#2055-预算耗尽时的优雅降级">20.5.5 预算耗尽时的优雅降级</a></li><li class="toc-l3"><a href="#2056-失效模式与反模式">20.5.6 失效模式与反模式</a></li><li class="toc-l2"><a href="#206-工程落地实践代码示例">20.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#2061-框架无关实现完整可运行">20.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#2062-框架集成实现langgraph-send-api拓扑波次并行调度">20.6.2 框架集成实现（LangGraph Send API：拓扑波次并行调度）</a></li><li class="toc-l3"><a href="#2063-生产化改造清单">20.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#207-概览-核心要点-结论">20.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

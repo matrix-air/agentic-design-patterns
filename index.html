@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能体设计模式 · Agentic Design Patterns（中文深讲版）</title>
+<meta name="description" content="21 种智能体设计模式的中文深度原创讲解：起源考据 + 深度讲解 + 可落地工程代码。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="topbar-title" href="index.html">智能体设计模式</a>
+  <span class="topbar-part">Agentic Design Patterns · 中文深讲版</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="cover">
+  <div class="cover-inner">
+    <h1>智能体设计模式</h1>
+    <p class="cover-sub">构建智能系统的 21 种可复用架构模式 · 起源考据 × 深度讲解 × 工程落地</p>
+    <p class="cover-stats">23 章全文在线 · 约 15.2 万字 · 42 个可运行代码示例</p>
+    <p class="cover-note">体系参照 Antonio Gulli《Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems》（Springer, 2025），内容为原创中文深讲：每种模式讲清最早谁提出、发挥了什么作用、机制细节与失效模式，并给出照抄即可运行的双实现代码。</p>
+    <a class="start-btn" href="chapters/ch00-preface.html">开始阅读 →</a>
+  </div>
+</div>
+<main class="index-main">
+  <div class="reading-paths">
+    <div class="rp-title">三条阅读路线</div>
+    <ul>
+      <li><b>按序通读</b>：开篇 → 核心模式（1-7）→ 认知机制（8-11）→ 容错与扩展（12-14）→ 高级架构（15-21）→ 收官。</li>
+      <li><b>直奔生产</b>：第 2 章路由 → 第 11 章目标监控 → 第 12 章异常恢复 → 第 18 章护栏 → 第 19 章评估，这是"能上线"的最小组合。</li>
+      <li><b>造一个研究助手</b>：第 6 章规划 → 第 5 章工具使用 → 第 14 章 RAG → 第 4 章反思 → 第 21 章探索发现。</li>
+    </ul>
+  </div>
+  <section class="idx-part"><h2>开篇</h2><a class="idx-row" href="chapters/ch00-preface.html"><span class="idx-label">前言</span><span class="idx-en">Preface</span><span class="idx-summary">什么是智能体、为什么需要设计模式，以及全书二十一种模式的地图与两种读法。</span></a></section><section class="idx-part"><h2>第一部分 · 核心模式</h2><a class="idx-row" href="chapters/ch01-prompt-chaining.html"><span class="idx-label">第1章 提示链</span><span class="idx-en">Prompt Chaining</span><span class="idx-summary">把复杂任务拆成只做一件事的顺序提示步骤，前一步结构化输出作为后一步输入，以线性组合换取可靠性与可调试性。</span></a><a class="idx-row" href="chapters/ch02-routing.html"><span class="idx-label">第2章 路由</span><span class="idx-en">Routing</span><span class="idx-summary">按输入特征把请求分流到合适的提示、模型或智能体，用前置的分类判断换取出错的隔离、成本的下降与专业度的集中。</span></a><a class="idx-row" href="chapters/ch03-parallelization.html"><span class="idx-label">第3章 并行化</span><span class="idx-en">Parallelization</span><span class="idx-summary">把独立子任务并发执行后归并——切分压缩延迟，投票提升准确率，聚合器融合观点，join 阶段的归并语义决定成败。</span></a><a class="idx-row" href="chapters/ch04-reflection.html"><span class="idx-label">第4章 反思</span><span class="idx-en">Reflection</span><span class="idx-summary">让智能体以批评者视角审视自身输出，经"生成-批评-修订"循环与跨尝试教训沉淀提升质量，并明确其能力边界与停止条件。</span></a><a class="idx-row" href="chapters/ch05-tool-use.html"><span class="idx-label">第5章 工具使用</span><span class="idx-en">Tool Use</span><span class="idx-summary">让模型通过结构化协议调用外部函数获取信息或执行动作，用注册表、schema 校验、观察回注与停止条件把文本生成器变成可靠的执行器。</span></a><a class="idx-row" href="chapters/ch06-planning.html"><span class="idx-label">第6章 规划</span><span class="idx-en">Planning</span><span class="idx-summary">让智能体在行动前把目标分解为可执行的子任务序列，在执行偏差出现时按触发条件重规划，用显式中间结构换长程任务的稳定性与可观测性。</span></a><a class="idx-row" href="chapters/ch07-multi-agent.html"><span class="idx-label">第7章 多智能体协作</span><span class="idx-en">Multi-Agent Collaboration</span><span class="idx-summary">把单个智能体拆成角色化团队，用显式消息协议与合适的拓扑结构完成单点难以胜任的大型任务。</span></a></section><section class="idx-part"><h2>第二部分 · 认知机制</h2><a class="idx-row" href="chapters/ch08-memory.html"><span class="idx-label">第8章 记忆管理</span><span class="idx-en">Memory Management</span><span class="idx-summary">在有限上下文之外，用短窗、摘要与检索分层管理状态，让智能体跨轮次、跨会话记住该记的事。</span></a><a class="idx-row" href="chapters/ch09-learning-adaptation.html"><span class="idx-label">第9章 学习与适应</span><span class="idx-en">Learning and Adaptation</span><span class="idx-summary">以技能库、经验库与进化循环实现非参数化的持续改进，让智能体不改权重也能越用越好。</span></a><a class="idx-row" href="chapters/ch10-mcp.html"><span class="idx-label">第10章 模型上下文协议</span><span class="idx-en">Model Context Protocol (MCP)</span><span class="idx-summary">MCP 用一个开放协议把"模型应用×工具数据源"的 M×N 集成爆炸压成 M+N，是智能体工具生态的事实标准接口层。</span></a><a class="idx-row" href="chapters/ch11-goal-monitoring.html"><span class="idx-label">第11章 目标设定与监控</span><span class="idx-en">Goal Setting and Monitoring</span><span class="idx-summary">把意图形式化为可判定的完成判据、约束与预算，并用检查循环持续比对行为与目标，是智能体长任务不跑偏的机制基础。</span></a></section><section class="idx-part"><h2>第三部分 · 容错与扩展</h2><a class="idx-row" href="chapters/ch12-exception-recovery.html"><span class="idx-label">第12章 异常处理与恢复</span><span class="idx-en">Exception Handling and Recovery</span><span class="idx-summary">把智能体的执行设计为可重试、可熔断、可降级、可从检查点恢复的状态机，并用幂等与补偿保证"失败后重走"不会造成二次伤害。</span></a><a class="idx-row" href="chapters/ch13-human-in-the-loop.html"><span class="idx-label">第13章 人在回路</span><span class="idx-en">Human-in-the-Loop</span><span class="idx-summary">用介入点、置信度升级路由与可恢复的审批闸门，把人放进智能体决策链的关键位置，让高风险动作有人兜底、有据可查。</span></a><a class="idx-row" href="chapters/ch14-knowledge-retrieval-rag.html"><span class="idx-label">第14章 知识检索</span><span class="idx-en">Retrieval-Augmented Generation (RAG)</span><span class="idx-summary">把模型答不了的知识外置成可检索的资料库，用分块、混合检索、重排与引用生成，让回答有据可查、可即时更新、可溯源。</span></a></section><section class="idx-part"><h2>第四部分 · 高级架构</h2><a class="idx-row" href="chapters/ch15-agent-communication-a2a.html"><span class="idx-label">第15章 智能体间通信</span><span class="idx-en">Agent-to-Agent Communication (A2A)</span><span class="idx-summary">用开放协议连接分属不同团队与框架的智能体：Agent Card 发现能力、Task 状态机管理长任务、消息信封跨组织传递，与 MCP 构成纵横互补。</span></a><a class="idx-row" href="chapters/ch16-resource-aware-optimization.html"><span class="idx-label">第16章 资源感知优化</span><span class="idx-en">Resource-Aware Optimization</span><span class="idx-summary">把质量、成本、延迟当作可调度的资源，用级联、分级、缓存、上下文瘦身与批处理错峰，在 SLO 约束下花最少的钱买到合格的质量。</span></a><a class="idx-row" href="chapters/ch17-reasoning-techniques.html"><span class="idx-label">第17章 推理技术</span><span class="idx-en">Reasoning Techniques</span><span class="idx-summary">用提示或训练诱导模型显式展开中间推理，再以采样投票、树搜索与测试时算力分配，把"更多思考"可控地兑换成更高正确率。</span></a><a class="idx-row" href="chapters/ch18-guardrails-safety.html"><span class="idx-label">第18章 护栏机制</span><span class="idx-en">Guardrails and Safety Patterns</span><span class="idx-summary">围绕注入、越狱、外泄、工具滥用与级联失权五类威胁，在输入、工具、输出与人审多道闸门上实施纵深防御，让单点失守不升级为系统失守。</span></a><a class="idx-row" href="chapters/ch19-evaluation-monitoring.html"><span class="idx-label">第19章 评估与监控</span><span class="idx-en">Evaluation and Monitoring</span><span class="idx-summary">用分层评估体系（单点断言、场景回归、在线 A/B）与 LLM 裁判、黄金集、CI 门禁和在线监控三件套，让智能体系统的质量从感觉变成可度量、可回归、可告警的工程事实。</span></a><a class="idx-row" href="chapters/ch20-prioritization.html"><span class="idx-label">第20章 优先级排序</span><span class="idx-en">Prioritization</span><span class="idx-summary">把多任务竞争下的"先做哪个"从直觉变成算法——以四类稀缺资源为约束，用依赖、截止期、价值密度等信号定序，支持动态重排与预算耗尽时的优雅降级。</span></a><a class="idx-row" href="chapters/ch21-exploration-discovery.html"><span class="idx-label">第21章 探索与发现</span><span class="idx-en">Exploration and Discovery</span><span class="idx-summary">把智能体从"执行已知"扩展到"发现未知"——用探索-利用权衡管理搜索预算，用假设-实验-证伪循环产生可验证的新知识，并用自动验证闸门守住发现的成色。</span></a></section><section class="idx-part"><h2>收官</h2><a class="idx-row" href="chapters/ch22-conclusion.html"><span class="idx-label">结语</span><span class="idx-en">Conclusion</span><span class="idx-summary">把二十一个模式收拢为五层架构视图，给出典型场景的模式组合速查表、从原型到生产的五级成熟度阶梯，以及评估、安全、成本、标准化四个开放问题。</span></a></section>
+  <footer class="page-foot">每章固定结构：模式概述 → 起源与历史 → 发挥的作用 → 实际应用 → 深度讲解 → 工程落地代码 → 核心要点。生成于 2026-10-21。</footer>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>

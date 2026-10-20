@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>前言 · 智能体设计模式</title>
+<meta name="description" content="什么是智能体、为什么需要设计模式，以及全书二十一种模式的地图与两种读法。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">开篇</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a class="active" href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">开篇</div>
+      <h1>前言</h1>
+      <p class="chapter-summary">什么是智能体、为什么需要设计模式，以及全书二十一种模式的地图与两种读法。</p>
+    </div>
+    <div class="chapter-body">
+<h2 id="从语言模型到智能体">从语言模型到智能体</h2>
+<p>大语言模型本身只会做一件事：给定一段文本，接着写下一段文本。它没有目标，不会行动，记不住上一轮做过什么。所谓智能体（Agent），就是给这个"会思考的大脑"装上骨骼与手脚：让模型在一个循环里运转——接收目标、观察环境、调用工具、检查结果、决定下一步——直到任务完成或触发停止条件。一句话概括：<strong>智能体 = 大语言模型 + 循环 + 工具 + 状态</strong>。</p>
+<p>实践中还有一个介于"普通程序"与"完全自主智能体"之间的层次：工作流（Workflow）。工作流由开发者预先写定控制流，模型只负责其中的语义环节——理解、生成、判断；智能体则由模型自己决定控制流。Anthropic 在 2024 年 12 月的工程文章《Building Effective Agents》里给出的正是这个区分，本书沿用这一框架：前半本大量篇幅在讲"怎么把工作流写对"，后半本才进入"怎么把自主性放对地方"。先把工作流写对，再谈自主，是几乎所有生产系统能真正落地的路径。</p>
+<h2 id="为什么需要设计模式">为什么需要设计模式</h2>
+<p>把一个"能用的 demo"变成"敢上生产的系统"，中间隔着的不是更聪明的模型，而是一批反复出现的工程问题：任务太复杂，单条提示装不下怎么办？多个模型贵贱不一，请求该交给谁？三路评审结果互相矛盾，听谁的？工具调用失败了一半，整单回滚还是继续？这些问题在每个团队、每次新项目里都会以相似的面貌重新出现。</p>
+<p>设计模式回答的就是这种"重复出现的问题与它的最小可复用解"。它给三样东西：一套命名（让团队说"这里用提示链"就能互相听懂）、一副骨架（状态怎么定义、循环怎么退、错误往哪走）、一组边界（什么情况该用、什么情况用了反而更糟）。模型能力每年都在变，但这些结构层面的知识变化得慢得多——这正是值得写进书里的部分。</p>
+<h2 id="本书与原书的关系">本书与原书的关系</h2>
+<p>本书参照 Antonio Gulli《Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems》（Springer 2025）的二十一种模式体系，但全部内容为原创写作，不是翻译或抄写。体系沿用原书的四部分划分（核心模式、认知机制、容错与扩展、高级架构），每一章内部则是面向中文 AI 工程师重新展开的：每种模式都从学术起源讲起，给出机制细节、变体谱系、失效模式，以及照着就能跑的代码。判断标准只有一条：读完一章，就能把这种模式在自己的系统里工程落地。</p>
+<h2 id="全书二十一章地图">全书二十一章地图</h2>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>章</th>
+<th>模式</th>
+<th>回答的核心问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一、核心模式</td>
+<td>1</td>
+<td>提示链（Prompt Chaining）</td>
+<td>复杂任务怎么拆成可靠的步骤序列</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>2</td>
+<td>路由（Routing）</td>
+<td>请求怎么分流到合适的提示、模型或智能体</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>3</td>
+<td>并行化（Parallelization）</td>
+<td>独立子任务怎么并发执行再归并</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>4</td>
+<td>反思（Reflection）</td>
+<td>模型怎么自我检查并改进输出</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>5</td>
+<td>工具使用（Tool Use）</td>
+<td>模型怎么调用外部函数与 API</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>6</td>
+<td>规划（Planning）</td>
+<td>目标怎么变成可执行的分步计划</td>
+</tr>
+<tr>
+<td>一、核心模式</td>
+<td>7</td>
+<td>多智能体（Multi-Agent）</td>
+<td>任务怎么拆给多个角色协作完成</td>
+</tr>
+<tr>
+<td>二、认知机制</td>
+<td>8</td>
+<td>记忆管理（Memory Management）</td>
+<td>上下文有限时状态怎么留存与取用</td>
+</tr>
+<tr>
+<td>二、认知机制</td>
+<td>9</td>
+<td>学习与适应（Learning and Adaptation）</td>
+<td>系统怎么从历史交互中持续改进</td>
+</tr>
+<tr>
+<td>二、认知机制</td>
+<td>10</td>
+<td>模型上下文协议（MCP）</td>
+<td>工具与数据源怎么标准化接入</td>
+</tr>
+<tr>
+<td>二、认知机制</td>
+<td>11</td>
+<td>目标设定与监控（Goal Setting and Monitoring）</td>
+<td>长任务怎么锚定目标、盯住进度</td>
+</tr>
+<tr>
+<td>三、容错与扩展</td>
+<td>12</td>
+<td>异常处理与恢复（Exception Handling and Recovery）</td>
+<td>失败怎么被捕获、重试与回滚</td>
+</tr>
+<tr>
+<td>三、容错与扩展</td>
+<td>13</td>
+<td>人在回路（Human-in-the-Loop）</td>
+<td>关键决策怎么交给人类把关</td>
+</tr>
+<tr>
+<td>三、容错与扩展</td>
+<td>14</td>
+<td>知识检索 RAG（Knowledge Retrieval）</td>
+<td>私有知识怎么进入模型上下文</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>15</td>
+<td>智能体间通信 A2A（Inter-Agent Communication）</td>
+<td>智能体之间怎么对话与协商</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>16</td>
+<td>资源感知优化（Resource-Aware Optimization）</td>
+<td>成本、延迟、配额怎么纳入决策</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>17</td>
+<td>推理技术（Reasoning Techniques）</td>
+<td>深度思考怎么按需分配给难题</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>18</td>
+<td>守护栏与安全模式（Guardrails / Safety Patterns）</td>
+<td>输入输出与行为边界怎么守住</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>19</td>
+<td>评估与监控（Evaluation and Monitoring）</td>
+<td>智能体系统的效果怎么度量</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>20</td>
+<td>优先级排序（Prioritization）</td>
+<td>多任务竞争时先做哪个</td>
+</tr>
+<tr>
+<td>四、高级架构</td>
+<td>21</td>
+<td>探索与发现（Exploration and Discovery）</td>
+<td>系统怎么在未知空间里搜索</td>
+</tr>
+</tbody>
+</table>
+<h2 id="如何使用本书">如何使用本书</h2>
+<p>本书支持两种读法。<strong>按序读</strong>：第 1 至 7 章是地基，建议所有读者先过一遍——这七个模式覆盖了搭任何一个智能体系统的主干决策；第 8 至 14 章解决"系统要长期跑、要扛住失败"的问题；第 15 至 21 章面向多智能体与大规模场景。每章自包含，代码可独立运行，因此也支持<strong>按查读</strong>：遇到具体问题时，按上面地图的"核心问题"一列直接翻到对应章节。</p>
+<p>如果你带着一个明确的建设目标而来，可以走这三条典型组合路线：</p>
+<ul>
+<li><strong>路线 A：从零搭一个可靠的单智能体</strong>——第 1 章提示链搭主干，第 4 章反思提质量，第 12 章异常处理保稳定，第 19 章评估验效果。适合内部工具与垂直业务场景。</li>
+<li><strong>路线 B：降本与提速</strong>——第 2 章路由把请求分流到对价的模型，第 3 章并行化压缩延迟，第 16 章资源感知优化统筹配额。适合调用量大、成本敏感的系统。</li>
+<li><strong>路线 C：从单智能体到多智能体</strong>——第 7 章多智能体协作定分工，第 15 章 A2A 定通信，第 11 章目标监控防跑偏，第 13 章人在回路控风险。适合长链路、多角色的复杂系统。</li>
+</ul>
+<h2 id="代码约定">代码约定</h2>
+<p>全书代码统一使用 Python 3.10+，通过 OpenAI 兼容接口接入模型，只读环境变量（<code>AGENT_LLM_BASE_URL</code>、<code>AGENT_LLM_API_KEY</code>、<code>AGENT_LLM_MODEL</code>），不硬编码任何密钥——换任何一家兼容服务只需改三个环境变量。每章给出两份实现：框架无关版（只用官方 SDK，完整可运行）与框架集成版（LangChain / LangGraph 等，标注测试版本）。示例刻意保留错误路径与停止条件，因为生产代码的难点从来不在 happy path。</p>
+<p>模式是工具，不是目的。读完后请回到你自己的问题上：先用最笨的提示链试一次，让失败暴露出来，再决定要引入哪种更重的结构——这比任何预先的架构设计都更接近智能体工程的真相。</p></div>
+    <div class="pagers"><span></span><a class="pager" href="../chapters/ch01-prompt-chaining.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第1章 提示链</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#从语言模型到智能体">从语言模型到智能体</a></li><li class="toc-l2"><a href="#为什么需要设计模式">为什么需要设计模式</a></li><li class="toc-l2"><a href="#本书与原书的关系">本书与原书的关系</a></li><li class="toc-l2"><a href="#全书二十一章地图">全书二十一章地图</a></li><li class="toc-l2"><a href="#如何使用本书">如何使用本书</a></li><li class="toc-l2"><a href="#代码约定">代码约定</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

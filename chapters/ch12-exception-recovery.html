@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第12章 异常处理与恢复 · 智能体设计模式</title>
+<meta name="description" content="把智能体的执行设计为可重试、可熔断、可降级、可从检查点恢复的状态机，并用幂等与补偿保证"失败后重走"不会造成二次伤害。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第三部分 · 容错与扩展</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a class="active" href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第三部分 · 容错与扩展</div>
+      <h1>第12章 异常处理与恢复 <span class="en-title">Exception Handling and Recovery</span></h1>
+      <p class="chapter-summary">把智能体的执行设计为可重试、可熔断、可降级、可从检查点恢复的状态机，并用幂等与补偿保证"失败后重走"不会造成二次伤害。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：为智能体的每一步预先设计失败路径——瞬时错误用退避重试、持续错误用熔断降级、长流程用检查点续跑、副作用用幂等与补偿兜底——使"失败"成为可恢复的常态而非灾难。
+<strong>解决什么问题</strong>：智能体执行链路上模型、工具、编排、语义四层都会失败，默认行为（崩溃或静默吞掉）都不可接受 ｜ <strong>适用场景</strong>：长时自治任务、有副作用的操作链、调用不稳定外部依赖的工作流 ｜ <strong>核心机制</strong>：错误分类 → 重试/熔断/降级 → 检查点恢复 → 幂等与补偿 ｜ <strong>代价</strong>：代码复杂度与状态管理成本上升；重试与恢复本身消耗资源；恢复语义（恰好一次的幻觉）需要小心设计。</p>
+</blockquote>
+<h2 id="121-模式概述">12.1 模式概述</h2>
+<h3 id="1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</h3>
+<p>一个生产级智能体的故障面远大于传统程序。传统程序只担心自己的代码和依赖，而智能体叠加了四层不确定性：<strong>模型层</strong>（限流、超时、内容策略拒绝，以及输出本身的随机性——同样的输入两次调用结果不同）、<strong>工具层</strong>（网络抖动、权限过期、返回格式突变、部分成功）、<strong>编排层</strong>（死循环、状态丢失、并发写冲突）、<strong>语义层</strong>（调用"成功"返回 200，内容却是错的）。更麻烦的是 LLM 应用的依赖质量普遍低于传统分布式系统：重试一个 HTTP 接口，第二次大概率还是同样的错误；重试一次模型调用，第二次可能就对了——非确定性让"重试"这个老工具的适用边界发生了位移。</p>
+<p>默认的两个行为都不可接受。直接崩溃：一个跑了四十步的自治任务在第三十九步崩掉，全部进度作废。静默吞掉（catch 后继续）：错误状态渗入后续步骤，最终产出一个"看似完整实则错误"的结果，比崩溃更难排查。异常处理与恢复模式的立场是：<strong>失败是智能体运行的常态输入，必须像设计正常路径一样显式设计失败路径</strong>——每一步都要回答四个问题：失败了重试几次？重试无果怎么办（降级到什么）？崩掉之后从哪续跑？如果这一步有副作用，重走一遍会不会造成二次伤害？</p>
+<h3 id="1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</h3>
+<p>机制由四层组成，逐层递进。<strong>第一层：错误分类</strong>。拿到异常先分类再行动——瞬时错误（限流 429、超时、网络抖动）可重试；永久错误（参数非法 400、权限不足 403）重试无意义，直接走失败路径；语义错误（返回了但错了）不能原样重试，要修改输入或校验后再试。<strong>第二层：重试与退避</strong>。可重试错误用指数退避加抖动（full jitter），配合重试次数上限与总预算；只重试幂等操作。<strong>第三层：熔断与降级</strong>。某依赖连续失败超过阈值就熔断——在一段时间内直接快速失败，不再发起真实调用，让依赖喘息、让自己止损；同时提供降级路径（备用模型、缓存、静态结果），保证主链路不可用时业务仍能以低质量继续。<strong>第四层：检查点与恢复</strong>。把工作流状态（已完成步骤与结果、当前上下文）持久化，进程崩溃后从最近检查点恢复，已完成的步骤凭幂等记录跳过而不是重做；对有副作用的写操作，用幂等键去重，对无法重做的复合操作用 SAGA 式补偿（逆序执行补偿动作回滚）。</p>
+<h3 id="1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</h3>
+<p>与<strong>目标监控</strong>（第 11 章）互为攻守：监控判定"预算耗尽、连续失败"后把控制权交给恢复机制；恢复机制的重试与降级动作又必须被监控记录，否则降级会悄悄变成常态。与<strong>工具调用/MCP</strong>的关系在边界上：超时、重试、熔断应实现于工具调用包装层（客户端一侧），让业务编排代码保持干净。与<strong>规划/路由</strong>的关系是恢复的两种出口：可修复的失败（瞬时错误）就地恢复，不可修复的失败改道（换工具、换模型、换路径）。与<strong>人机协同</strong>的关系是最后一道闸：所有自动恢复手段穷尽后，正确动作是把现场打包升级给人，而不是假装问题不存在。</p>
+<h2 id="122-起源与历史最早是谁提出来的">12.2 起源与历史：最早是谁提出来的</h2>
+<p>本章的每个构件都来自三个传统：编程语言的异常机制（如何表达与传播失败）、分布式系统的事务与容错理论（如何让跨系统操作要么完成要么干净地退回）、以及在线服务工程（如何在真实故障率下保持可用）。智能体框架做的事，本质上是把这三个传统的成果重新组装到"LLM 步进执行"这个新运行时上。</p>
+<table>
+<thead>
+<tr>
+<th>年份月</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1960s</td>
+<td>PL/I 的 ON 条件：异常处理首次成为通用编程语言机制</td>
+<td>IBM（PL/I 设计团队）</td>
+<td>PL/I 语言设计</td>
+</tr>
+<tr>
+<td>1987</td>
+<td>SAGA 模型：长事务拆分为子事务链，失败时逆序执行补偿事务</td>
+<td>Hector Garcia-Molina, Kenneth Salem</td>
+<td>SIGMOD'87《Sagas》</td>
+</tr>
+<tr>
+<td>1990s</td>
+<td>C++ 与 Java 将 try/catch（及 finally）定型为现代主流异常语法</td>
+<td>C++ 标准委员会 / Sun</td>
+<td>语言标准与主流实践</td>
+</tr>
+<tr>
+<td>2007</td>
+<td>《Release It!》系统化稳定性模式：熔断器、舱壁、超时、快速失败</td>
+<td>Michael Nygard</td>
+<td>Pragmatic Bookshelf</td>
+</tr>
+<tr>
+<td>2012-12</td>
+<td>Netflix 开源 Hystrix：熔断、舱壁、降级在微服务间大规模工程化</td>
+<td>Netflix</td>
+<td>GitHub 开源（InfoQ 2012-12 报道）</td>
+</tr>
+<tr>
+<td>2015-03</td>
+<td>《Exponential Backoff And Jitter》：证明无抖动的指数退避会在并发下成簇冲击，提出 full jitter</td>
+<td>Marc Brooker</td>
+<td>AWS Architecture Blog，2015-03-04</td>
+</tr>
+<tr>
+<td>2017</td>
+<td>Uber Cadence 发布（durable execution 引擎），后由其团队独立发展为 Temporal</td>
+<td>Uber</td>
+<td>开源发布</td>
+</tr>
+<tr>
+<td>2022</td>
+<td>RFC 9110《HTTP Semantics》明确方法幂等语义：GET/PUT/DELETE 幂等，POST 不幂等</td>
+<td>IETF</td>
+<td>RFC 9110</td>
+</tr>
+<tr>
+<td>2023</td>
+<td>Instructor 库普及"结构化输出校验失败→带错误信息重问"模式</td>
+<td>Jason Liu</td>
+<td>开源项目</td>
+</tr>
+<tr>
+<td>2024</td>
+<td>LangGraph Checkpointer：智能体工作流的检查点持久化与恢复成为框架标配</td>
+<td>LangChain</td>
+<td>LangGraph 官方文档</td>
+</tr>
+</tbody>
+</table>
+<p>演化脉络的主线是"失败处理的重心不断上移"。语言层（PL/I 到 try/catch）解决的是单进程内失败的表达与清理；事务层（SAGA）解决跨系统原子性——长事务持有锁不可行，就用补偿把"回滚"变成显式的业务动作；服务层（Nygard 的模式与 Hystrix 的实践）解决依赖故障的隔离与止损；durable execution（Cadence/Temporal）把"进程可以死、流程必须活"变成基础设施承诺。智能体框架（LangGraph Checkpointer、ADK 的异常处理、Instructor 的输出重试）承接了全部四层，并新增了本领域特有的问题：模型输出不可重放（同样的 prompt 重试会得到不同结果），因此检查点必须连同"上下文快照"一起存，恢复才不失真。</p>
+<h2 id="123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</h2>
+<p>第一，它把长任务的平均完成率从"运气"变成"设计值"。工具调用失败率哪怕只有 3%，一个 30 步的任务全程无故障的概率也不到 40%；没有重试，多数任务死于偶发抖动而非能力不足。重试、降级、检查点这三件事把存活曲线重新拉直。</p>
+<p>第二，它保护系统不被故障放大摧毁。没有熔断的智能体集群遇到模型服务故障时，所有智能体同时疯狂重试——这本身就是一次自造的 DDoS（重试风暴）；退避加抖动控制重试节奏，熔断控制总量，错误预算控制整体风险敞口。容错设计的第一受益者常常不是当前这次任务，而是整个共享依赖。</p>
+<p>第三，它让"有副作用的智能体"成为可能。读操作失败可以重来，写操作失败重来可能双倍扣款。幂等键、检查点、SAGA 补偿共同给出工程答案：至少一次的投递 + 恰好一次的效果。没有这一层，智能体永远只能停留在"只读"的安全区。</p>
+<h2 id="124-实际应用与案例">12.4 实际应用与案例</h2>
+<p><strong>模型 API 调用加固</strong>。场景：智能体核心的每一次推理调用都依赖外部 API。做法：429/超时用指数退避加抖动重试（带次数上限与总时长预算），内容策略拒绝不重试原文而是改写后重试一次，连续失败触发熔断并降级到备用模型。关键设计点：区分"可重试"与"不可重试"的 HTTP 语义；重试计数要随请求头透传，避免中间层重复叠加重试造成放大。</p>
+<p><strong>结构化输出解析失败重试</strong>。场景：要求模型输出 JSON，偶发返回带注释或截断的非法 JSON。做法：解析失败时把解析器的报错原文（哪个字段、什么类型错）附回给模型重问，两次失败换更宽松的修复提示词或降级到规则抽取。关键设计点：报错信息要具体可执行（"total 应为数字，实际为字符串'120元'"），这正是 Instructor 类库把校验错误自动回传的思路。</p>
+<p><strong>带支付的多步订单流程</strong>。场景：查库存→扣款→发货，任何一步后都可能崩。做法：扣款用客户端生成的幂等键（同键重试服务端去重），发货失败用 SAGA 补偿（先退款再取消，逆序回滚），全程状态落检查点，崩溃后从检查点续跑且已扣款步骤凭幂等记录跳过。关键设计点：补偿动作本身要幂等（退款接口可安全重复调用），补偿失败进人工队列。</p>
+<p><strong>长时研究/爬取任务断点续跑</strong>。场景：数小时的采集任务，浏览器崩溃、机器重启随时可能发生。做法：每完成一个单元（一个页面、一个子问题）即写检查点；重启后从检查点恢复，跳过已完成单元。关键设计点：检查点粒度按"可安全重做的最小副作用单元"划，太细则开销大，太粗则重做面大。</p>
+<p><strong>熔断降级保可用</strong>。场景：检索依赖抖动，智能体答不了问题。做法：熔断器打开后自动降级到缓存答案或"基于本地知识 + 明确标注信息可能过期"的答复，并在响应里打降级标记。关键设计点：降级必须可观测（指标与日志标记降级原因），否则用户默默忍受低质答案、没人知道系统早已带病运行。</p>
+<p><strong>批量作业的失败隔离</strong>。场景：一千条工单的批量处理，个别工单触发模型异常。做法：单条失败落死信队列带完整上下文，不阻断整批；整批结束统一重放死信。关键设计点：失败条目要记录原始输入与错误分类，重放前先修根因，避免重放风暴。</p>
+<h2 id="125-深度讲解">12.5 深度讲解</h2>
+<h3 id="1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</h3>
+<p>智能体故障的分类学直接决定策略，值得给出完整映射。<strong>模型故障</strong>：限流（429）与过载（5xx）是瞬时的，退避重试有效；上下文超限是永久的，重试无益，要裁剪上下文；内容策略拒绝介于两者之间——原样重试大概率再拒，改写输入后重试可能通过；生成质量随机劣化（幻觉、跑题）属于语义故障，重试同 prompt 是抛硬币。<strong>工具故障</strong>：网络与超时是瞬时；权限与配额是永久（需人工或换凭据）；格式漂移（上游改了返回结构）是"语义故障的工具版"，要靠输出校验发现；部分成功（批量操作完成一半后断连）最危险，盲目重试=重复执行，必须先查幂等记录。<strong>编排故障</strong>：死循环、状态丢失、并发写冲突；这类故障重试的是"代码"而不是"请求"，检查点与状态版本化是对策。<strong>语义故障</strong>——返回了但错了，是 agent 特有且最阴险的一层：它不抛异常，没有错误码，只有第 11 章的判据与校验能抓住它。抓住后的正确动作不是原样重试（同输入大概率同错误），而是改变条件再试：换提示词、加约束、换模型，或把校验错误作为反馈注入。一句话原则：<strong>抛异常的错误用重试治，不抛异常的错误用校验治</strong>。</p>
+<h3 id="1252-重试与退避节奏设计的定量细节">12.5.2 重试与退避：节奏设计的定量细节</h3>
+<p>重试策略的三个参数——次数、间隔、抖动——都有讲究。次数与总预算：重试次数应换算为总时间预算（如"最多 4 次、总等待不超过 30 秒"），因为指数退避下次数与等待时间是乘法关系，不设总预算的次数上限会拖垮调用方。间隔：capped exponential backoff，<code>sleep = min(cap, base * 2^attempt)</code>。抖动：Brooker 在 2015 年的分析揭示了纯退避的盲区——并发客户端即使各自指数退避，重试时刻仍会同簇出现（大家的节奏一致），服务端收到的是周期性脉冲而非平滑流量；解法是 full jitter：<code>sleep = random.uniform(0, min(cap, base * 2^attempt))</code>，把每次的重试时刻在区间内随机化。模拟数据显示 full jitter 在总完成时间与调用总量上都显著优于无抖动退避。另一个常被忽略的放大器是<strong>多层重试</strong>：客户端重试 3 次 × 网关重试 3 次 × SDK 重试 3 次 = 一次故障最多 27 发请求。原则是整条调用链只在一层做重试（通常在最外层），或把重试预算作为元数据沿调用链传递并逐层递减。</p>
+<h3 id="1253-熔断舱壁与错误预算">12.5.3 熔断、舱壁与错误预算</h3>
+<p>熔断器是一个三态状态机：<strong>闭合</strong>（正常放行，滑动窗口内统计失败率）→ 失败率超阈值 → <strong>打开</strong>（一切调用立即快速失败，不打扰依赖）→ 冷却期结束 → <strong>半开</strong>（放行少量探测请求）→ 成功则闭合、失败则重回打开。它治的病是"对已死依赖的持续骚扰"：依赖已经过载，每个重试都在给它补刀；熔断用快速失败给依赖恢复窗口，也把调用方的资源从无限等待中解放出来。<strong>舱壁</strong>是隔离维度：按依赖划分资源池（并发数、连接数），一个依赖的饱和不会拖垮其他依赖——智能体系统里至少要把"模型调用""检索调用""写操作"分池。<strong>错误预算</strong>是治理维度：为每个依赖设定滑动窗口错误率上限（如 1%），超出即触发自动熔断与新版本发布冻结。三者共同的哲学是：<strong>可用的降级服务优于不可用的完美服务</strong>。落地陷阱两个：熔断阈值按依赖分级设置（核心依赖阈值高、容忍度高，边缘依赖阈值低、熔断快）；半开状态的探测流量要小而可控，否则探测本身就是一次小型风暴。</p>
+<h3 id="1254-检查点与恢复非确定性带来的新难题">12.5.4 检查点与恢复：非确定性带来的新难题</h3>
+<p>传统 durable execution 的假设是"步骤可确定性重放"——同样的输入重跑同样的代码得到同样的结果，所以只需存输入。LLM 智能体打破了这个假设：步骤的输出是模型生成，不可重放。因此智能体的检查点必须存<strong>结果</strong>而非仅存输入：每步完成后，把（步骤标识、输入摘要、完整输出、上下文增量）原子写入持久层；恢复时，已完成步骤直接复用存下的输出，只有未完成步骤才真正重执行。三个工程细节决定成败。其一是<strong>原子性</strong>：检查点写入与副作用提交的顺序——先写检查点再提交副作用，崩溃在两者之间会漏记已完成的事实；先提交再写检查点，崩溃在中间会导致重做。工程解法是把幂等键放进副作用请求里，让"重做"在服务端去重，两个顺序就都安全了。其二是<strong>上下文一致性</strong>：恢复后的对话历史必须与检查点时刻完全一致，包括工具返回的原始文本（不只是摘要），否则模型基于失真的记忆继续工作。其三是<strong>恢复的迭代上限</strong>：同一步骤反复失败反复从检查点恢复，应该计数并在达到上限后升级，避免"恢复风暴"。</p>
+<h3 id="1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</h3>
+<p><strong>幂等</strong>解决"同一操作执行多次，效果如同一次"。HTTP 语义里 GET/PUT/DELETE 天然幂等而 POST 不幂等（RFC 9110）；工程实践是客户端生成幂等键（UUID，随请求携带，服务端在窗口期内去重）——支付、下单、发消息这些 POST 型操作都必须补上这层。智能体的特殊性在于"重试决策是自动做出的"，人尚可在重试前想一下"是不是已经扣过款了"，自动重试不会想，所以幂等保护必须内建于工具实现而非依赖调用方自觉。<strong>补偿</strong>解决"已经发生、无法撤销的操作如何退回"。SAGA 的洞见是把长事务拆成子事务链，每个子事务登记对应的补偿动作，失败时逆序执行补偿：下单的补偿是取消，扣款的补偿是退款，发邮件的补偿是……没有（不能撤回，只能发更正邮件）。这提示补偿设计的分级：可精确撤销（数据库写）、可业务对冲（退款）、不可撤销只能披露（外发消息）——第三类必须在执行前的确认闸门里拦截，而不是事后补救。补偿链自身的故障处理常被遗忘：补偿也可能失败，补偿要幂等、要重试、最终失败进人工队列；同时记录"补偿中"状态，防止系统在半回滚状态下接受新请求。</p>
+<h3 id="1256-降级链与失效模式">12.5.6 降级链与失效模式</h3>
+<p>降级链是一张预先画好的能力阶梯：主模型 → 备用模型 → 缓存答案 → 静态话术 + 转人工。设计要点：每一级的触发条件明确（不是"感觉不行了"就降）、每一级的效果损失被明确接受、降级动作全程打标（响应头、日志、指标），并有"自动回梯"机制——依赖恢复后自动切回主路径。最危险的反模式是降级成为常态：主依赖故障两周无人发现，因为用户拿到的"都还行"。对策是降级率本身进告警。</p>
+<p>失效模式清单，每一条都值得当作 review checklist：<strong>无限重试</strong>（没有次数与总预算上限）；<strong>重试非幂等操作</strong>（双倍扣款制造机）；<strong>吞异常继续</strong>（<code>except: pass</code> 让错误状态污染后续所有步骤）；<strong>把重试当修复</strong>（永久错误重试十次只是把失败变贵）；<strong>检查点不含上下文</strong>（恢复后模型失忆，行为断裂）；<strong>降级路径从未被测试</strong>（真出事时降级路径自己崩）；<strong>半开探测风暴</strong>（熔断恢复期的探测没限流）；<strong>死信队列无消费者</strong>（失败被"记录"了，但没人重放）。何时可以不用这套机制：纯内存、无副作用、可整体重算的短任务，直接失败重抛最简单——容错机制的复杂度必须与任务的价值和不可重做性匹配。</p>
+<h2 id="126-工程落地实践代码示例">12.6 工程落地：实践代码示例</h2>
+<h3 id="1261-框架无关实现完整可运行">12.6.1 框架无关实现（完整可运行）</h3>
+<p>一个带指数退避（full jitter）、熔断器、检查点恢复与幂等跳过的健壮执行器。核心演示不依赖模型即可完整运行（重试、熔断、降级、崩溃恢复、幂等跳过全部展示）；最后一步用 <code>llm()</code> 做摘要，未配置模型环境变量时自动走降级路径——这本身就是一次真实的降级演示。</p>
+<pre><code class="language-python">&quot;&quot;&quot;健壮执行器：指数退避(full jitter) + 熔断器 + 检查点恢复 + 幂等跳过 + 降级链。
+
+依赖：pip install openai（未配置 AGENT_LLM_API_KEY 时自动降级，不影响主演示）
+运行：python ch12_robust_executor.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+import os
+import random
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import Callable
+
+
+class StepError(Exception):
+    &quot;&quot;&quot;步骤错误基类。&quot;&quot;&quot;
+
+
+class RetryableError(StepError):
+    &quot;&quot;&quot;瞬时错误：限流、超时、网络抖动。策略=退避重试。&quot;&quot;&quot;
+
+
+class FatalError(StepError):
+    &quot;&quot;&quot;永久错误：参数非法、权限不足。策略=不重试，走降级或升级。&quot;&quot;&quot;
+
+
+class CircuitOpenError(StepError):
+    &quot;&quot;&quot;熔断打开期间的快速失败。策略=直接降级。&quot;&quot;&quot;
+
+
+# ---------------- 熔断器：闭合/打开/半开 三态状态机 ----------------
+class CircuitState(str, Enum):
+    CLOSED = &quot;closed&quot;
+    OPEN = &quot;open&quot;
+    HALF_OPEN = &quot;half_open&quot;
+
+
+class CircuitBreaker:
+    &quot;&quot;&quot;滑动窗口失败率触发熔断；冷却后半开放行探测。&quot;&quot;&quot;
+
+    def __init__(self, name: str, failure_threshold: int = 3, recovery_seconds: float = 30.0):
+        self.name = name
+        self.failure_threshold = failure_threshold
+        self.recovery_seconds = recovery_seconds
+        self.state = CircuitState.CLOSED
+        self.failures = 0
+        self.opened_at = 0.0
+
+    def allow(self) -&gt; bool:
+        if self.state is CircuitState.CLOSED:
+            return True
+        if self.state is CircuitState.OPEN:
+            if time.monotonic() - self.opened_at &gt;= self.recovery_seconds:
+                self.state = CircuitState.HALF_OPEN      # 冷却结束，放行探测
+                return True
+            return False
+        return True                                       # HALF_OPEN：放行单个探测
+
+    def record_success(self) -&gt; None:
+        self.failures, self.state = 0, CircuitState.CLOSED
+
+    def record_failure(self) -&gt; None:
+        self.failures += 1
+        if self.state is CircuitState.HALF_OPEN or self.failures &gt;= self.failure_threshold:
+            self.state, self.opened_at = CircuitState.OPEN, time.monotonic()
+
+
+def full_jitter_sleep(attempt: int, base: float = 0.2, cap: float = 8.0, scale: float = 1.0) -&gt; None:
+    &quot;&quot;&quot;full jitter 指数退避：sleep 在 [0, min(cap, base*2^attempt)] 内均匀随机（Brooker 2015）。&quot;&quot;&quot;
+    delay = random.uniform(0, min(cap, base * (2 ** attempt))) * scale
+    if delay &gt; 0:
+        time.sleep(delay)
+
+
+# ---------------- 检查点：JSON 文件持久化 ----------------
+class Checkpointer:
+    &quot;&quot;&quot;把已完成步骤的结果原子落盘；恢复时凭记录跳过，保证幂等。&quot;&quot;&quot;
+
+    def __init__(self, path: str):
+        self.path = Path(path)
+        self.data: dict
+        if self.path.exists() and self.path.stat().st_size &gt; 0:
+            self.data = json.loads(self.path.read_text())
+        else:
+            self.data = {&quot;steps&quot;: {}}
+
+    def get(self, step_id: str) -&gt; dict | None:
+        return self.data[&quot;steps&quot;].get(step_id)
+
+    def save(self, step_id: str, result: dict, degraded: bool = False) -&gt; None:
+        self.data[&quot;steps&quot;][step_id] = {&quot;result&quot;: result, &quot;degraded&quot;: degraded}
+        tmp = self.path.with_suffix(&quot;.tmp&quot;)               # 先写临时文件再原子替换
+        tmp.write_text(json.dumps(self.data, ensure_ascii=False, indent=2))
+        tmp.replace(self.path)
+
+
+# ---------------- 步骤与执行器 ----------------
+@dataclass
+class Step:
+    step_id: str
+    name: str
+    fn: Callable[[dict], dict]                                  # 正常实现
+    fallback: Callable[[dict, Exception], dict] | None = None   # 降级实现（能力阶梯下一级）
+    max_retries: int = 3                                        # 重试次数上限
+    breaker: CircuitBreaker = field(default_factory=lambda: CircuitBreaker(&quot;step&quot;))
+
+
+class RobustExecutor:
+    &quot;&quot;&quot;按序执行步骤：幂等跳过 -&gt; 熔断检查 -&gt; 退避重试 -&gt; 降级 -&gt; 检查点。&quot;&quot;&quot;
+
+    def __init__(self, steps: list[Step], checkpoint: Checkpointer, sleep_scale: float = 1.0):
+        self.steps = steps
+        self.checkpoint = checkpoint
+        self.sleep_scale = sleep_scale
+
+    def run_step(self, step: Step, ctx: dict) -&gt; dict:
+        # 1) 幂等跳过：检查点里已有本步结果 =&gt; 不重复执行（至少一次投递+恰好一次效果）。
+        saved = self.checkpoint.get(step.step_id)
+        if saved is not None:
+            print(f&quot;  [{step.name}] 命中检查点，跳过（degraded={saved['degraded']}）&quot;)
+            return saved[&quot;result&quot;]
+        # 2) 熔断检查：打开状态直接快速失败进降级，不打扰依赖。
+        if not step.breaker.allow():
+            err = CircuitOpenError(f&quot;{step.name} 熔断打开中&quot;)
+            print(f&quot;  [{step.name}] 熔断器打开 -&gt; 快速失败&quot;)
+            return self._degrade(step, ctx, err)
+        # 3) 重试循环：可重试错误退避重试；永久错误立即退出；重试预算用尽走降级。
+        last_err: Exception | None = None
+        for attempt in range(step.max_retries + 1):
+            try:
+                result = step.fn(ctx)
+                step.breaker.record_success()
+                self.checkpoint.save(step.step_id, result)
+                print(f&quot;  [{step.name}] 成功（第{attempt + 1}次尝试）&quot;)
+                return result
+            except FatalError as exc:
+                last_err = exc
+                print(f&quot;  [{step.name}] 永久错误，不重试：{exc}&quot;)
+                break
+            except StepError as exc:
+                last_err = exc
+                step.breaker.record_failure()
+                print(f&quot;  [{step.name}] 瞬时错误（第{attempt + 1}次）：{exc}&quot;)
+                if attempt &lt; step.max_retries:
+                    full_jitter_sleep(attempt, scale=self.sleep_scale)
+        return self._degrade(step, ctx, last_err or StepError(&quot;unknown&quot;))
+
+    def _degrade(self, step: Step, ctx: dict, err: Exception) -&gt; dict:
+        # 4) 降级：有降级实现则用之并落盘（标记 degraded），无则升级（抛出）。
+        if step.fallback is None:
+            raise err
+        result = step.fallback(ctx, err)
+        self.checkpoint.save(step.step_id, result, degraded=True)
+        print(f&quot;  [{step.name}] 降级执行：{result}&quot;)
+        return result
+
+    def run(self, ctx: dict) -&gt; dict:
+        for i, step in enumerate(self.steps):
+            print(f&quot;步骤 {i + 1}/{len(self.steps)}：{step.name}&quot;)
+            ctx[step.step_id] = self.run_step(step, ctx)
+        return ctx
+
+
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。&quot;&quot;&quot;
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+        api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+    )
+    model = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+    ]
+    resp = client.chat.completions.create(model=model, messages=messages, temperature=temperature)
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+# ---------------- 演示 ----------------
+if __name__ == &quot;__main__&quot;:
+    CKPT = Path(&quot;order_checkpoint.json&quot;)
+    CKPT.unlink(missing_ok=True)                      # 每次演示从干净状态开始
+
+    # 工具 1：支付——前 2 次瞬时失败（模拟限流），第 3 次成功。幂等键保证重试安全。
+    pay_state = {&quot;calls&quot;: 0}
+
+    def charge(ctx: dict) -&gt; dict:
+        pay_state[&quot;calls&quot;] += 1
+        if pay_state[&quot;calls&quot;] &lt;= 2:
+            raise RetryableError(&quot;支付网关 503（模拟限流）&quot;)
+        return {&quot;charged_cny&quot;: 129.0, &quot;idempotency_key&quot;: &quot;key-ORD-9&quot;, &quot;txn&quot;: &quot;T-1001&quot;}
+
+    def charge_fallback(ctx: dict, err: Exception) -&gt; dict:
+        return {&quot;charged&quot;: False, &quot;reason&quot;: f&quot;支付降级为货到付款（{err}）&quot;}
+
+    # 工具 2：发货——永久错误演示（地址缺失），提供降级：进人工队列。
+    def ship(ctx: dict) -&gt; dict:
+        if not ctx.get(&quot;address&quot;):
+            raise FatalError(&quot;收货地址缺失，无法发货&quot;)
+        return {&quot;shipped&quot;: True}
+
+    def ship_fallback(ctx: dict, err: Exception) -&gt; dict:
+        return {&quot;shipped&quot;: False, &quot;queued&quot;: &quot;manual-review&quot;, &quot;reason&quot;: str(err)}
+
+    # 工具 3：摘要——有模型用模型，无模型自动降级为模板（真实降级路径演示）。
+    def summarize(ctx: dict) -&gt; dict:
+        if not os.environ.get(&quot;AGENT_LLM_API_KEY&quot;):
+            raise RetryableError(&quot;模型未配置&quot;)
+        text = llm(f&quot;用一句话总结订单处理结果：{ctx['charge']} / {ctx['ship']}&quot;, temperature=0.2)
+        return {&quot;summary&quot;: text}
+
+    def summarize_fallback(ctx: dict, err: Exception) -&gt; dict:
+        return {&quot;summary&quot;: f&quot;[模板降级] 订单 ORD-9 处理完成：{ctx['charge'].get('charged_cny', 0)} 元&quot;}
+
+    steps = [
+        Step(&quot;charge&quot;, &quot;支付&quot;, charge, charge_fallback, max_retries=4),
+        Step(&quot;ship&quot;, &quot;发货&quot;, ship, ship_fallback, max_retries=1),
+        Step(&quot;summarize&quot;, &quot;摘要&quot;, summarize, summarize_fallback, max_retries=1),
+    ]
+    ctx = RobustExecutor(steps, Checkpointer(CKPT), sleep_scale=0.0).run({&quot;order_id&quot;: &quot;ORD-9&quot;})
+    print(f&quot;\n第一次运行完成：{json.dumps(ctx, ensure_ascii=False)}&quot;)
+
+    # 崩溃恢复演示：清掉内存状态、新建执行器从同一检查点文件恢复。
+    print(&quot;\n-- 模拟进程崩溃后重启（从检查点恢复）--&quot;)
+    ctx2 = RobustExecutor(steps, Checkpointer(CKPT), sleep_scale=0.0).run({&quot;order_id&quot;: &quot;ORD-9&quot;})
+    print(f&quot;恢复运行完成（全部步骤命中检查点，未重复执行任何副作用）：{json.dumps(ctx2, ensure_ascii=False)}&quot;)
+    assert ctx2[&quot;charge&quot;] == ctx[&quot;charge&quot;], &quot;支付步骤不应重复执行&quot;
+    print(&quot;\n检查点文件：&quot;, CKPT.resolve())
+</code></pre>
+<h3 id="1262-框架集成实现langgraph-checkpointer崩溃恢复">12.6.2 框架集成实现（LangGraph Checkpointer：崩溃恢复）</h3>
+<p>LangGraph 的 Checkpointer 把"每步之后自动存检查点"变成框架能力：图每完成一个节点，状态就持久化一次；执行中途抛错，已落检查点的状态不丢。恢复时用同一个 <code>thread_id</code> 传入增量状态继续跑，配合节点内的幂等守卫（读检查点状态判断是否已做过），已完成的副作用不会重复执行。在 <strong>langgraph==1.2.12</strong> 实测（无需模型调用）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;LangGraph 检查点恢复：节点失败 -&gt; 从检查点恢复 -&gt; 已有副作用不重复执行。
+
+依赖：pip install langgraph   # langgraph==1.2.12 实测
+运行：python ch12_langgraph_recovery.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from typing import Annotated, Any, TypedDict
+
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import END, START, StateGraph
+
+
+class FlowState(TypedDict):
+    order_id: str
+    address: str | None
+    charged: bool
+    shipped: bool
+    log: Annotated[list[str], lambda a, b: a + b]   # 追加式日志
+    fail_next: bool                                  # 注入故障的开关
+
+
+def charge(state: FlowState) -&gt; FlowState:
+    &quot;&quot;&quot;支付节点：有副作用，靠检查点+幂等记录保证不重复扣款。&quot;&quot;&quot;
+    if state[&quot;charged&quot;]:
+        return {&quot;log&quot;: [&quot;charge: 已完成，跳过&quot;]}
+    return {&quot;charged&quot;: True, &quot;log&quot;: [f&quot;charge: 已扣款 ORD-{state['order_id']}&quot;]}
+
+
+def ship(state: FlowState) -&gt; FlowState:
+    &quot;&quot;&quot;发货节点：fail_next=True 时抛错，模拟工具故障导致图执行中断。&quot;&quot;&quot;
+    if state.get(&quot;fail_next&quot;):
+        raise RuntimeError(&quot;发货服务不可用（模拟故障）&quot;)
+    if state[&quot;shipped&quot;]:
+        return {&quot;log&quot;: [&quot;ship: 已完成，跳过&quot;]}
+    return {&quot;shipped&quot;: True, &quot;address&quot;: state[&quot;address&quot;], &quot;log&quot;: [&quot;ship: 已发货&quot;]}
+
+
+def build_app():
+    g = StateGraph(FlowState)
+    g.add_node(&quot;charge&quot;, charge)
+    g.add_node(&quot;ship&quot;, ship)
+    g.add_edge(START, &quot;charge&quot;)
+    g.add_edge(&quot;charge&quot;, &quot;ship&quot;)
+    g.add_edge(&quot;ship&quot;, END)
+    # 检查器让图的每步状态都被持久化（生产换 SqliteSaver/PostgresSaver）
+    return g.compile(checkpointer=InMemorySaver())
+
+
+if __name__ == &quot;__main__&quot;:
+    app = build_app()
+    config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;order-9&quot;}}   # 线程 ID = 检查点命名空间
+
+    # 第一次运行：ship 节点抛错，图中断——但 charge 的状态已入检查点。
+    try:
+        app.invoke(
+            {&quot;order_id&quot;: &quot;9&quot;, &quot;address&quot;: &quot;北京市...&quot;, &quot;charged&quot;: False, &quot;shipped&quot;: False,
+             &quot;log&quot;: [], &quot;fail_next&quot;: True},
+            config,
+        )
+    except RuntimeError as exc:
+        print(f&quot;[运行1] 中断：{exc}&quot;)
+
+    saved = app.get_state(config)                          # 查看检查点现场
+    print(f&quot;[检查点] charged={saved.values.get('charged')} shipped={saved.values.get('shipped')}&quot;)
+    print(f&quot;[检查点] 日志={saved.values.get('log')}&quot;)
+
+    # 恢复运行：故障修复（fail_next=False），传入增量状态从检查点继续。
+    # charge 节点会再次被调度，但读到检查点里 charged=True，只记录&quot;已完成，跳过&quot;，
+    # 不会重复扣款——幂等守卫 + 检查点状态共同保证副作用恰好一次。
+    result: dict[str, Any] = app.invoke({&quot;fail_next&quot;: False}, config)
+    print(f&quot;[运行2] 恢复完成：log={result['log']}&quot;)
+    assert result[&quot;charged&quot;] and result[&quot;shipped&quot;]
+    # 关键证据：日志里 charge 只出现过一次（第一次运行），第二次运行没有重复扣款。
+    assert sum(1 for line in result[&quot;log&quot;] if line.startswith(&quot;charge: 已扣款&quot;)) == 1
+    print(&quot;[验证] charge 节点未被重复执行——检查点恢复保证了副作用恰好一次。&quot;)
+</code></pre>
+<h3 id="1263-生产化改造清单">12.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：全链路错误分类（可重试/永久/语义）落到统一的错误类型；任何 <code>except</code> 都必须记录并分流，禁止裸吞。</li>
+<li><strong>超时</strong>：模型调用、工具调用、整个步骤三层都要有超时；超时错误按可重试处理，但计入熔断统计。</li>
+<li><strong>重试治理</strong>：full jitter 退避 + 次数与总时长双预算；调用链只在一层重试，重试深度随请求头传递递减。</li>
+<li><strong>并发</strong>：共享依赖分舱壁（按依赖设并发上限）；批量任务限速，失败条目进死信队列带全量上下文。</li>
+<li><strong>缓存与幂等</strong>：写操作一律携带客户端幂等键；只读结果按输入哈希缓存，减少对不稳定依赖的真实调用。</li>
+<li><strong>可观测</strong>：重试率、熔断状态、降级率、恢复次数做成一等指标；每次降级在响应与日志打标，降级率超阈值告警。</li>
+<li><strong>检查点</strong>：检查点含完整上下文快照（含工具原始输出）；写入原子化（临时文件+替换或事务）；同一步骤恢复重试设上限，超限升级人工。</li>
+<li><strong>成本控制</strong>：重试与降级都消耗 token，按任务设金额预算；语义错误的"改条件重试"次数单列限额，防止"校验-重试"循环烧钱。</li>
+<li><strong>演练</strong>：降级路径与恢复路径要定期演练（混沌工程式注入故障），从未运行过的恢复代码等于不存在。</li>
+</ul>
+<h2 id="127-概览-核心要点-结论">12.7 概览 / 核心要点 / 结论</h2>
+<h3 id="本章小结">本章小结</h3>
+<p>异常处理与恢复把智能体执行从"祈祷不失败"改造为"失败按剧本走"：先分类（瞬时/永久/语义）再选策略，瞬时错误用带抖动的退避重试，持续错误用熔断止血、用降级维持服务，长流程靠检查点断点续跑，副作用靠幂等键与 SAGA 补偿保证"重走无伤害"。这套机制没有一件是智能体时代的新发明——从 PL/I 的异常、SAGA 的补偿到 Nygard 的稳定性模式与 durable execution 引擎——智能体工程做的是把它们组装进一个输出不可重放的新运行时，并为"返回了但错了"的语义故障补上校验这一环。</p>
+<h3 id="核心要点">核心要点</h3>
+<ul>
+<li>四层故障四类对策：模型故障退避重试/裁剪上下文，工具故障重试+幂等，编排故障检查点+状态版本化，语义故障只能靠校验抓、改条件重试。</li>
+<li>重试三原则：只重试幂等操作、指数退避必须加 full jitter、次数与总预算双上限。</li>
+<li>整条调用链只在一层重试，多层重试相乘是重试风暴的根源。</li>
+<li>熔断器三态（闭合/打开/半开）+ 舱壁隔离 + 错误预算：可用的降级优于不可用的完美。</li>
+<li>智能体检查点必须存"结果+完整上下文"而非仅存输入——模型输出不可确定性重放。</li>
+<li>副作用安全公式：至少一次投递 + 客户端幂等键 + 服务端去重 = 恰好一次效果。</li>
+<li>SAGA 补偿逆序回滚；补偿自身要幂等、要重试、最终失败进人工队列；不可撤销动作必须在事前确认闸门拦截。</li>
+<li>降级链预画能力阶梯且全程打标；降级率进告警，防止降级悄然成为常态。</li>
+</ul>
+<h3 id="结论">结论</h3>
+<p>判断一个智能体系统是否生产就绪，看的不是演示时的流畅，而是故障时的剧本：重试是否克制、熔断是否及时、降级是否有标、恢复是否无副作用。这些剧本的每一行都来自半个多世纪的工程积累，智能体并没有推翻它们，只是让"语义故障"加入进来、让"不可重放"提高了检查点的成本。把失败路径当作一等公民来设计的团队，才能把智能体放进真正重要的业务流程里。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch11-goal-monitoring.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第11章 目标设定与监控</span></a><a class="pager" href="../chapters/ch13-human-in-the-loop.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第13章 人在回路</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#121-模式概述">12.1 模式概述</a></li><li class="toc-l3"><a href="#1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#122-起源与历史最早是谁提出来的">12.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#124-实际应用与案例">12.4 实际应用与案例</a></li><li class="toc-l2"><a href="#125-深度讲解">12.5 深度讲解</a></li><li class="toc-l3"><a href="#1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</a></li><li class="toc-l3"><a href="#1252-重试与退避节奏设计的定量细节">12.5.2 重试与退避：节奏设计的定量细节</a></li><li class="toc-l3"><a href="#1253-熔断舱壁与错误预算">12.5.3 熔断、舱壁与错误预算</a></li><li class="toc-l3"><a href="#1254-检查点与恢复非确定性带来的新难题">12.5.4 检查点与恢复：非确定性带来的新难题</a></li><li class="toc-l3"><a href="#1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</a></li><li class="toc-l3"><a href="#1256-降级链与失效模式">12.5.6 降级链与失效模式</a></li><li class="toc-l2"><a href="#126-工程落地实践代码示例">12.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1261-框架无关实现完整可运行">12.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1262-框架集成实现langgraph-checkpointer崩溃恢复">12.6.2 框架集成实现（LangGraph Checkpointer：崩溃恢复）</a></li><li class="toc-l3"><a href="#1263-生产化改造清单">12.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#127-概览-核心要点-结论">12.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

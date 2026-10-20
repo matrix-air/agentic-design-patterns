@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第3章 并行化 · 智能体设计模式</title>
+<meta name="description" content="把独立子任务并发执行后归并——切分压缩延迟，投票提升准确率，聚合器融合观点，join 阶段的归并语义决定成败。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第一部分 · 核心模式</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a class="active" href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第一部分 · 核心模式</div>
+      <h1>第3章 并行化 <span class="en-title">Parallelization</span></h1>
+      <p class="chapter-summary">把独立子任务并发执行后归并——切分压缩延迟，投票提升准确率，聚合器融合观点，join 阶段的归并语义决定成败。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：把相互独立的子任务同时交给多个模型调用执行，再把结果归并为一份输出——切分求快，投票求准，聚合求全。
+<strong>解决什么问题</strong>：串行链的延迟叠加与单次采样的随机失误 ｜ <strong>适用场景</strong>：多维独立评审、批量独立任务、推理题多采样投票、多模型生成融合 ｜ <strong>核心机制</strong>：任务切分 + 并发执行 + join 归并（拼接/投票/聚合器三种语义）｜ <strong>代价</strong>：token 成本成倍放大，归并逻辑自身成为新的复杂度与故障点。</p>
+</blockquote>
+<h2 id="31-模式概述">3.1 模式概述</h2>
+<h3 id="311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</h3>
+<p>串行的提示链解决了任务过载问题，却带来两样新的东西：累积的延迟，和累积的随机性。延迟好理解——三步链就是三次模型调用的耗时之和，用户等得着急。随机性则更隐蔽：大模型的输出是概率采样，同一个问题问两遍可能得到不同答案，任何一次单独调用都可能踩中一次"随机失误"——漏看一个约束、算错一步推理。对单次调用而言这是小概率，对一个每天跑百万次的系统而言是必然事件。</p>
+<p>并行化针对这两点给出了对称的解法。对付延迟：如果子任务之间互相独立，就没有理由排队——三路评审同时发出，总耗时从三倍压缩到一倍加一点汇合开销。对付随机性：如果失误是随机的，就让多次独立采样互相暴露——同一问题问五遍，三次说 A 两次说 B，多数派比任何单次采样都更可信。这两种用法（切分与投票）加一个收尾环节（聚合器），构成了并行化的全部骨架。</p>
+<h3 id="312-核心机制它如何工作">3.1.2 核心机制：它如何工作</h3>
+<p>并行化的执行由三个阶段构成。<strong>切分阶段</strong>决定怎么把工作拆开：切分可以按内容维度（一份技术方案拆成技术、安全、成本三路评审）、按数据块（长文档切成章节分别翻译）、或按采样次数（同一个问题独立采样 N 次）。切分的铁律是独立性：每一路在执行时不能依赖其他路的中间结果。<strong>执行阶段</strong>用线程池、异步协程或框架的并行原语把 N 个调用同时发出，并对每一路设置超时与失败隔离——一路崩了不影响其他路。<strong>归并阶段（join）</strong>是关键：N 份输出按三种语义之一合成一份——结果天然独立时按序拼接（分块翻译）；结果互为替代品时投票（多采样推理）；结果互为素材时交给一个聚合器模型融合裁决（多维评审意见）。归并阶段还必须回答一个工程问题：部分路失败时，整体算成功还是失败——这由 quorum（法定多数）语义决定。</p>
+<h3 id="313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</h3>
+<p>并行化与提示链（第 1 章）互为补充：链是纵向的顺序骨架，并行化是链上某个节点的横向展开——"带并行分支的链"就是两者的复合。投票与反思（第 4 章）是提升输出质量的两种路径：反思让模型自查一次，投票让多次独立生成互相印证，实践常在投票之后再接一轮反思做最终裁决。多智能体协作（第 7 章）可以看作并行化的组织形态升级：从"一把任务撒给 N 个无差别的调用"升级为"分工、角色与协调"。聚合器与评估监控（第 19 章）共享一套思想：如何为多个输出建立可比的评价尺度。</p>
+<h2 id="32-起源与历史最早是谁提出来的">3.2 起源与历史：最早是谁提出来的</h2>
+<p>并行化的系统化源头不在 AI 领域，而在分布式系统：2004 年 Google 的 Dean 与 Ghemawat 发表 MapReduce（OSDI 2004），把"分而治之、map 阶段并行处理、reduce 阶段归并结果"固化为一套通用编程范式。LLM 应用的并行化在结构上就是 MapReduce 的直系后代——map 是 N 路并发调用，reduce 是拼接、投票或聚合。</p>
+<p>LLM 时代自己的里程碑是自洽性（Self-Consistency）。2022 年 3 月，Wang 等人发表 arXiv:2203.11171（后发表于 ICLR 2023）：对同一个推理问题多次采样不同的推理路径，把最终答案做多数投票，在 GSM8K 等算术与常识推理基准上带来大幅提升。这是"投票式并行"的学术原型，证明了大模型随机性可以被结构化地利用——单次采样会出错，但系统性错误很难在多次独立采样中保持同一方向。2023 年 6 月出现两个工程侧的节点：Jiang 等发表 LLM-Blender（arXiv:2306.02561，后发表于 NeurIPS 2023），先用配对排序评估多个模型的候选输出、再由融合模型合成最终答案，给出了"聚合器"的学术样板；同月 OpenAI 宣布支持并行函数调用，模型可以在单轮请求里同时发起多个工具调用，工具层面的并行从"开发者自己编排"变成了"模型自己编排"。2024 年 12 月，Anthropic《Building Effective Agents》把并行化正式分为切分（sectioning）与投票（voting）两类，完成了行业定名。</p>
+<table>
+<thead>
+<tr>
+<th>年月</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2004</td>
+<td>MapReduce：分而治之、并行 map、归并 reduce 的通用范式</td>
+<td>Dean 与 Ghemawat，Google</td>
+<td>OSDI 2004</td>
+</tr>
+<tr>
+<td>2022-03</td>
+<td>Self-Consistency：同题多次采样 + 多数投票提升推理准确率</td>
+<td>Wang 等，Google Research</td>
+<td>arXiv:2203.11171，ICLR 2023</td>
+</tr>
+<tr>
+<td>2023-06</td>
+<td>LLM-Blender：多模型候选配对排序后融合</td>
+<td>Jiang 等</td>
+<td>arXiv:2306.02561，NeurIPS 2023</td>
+</tr>
+<tr>
+<td>2023-06</td>
+<td>OpenAI 支持并行函数调用，单轮可同时发起多个工具调用</td>
+<td>OpenAI</td>
+<td>官方 API 公告</td>
+</tr>
+<tr>
+<td>2024-12</td>
+<td>《Building Effective Agents》将并行化分为切分（sectioning）与投票（voting）</td>
+<td>Anthropic</td>
+<td>官方工程博客</td>
+</tr>
+</tbody>
+</table>
+<p>演化脉络是一条"从系统到模型再到智能体"的迁移线：MapReduce 提供结构（并行 + 归并），Self-Consistency 提供第一个为概率模型量身定制的归并语义（多数投票），LLM-Blender 与并行函数调用把并行能力下沉到工程框架与 API 层，Anthropic 的分类法则把它确立为智能体工作流的一等公民。</p>
+<h2 id="33-发挥的作用为什么重要">3.3 发挥的作用：为什么重要</h2>
+<p>并行化在两个最难缠的系统指标上直接发力。<strong>延迟</strong>：多维评审、批量处理、多路工具调用这类天然并行的负载，串行执行的时间是各路之和，并行执行的时间约等于最慢一路——五路评审从"五倍等待"变成"一倍等待"，这是不需要换更强模型就能拿到的提速。<strong>准确率</strong>：Self-Consistency 展示的提升在推理类任务上往往超过换用更大模型：单次采样像一次抛硬币，多次独立采样加多数投票像多次抛硬币看频率，方差被结构性地压了下去。对高价值决策（合同审查、医疗分诊、代码上线评审），投票还是最便宜的不确定性度量——票数分歧本身就是"这个问题难、需要人工介入"的信号。</p>
+<p>第三重作用是能力融合：不同模型各有所长，聚合器归并让系统同时吃到了多家的红利，任何单一模型的风向变化也被稀释在组合之中。这种"不把鸡蛋放进一个模型"的稳健性，在大模型能力快速轮动的时期尤其值钱。</p>
+<h2 id="34-实际应用与案例">3.4 实际应用与案例</h2>
+<ul>
+<li><strong>长文档并行评审</strong>：一份技术方案按维度拆成正确性、安全性、可维护性三路并发评审，聚合器汇总为一份意见。关键设计点：各路只输出结构化问题清单，归并时按严重度排序而不是按来源罗列。</li>
+<li><strong>推理任务自洽投票</strong>：数学应用题、逻辑谜题用高温度采样 5~10 次，答案归一化后多数投票。关键设计点：答案必须先归一化（"0.5"与"二分之一"是同一票）再计票，否则多数派被表述差异稀释。</li>
+<li><strong>内容安全多审官</strong>：同一内容同时送多个安全评审提示（或多个模型），任一审官亮红牌即拦截。关键设计点：这里用的是"一票否决"而非多数决——安全场景的误放代价远高于误拦。</li>
+<li><strong>代码库批量重构</strong>：数百个文件的机械重构按文件切分并发执行，每路独立跑测试校验，失败文件回滚不牵连其他。关键设计点：切分单元选"文件"这种天然无依赖的边界，并给每路配独立的失败处理。</li>
+<li><strong>多模型生成融合</strong>：三个模型各写一版营销文案，聚合器取各版之长合成终稿。关键设计点：聚合器提示要显式说明"意见冲突时以哪个为准"（如以合规版为准），否则融合结果随机偏袒。</li>
+<li><strong>批量数据标注提速</strong>：上万条数据按批并行标注，校验规则先于模型跑一遍过滤掉可机械判断的样本。关键设计点：并发数要贴着供应商限流配额调，盲开高并发只会换来批量超时。</li>
+</ul>
+<h2 id="35-深度讲解">3.5 深度讲解</h2>
+<p><strong>机制细节：join 的三种归并语义。</strong> 并行化真正的设计难点不在"并发发请求"，而在汇合点上。第一种是<strong>拼接归并</strong>：各路结果天然独立、互不冲突（分块翻译、批量标注），归并只是保序拼接，唯一要小心的是跨块的上下文断裂——第 5 块把"上一章"翻丢了，因为切分时上下文被切断，对策是切分时留重叠区或携带边界摘要。第二种是<strong>投票归并</strong>：各路结果互为替代品，用计票消解分歧。投票的技术核心是答案归一化——必须把语义相同的输出映射到同一票面再计票，否则"多数"是表述方式的多数而非答案的多数。平局要预先定义处理规则：触发升级（重采样一轮、或送强模型仲裁）比随机挑一个好，因为平局本身就是高不确定性的证据。第三种是<strong>聚合器归并</strong>：各路结果互为素材（三份不同角度的评审意见），由一个聚合 LLM 融合裁决。聚合器是 LLM-Blender 式的角色，它带来新的风险：聚合器本身会出错、有偏好（偏爱更长的、更靠后的输入），而且成为整条路径的单点——它的提示必须显式回答"意见冲突听谁的""某路缺席怎么办"。</p>
+<p><strong>机制细节：切分、投票与编排者-工人三变体。</strong> Anthropic 的两分法值得扩展成三类。<strong>切分（sectioning）</strong>的核心纪律是验证"真独立"：子任务间若共享隐式上下文，切分后互相引用就会丢失——把"第三章结论"的评审和"第三章论证"的评审拆给两路，后者拿不到前者的结论，评审就在互相矛盾的假设上进行。判断真独立的方法很机械：把每一路的输入单独打印出来，问"这路拿到的东西够它做完自己的事吗"，缺什么就把什么补进切分逻辑。<strong>投票（voting）</strong>的多样性必须是真的：同一温度、同一提示采五次，多样性来自采样噪声，便宜但浅；混合不同提示框架（prompt ensemble）或不同模型，多样性来自系统性视角差异，纠错力更强、成本更高。投票还有一个被反复验证的局限：如果所有采样共享同一个系统性偏差（同一个模型、同一份有偏见的提示），多数投票不会纠错，只会放大自信——多数派一致不等于正确，只等于"这个模型稳定地这么想"。<strong>编排者-工人（orchestrator-workers）</strong>是切分的动态版：切分方案本身由一个编排 LLM 在运行时生成，工人并发执行后交聚合器归并。它灵活，但把静态切分里"开发期就能验证的独立性"推迟到了运行时，失效模式也随之变成动态的——编排者切出了有依赖的子任务，系统就在暗处出错。</p>
+<p><strong>工程权衡：成本、延迟与确定性的三角。</strong> 投票的成本随采样数线性放大，k 次采样就是 k 倍 token；折中手段是提前终止（early stopping）——采到 quorum 多数一致就停，不再跑满 N 次，多数问题在前三四票就见分晓。延迟的真实上界由最慢一路与限流配额决定：五路并发里有一路超时，整体就等它，所以每路必须有独立的超时与放弃策略；供应商的速率限制则决定了并发数的硬上限，超出就是批量 429。确定性与多样性存在内生冲突：投票需要 temperature 大于 0 才有多样性，而温度高意味着同一输入两次运行结果不同——这与"可复现"的工程要求相悖，对策是用固定随机种子（若供应商支持）与结果缓存补偿，并在监控里接受"投票系统的输出天然带方差"这一事实。</p>
+<p><strong>失效模式与反模式。</strong> 第一个是部分失败的处理缺失：五路里两路超时，代码若无 quorum 检查就会拿三路结果当全量结论，而"缺席的两路"可能恰恰是最难的维度。quorum 语义（成功路数不足法定多数则整体失败或降级）必须显式实现，且低 quorum 通过的事件要在监控里单独曝光。第二个是假独立切分（上文已述）——它是并行化里最常见也最无声的错误。第三个是相关错误投票：同一模型的五次采样在同一个知识点上犯同一个错，五票一致地错，投票给了它五倍的自信。缓解手段是异构投票（不同模型或显著不同的提示），并把"票数与最终正确率"的关系纳入离线评估，而不是默认多数即正确。第四个反模式是把并行化当万金油用在有顺序依赖的任务上：每步依赖前步全部输出的任务（多轮谈判、迭代式调试）并行化只会制造竞态与混乱，硬并行出来的结果甚至难以复现 bug。</p>
+<p><strong>何时不要用。</strong> 任务强顺序依赖时不并行。单次调用已经足够可靠、且成本敏感时，投票的 N 倍花费买不来对等的质量。输出必须确定唯一又没有仲裁机制时（如直接写入账本的数值计算），带方差的投票系统反而是负债。最后，当"并行"只是为了让 N 个任务快点跑完而任务彼此毫无关系时，那叫批量调度，不需要本章的模式——直接开线程池就好。</p>
+<h2 id="36-工程落地实践代码示例">3.6 工程落地：实践代码示例</h2>
+<h3 id="361-框架无关实现完整可运行">3.6.1 框架无关实现（完整可运行）</h3>
+<p>以下实现并行化的两个核心变体：切分（三路评审并发 + 聚合器归并）与投票（同题多次采样 + 多数投票），完整演示超时、失败隔离、quorum 语义与平局升级。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第3章 并行化：框架无关实现——切分评审 + 自洽投票。
+
+变体一（切分 sectioning）：一份方案三路并发评审，聚合器归并意见。
+变体二（投票 voting）：同一问题独立采样 N 次，归一化后多数投票。
+工程要点：线程池并发、单路失败隔离、整体超时、quorum 检查、平局升级。
+
+运行前设置环境变量：AGENT_LLM_API_KEY（必填）、
+AGENT_LLM_BASE_URL / AGENT_LLM_MODEL（可选）。
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import os
+import sys
+from collections import Counter
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from typing import Callable
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+)
+MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+
+
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;调用大模型，返回补全文本。&quot;&quot;&quot;
+    messages: list[dict[str, str]] = []
+    if system:
+        messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
+    messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        temperature=temperature,
+    )
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+class QuorumError(RuntimeError):
+    &quot;&quot;&quot;成功分支数不足法定多数，整体结果不可信，归并失败。&quot;&quot;&quot;
+
+
+class TieError(RuntimeError):
+    &quot;&quot;&quot;投票出现平局：多数意见无法决出，按约定触发升级。&quot;&quot;&quot;
+
+
+def run_parallel(
+    tasks: dict[str, Callable[[], str]], timeout: float = 60.0
+) -&gt; dict[str, str | None]:
+    &quot;&quot;&quot;并发执行一组任务并隔离单路失败。
+
+    返回 {任务名: 结果}；失败或超时的路记为 None，不拖累其他路。
+    这是 join 阶段的前置：先拿到&quot;谁活了下来&quot;，再谈归并语义。
+    &quot;&quot;&quot;
+    results: dict[str, str | None] = {name: None for name in tasks}
+    with ThreadPoolExecutor(max_workers=len(tasks)) as pool:
+        futures: dict[Future[str], str] = {
+            pool.submit(fn): name for name, fn in tasks.items()
+        }
+        try:
+            for fut in as_completed(futures, timeout=timeout):
+                name = futures[fut]
+                try:
+                    results[name] = fut.result()
+                except Exception as exc:  # 单路失败只影响自己
+                    print(f&quot;[并行] 分支 {name} 失败：{exc}&quot;)
+        except TimeoutError:
+            print(&quot;[并行] 整体超时，未完成分支按失败处理&quot;)
+    return results
+
+
+# ---------- 变体一：切分（sectioning）+ 聚合器归并 ----------
+
+REVIEW_ASPECTS: dict[str, str] = {
+    &quot;技术正确性&quot;: &quot;检查方案中的技术断言是否成立、有无事实性错误。&quot;,
+    &quot;安全风险&quot;: &quot;检查是否引入注入、越权、数据泄露等安全风险。&quot;,
+    &quot;可维护性&quot;: &quot;检查可读性、可测试性与长期维护成本。&quot;,
+}
+
+
+def sectioning_review(design_doc: str) -&gt; str:
+    &quot;&quot;&quot;三路评审并发执行，聚合器归并为一份最终意见。
+
+    每路的提示自包含（含评审标准与全文），保证切分后的&quot;真独立&quot;。
+    &quot;&quot;&quot;
+    tasks: dict[str, Callable[[], str]] = {}
+    for aspect, criteria in REVIEW_ASPECTS.items():
+        def make_task(a: str = aspect, c: str = criteria) -&gt; Callable[[], str]:
+            def task() -&gt; str:
+                out = llm(
+                    f&quot;请只从【{a}】角度评审以下技术方案。\n评审标准：{c}\n&quot;
+                    '只输出 JSON：{&quot;issues&quot;: [{&quot;point&quot;: &quot;问题&quot;, &quot;severity&quot;: &quot;高|中|低&quot;}]}，'
+                    '无问题则输出 {&quot;issues&quot;: []}。\n\n方案：\n' + design_doc,
+                    system=&quot;你是严格的技术评审，只评审分配给你的维度。&quot;,
+                    temperature=0.2,
+                )
+                return out
+            return task
+
+        tasks[aspect] = make_task()
+
+    reviews = run_parallel(tasks, timeout=90.0)
+    survived = {k: v for k, v in reviews.items() if v is not None}
+    if len(survived) &lt; 2:  # quorum 语义：三路至少活两路才允许归并
+        raise QuorumError(f&quot;评审成功路数不足：{len(survived)}/3&quot;)
+
+    merged_input = &quot;\n&quot;.join(f&quot;【{k}】评审：{v}&quot; for k, v in survived.items())
+    missing = [k for k in reviews if reviews[k] is None]
+    missing_note = f&quot;（注意：{'、'.join(missing)} 维度评审缺席，不得假装已评审）&quot; if missing else &quot;&quot;
+    return llm(
+        &quot;以下是对同一技术方案的多维评审意见，请归并为一份最终评审报告：&quot;
+        &quot;按严重度排序列出问题，剔除重复，并对冲突意见给出裁决。\n&quot;
+        f&quot;{missing_note}\n\n{merged_input}&quot;,
+        system=&quot;你是评审组长。意见冲突时以技术正确性维度为最高优先。&quot;,
+        temperature=0.2,
+    )
+
+
+# ---------- 变体二：投票（voting）+ quorum + 平局升级 ----------
+
+def extract_answer(text: str) -&gt; str | None:
+    &quot;&quot;&quot;从输出中提取【答案：X】并归一化票面。
+
+    归一化是投票的正确性前提：'9.9' 与 '9.90' 必须是同一票。
+    &quot;&quot;&quot;
+    marker = &quot;【答案：&quot;
+    idx = text.find(marker)
+    if idx == -1:
+        return None
+    rest = text[idx + len(marker) :]
+    end = rest.find(&quot;】&quot;)
+    if end == -1:
+        return None
+    return rest[:end].strip().replace(&quot; &quot;, &quot;&quot;).rstrip(&quot;0&quot;).rstrip(&quot;.&quot;) or &quot;0&quot;
+
+
+def voting_answer(question: str, n: int = 5, quorum: int = 3) -&gt; str:
+    &quot;&quot;&quot;同一问题独立采样 n 次，多数投票；不足 quorum 或平局则升级。
+
+    - 成功采样数 &lt; quorum：失败路太多，结果不可信，抛 QuorumError；
+    - 最高票数 &lt; quorum：票面分歧过大，说明问题困难，抛 TieError 交上层
+      升级处理（重采样 / 强模型仲裁 / 人工），而不是硬选一个多数。
+    &quot;&quot;&quot;
+    def sample() -&gt; str | None:
+        out = llm(
+            f&quot;请解答以下问题，最后一行严格按【答案：X】格式给出最终答案。\n{question}&quot;,
+            temperature=0.7,  # 高温度才有采样多样性，投票的前提
+        )
+        return extract_answer(out)
+
+    tasks = {f&quot;sample_{i}&quot;: sample for i in range(n)}
+    results = run_parallel(tasks, timeout=90.0)
+    votes = [v for v in results.values() if v is not None]
+    print(f&quot;[投票] 有效票：{Counter(votes)}（成功 {len(votes)}/{n}）&quot;)
+    if len(votes) &lt; quorum:
+        raise QuorumError(f&quot;成功采样 {len(votes)} 次不足 quorum={quorum}&quot;)
+    top, count = Counter(votes).most_common(1)[0]
+    if count &lt; quorum:
+        raise TieError(f&quot;无多数一致：{Counter(votes).most_common()}&quot;)
+    return top
+
+
+if __name__ == &quot;__main__&quot;:
+    design = (
+        &quot;用户反馈导入功能：上传 CSV 后由服务端解析入库。&quot;
+        &quot;解析直接使用 eval 执行单元格公式以提高灵活性；&quot;
+        &quot;导入失败时把错误堆栈原样返回给前端以便调试。&quot;
+    )
+    print(&quot;=== 切分评审 ===&quot;)
+    try:
+        print(sectioning_review(design))
+    except QuorumError as exc:
+        print(f&quot;评审归并失败：{exc}&quot;, file=sys.stderr)
+
+    print(&quot;\n=== 自洽投票 ===&quot;)
+    try:
+        answer = voting_answer(&quot;9.11 和 9.9 哪个数字更大？&quot;)
+        print(f&quot;多数答案：{answer}&quot;)
+    except (QuorumError, TieError) as exc:
+        print(f&quot;投票未决，需升级处理：{exc}&quot;, file=sys.stderr)
+        sys.exit(1)
+</code></pre>
+<h3 id="362-框架集成实现langchain-lcel">3.6.2 框架集成实现（LangChain LCEL）</h3>
+<p>LCEL 里用 <code>RunnableParallel</code> 表达扇出，管道下游自然汇合。以下基于 langchain-core 0.3.x 与 langchain-openai 0.2.x 编写（API 若有变动，以所用版本官方文档为准）。注意：<code>RunnableParallel</code> 的默认语义是"任一分支失败则整体失败"，quorum 语义需要自定义归并节点（如框架无关版所示）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第3章 并行化：LangChain LCEL 实现——三路评审扇出 + 聚合归并。
+
+依赖：pip install &quot;langchain-core&gt;=0.3&quot; &quot;langchain-openai&gt;=0.2&quot;
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import os
+import sys
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnableParallel
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(
+    model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;),
+    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+    temperature=0.2,
+)
+
+
+def review_chain(aspect: str, criteria: str):
+    &quot;&quot;&quot;构造单路评审链，并挂带次数上限的重试（限流/瞬时错误可自愈）。&quot;&quot;&quot;
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (&quot;system&quot;, f&quot;你是严格的技术评审，只评审【{aspect}】维度，只输出 JSON。&quot;),
+            (
+                &quot;user&quot;,
+                &quot;评审标准：{criteria}\n&quot;
+                '输出 {{&quot;issues&quot;: [{{&quot;point&quot;: &quot;...&quot;, &quot;severity&quot;: &quot;高|中|低&quot;}}]}}\n\n'
+                &quot;方案：\n{design_doc}&quot;,
+            ),
+        ]
+    )
+    return (prompt | model | StrOutputParser()).with_retry(stop_after_attempt=2)
+
+
+# 扇出：三路评审共享同一输入 {design_doc}，并发执行
+parallel_reviews = RunnableParallel(
+    correctness=review_chain(&quot;技术正确性&quot;, &quot;检查技术断言是否成立、有无事实错误。&quot;),
+    security=review_chain(&quot;安全风险&quot;, &quot;检查注入、越权、数据泄露等风险。&quot;),
+    maintainability=review_chain(&quot;可维护性&quot;, &quot;检查可读性、可测试性与维护成本。&quot;),
+)
+
+# 汇合（join）：聚合器把三份意见归并为一份报告
+merge_chain = (
+    ChatPromptTemplate.from_messages(
+        [
+            (&quot;system&quot;, &quot;你是评审组长：按严重度排序、去重，冲突时以技术正确性为优先。&quot;),
+            (
+                &quot;user&quot;,
+                &quot;正确性评审：{correctness}\n安全评审：{security}\n&quot;
+                &quot;可维护性评审：{maintainability}\n请输出最终评审报告。&quot;,
+            ),
+        ]
+    )
+    | model
+    | StrOutputParser()
+)
+
+# 整链：扇出 -&gt; 汇合
+review_flow = parallel_reviews | merge_chain
+
+if __name__ == &quot;__main__&quot;:
+    design_doc = (
+        &quot;用户反馈导入功能：上传 CSV 后由服务端解析入库。&quot;
+        &quot;解析直接使用 eval 执行单元格公式以提高灵活性；&quot;
+        &quot;导入失败时把错误堆栈原样返回给前端以便调试。&quot;
+    )
+    try:
+        report = review_flow.invoke({&quot;design_doc&quot;: design_doc})
+        print(report)
+    except Exception as exc:
+        # LCEL 默认 fail-fast：任一分支重试耗尽即整链失败；
+        # 若业务需要 quorum 语义，应改用自定义 RunnableLambda 归并节点。
+        print(f&quot;并行评审失败：{exc}&quot;, file=sys.stderr)
+        sys.exit(1)
+</code></pre>
+<h3 id="363-生产化改造清单">3.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：单路失败隔离 + quorum 检查是底线；"低 quorum 通过"作为独立事件类型上报，不允许静默混入正常结果。</li>
+<li><strong>超时</strong>：每路独立超时 + 整体 join 超时双口径；慢路超限即放弃，不让最慢的一路拖住整个汇合点。</li>
+<li><strong>并发</strong>：并发数显式配置并贴着供应商限流配额走，配指数退避与抖动；批量场景用有界队列防止内存与请求数失控。</li>
+<li><strong>缓存</strong>：以"任务内容哈希 + 模型 + 提示版本"为 key 缓存各路结果；投票场景可缓存历史票面用于离线评估多数派正确率。</li>
+<li><strong>可观测</strong>：记录每路的耗时、token 数与成败；投票场景记录票面分布——票面熵突增往往意味着上游模型行为变化。</li>
+<li><strong>成本控制</strong>：投票用提前终止（攒够多数即停）压成本；为每类任务设采样数上限，并在监控里对比"加一票带来的边际正确率"。</li>
+<li><strong>确定性管理</strong>：投票链路接受输出方差，关键下游（如写库）前置确定性校验层；供应商支持种子时固定种子。</li>
+</ul>
+<h2 id="37-概览-核心要点-结论">3.7 概览 / 核心要点 / 结论</h2>
+<h3 id="371-本章小结">3.7.1 本章小结</h3>
+<p>并行化把"排队等待"变成"同时开工"，把"赌一次采样"变成"让多次采样互相印证"。它的结构源自 MapReduce 的分而治之，它的归并语义由 Self-Consistency 的多数投票和 LLM-Blender 式的聚合器补全，最终在 Anthropic 的切分/投票二分法中定名。本章的核心论点是：并行的难点在汇合点——拼接、投票、聚合器三种 join 语义对应三类任务结构，而部分失败下的 quorum 判定、答案归一化、平局升级这些"汇合处的脏活"，才是并行化工程质量的真正分野。成本随路数线性放大是这个模式的天花板，提前终止与异构投票是常用的两把平衡尺。</p>
+<h3 id="372-核心要点">3.7.2 核心要点</h3>
+<ul>
+<li>切分求延迟、投票求准确、聚合器求全面，先想清楚要哪一个再选结构。</li>
+<li>join 是设计的核心：拼接保序防断裂，投票先归一化再计票，聚合器要写明冲突裁决规则。</li>
+<li>切分前验证"真独立"：每路输入单独拿出来必须自足，缺上下文就补进切分逻辑。</li>
+<li>quorum 语义必须显式：成功路数不足法定多数时整体失败或降级，低 quorum 通过要曝光。</li>
+<li>多数一致不等于正确：同源采样的相关错误会被投票放大，高价值场景用异构投票。</li>
+<li>平局与低置信是"问题困难"的信号，正确做法是升级（重采样/强模型/人工），不是硬选。</li>
+<li>成本与延迟的收益都要实测：投票 k 倍 token，延迟上界是最慢一路加限流排队。</li>
+</ul>
+<h3 id="373-结论">3.7.3 结论</h3>
+<p>并行化是智能体工作流里最"像传统分布式系统"的一章：它不涉及模型的智能，只涉及把智能组织起来的方式。正因如此，它的成败几乎完全取决于工程判断——切分边界是否真实独立、汇合语义是否与业务对齐、失败路径是否定义清楚。把这三件事想透，五路并发的评审就比串行的单次生成更快也更可信；想不透，并行只会更快地产出一致的错误。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch02-routing.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第2章 路由</span></a><a class="pager" href="../chapters/ch04-reflection.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第4章 反思</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#31-模式概述">3.1 模式概述</a></li><li class="toc-l3"><a href="#311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#312-核心机制它如何工作">3.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#32-起源与历史最早是谁提出来的">3.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#33-发挥的作用为什么重要">3.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#34-实际应用与案例">3.4 实际应用与案例</a></li><li class="toc-l2"><a href="#35-深度讲解">3.5 深度讲解</a></li><li class="toc-l2"><a href="#36-工程落地实践代码示例">3.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#361-框架无关实现完整可运行">3.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#362-框架集成实现langchain-lcel">3.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#363-生产化改造清单">3.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#37-概览-核心要点-结论">3.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#371-本章小结">3.7.1 本章小结</a></li><li class="toc-l3"><a href="#372-核心要点">3.7.2 核心要点</a></li><li class="toc-l3"><a href="#373-结论">3.7.3 结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

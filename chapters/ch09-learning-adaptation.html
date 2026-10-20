@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第9章 学习与适应 · 智能体设计模式</title>
+<meta name="description" content="以技能库、经验库与进化循环实现非参数化的持续改进，让智能体不改权重也能越用越好。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第二部分 · 认知机制</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a class="active" href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第二部分 · 认知机制</div>
+      <h1>第9章 学习与适应 <span class="en-title">Learning and Adaptation</span></h1>
+      <p class="chapter-summary">以技能库、经验库与进化循环实现非参数化的持续改进，让智能体不改权重也能越用越好。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：让智能体把运行中的经验转化为可复用的提示、技能与记忆工件，并通过生成-评估-选择的循环使自身行为随使用持续变好。
+<strong>解决什么问题</strong>：智能体反复犯同类错误、有效解法无法沉淀、提示词靠手调试收敛慢、微调成本高且不可审计 ｜ <strong>适用场景</strong>：有可靠评估信号的任务（编码、有测试的工程问题、可量化指标的系统优化）、高频重复任务、需要长期复利的助手类产品 ｜ <strong>核心机制</strong>：经验捕获 + 工件化存储（技能库/经验库）+ 检索复用 + 进化循环（生成、评估、选择、变异）｜ <strong>代价</strong>：依赖评估器质量（会被"攻破"）、有自我强化与经验污染风险、进化循环的调用成本不可忽略。</p>
+</blockquote>
+<h2 id="91-模式概述">9.1 模式概述</h2>
+<h3 id="911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</h3>
+<p>机器学习意义上的"学习"指改参数，但智能体的学习绝大多数不发生在权重里。把视角拉高，智能体变好有两条路线。<strong>参数化路线</strong>：用微调、强化学习改模型权重，改动的是能力本身，代价是训练数据、算力与一轮完整的发布流程，产物是不透明的权重。<strong>非参数化路线</strong>：不改权重，改的是模型外部的文本工件——系统提示、少样本示例、技能代码库、经验记忆、工作流程序列。这些工件可读、可审计、可版本化、可随时回滚，写入成本低到一次调用就能完成。</p>
+<p>智能体工程的重心明显偏向非参数化路线，原因有三。第一，反馈信号天然存在且廉价：一次任务跑完，成功与否、错误日志、用户修正都是现成的学习信号，不需要标注团队。第二，学习单元是自然语言或代码，可以直接被人审查——"它学到了什么"以文本形式摆在库里，这与权重更新有本质的治理差异。第三，学习即时生效：新技能入库下一次检索即可用，不用等训练与部署。参数化路线并没有出局——当非参数化工件积累到足够规模，把它们蒸馏进微调数据（把成功的提示+上下文+输出变成训练样本）是自然的混合路径——但在智能体的日常迭代里，本章聚焦非参数化路线。</p>
+<p>按载体分，非参数化学习有四种形态：<strong>提示的进化</strong>（DSPy 把提示当作编译产物自动优化）、<strong>技能的积累</strong>（Voyager 式技能库，学到的技能是经验证的可执行代码）、<strong>经验的沉淀</strong>（第 4 章 Reflexion 的情景记忆向前一步，成为跨会话经验库）、<strong>程序的进化</strong>（AlphaEvolve 式进化循环，直接演化代码工件本身）。四者共享同一个骨架：捕获经验 → 工件化 → 检索复用 → 反馈修正。</p>
+<h3 id="912-核心机制它如何工作">9.1.2 核心机制：它如何工作</h3>
+<p>所有形态的共同骨架是一个闭环。<strong>捕获</strong>：从任务执行中提取反馈——显式的（测试通过/失败、指标分数）或隐式的（用户改写了答案、会话被放弃）。<strong>工件化</strong>：把经验固化成可检索的单元，关键是带结构与元数据：什么情境下、什么做法、结果如何、教训是什么，而不是一段无上下文的日志。<strong>复用</strong>：下次遇到相似情境时按嵌入相似度或结构化条件检索，把相关经验注入上下文。<strong>修正</strong>：工件本身也受反馈约束——被复用后效果差的技能降权或改写，错误的经验被后续证据覆盖。</p>
+<p>进化循环是这个骨架的强化版：不满足于"记录已有经验"，而是主动生成变体（变异）、用评估器批量打分（选择）、保留最优并继续变异，把搜索做成一个自动化循环。它能否工作的前提是存在<strong>廉价、自动、可信的评估器</strong>——这也是本章最重要的判据，9.5 节会展开。</p>
+<h3 id="913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</h3>
+<p>学习与适应是若干模式的"时间维度"扩展。反思模式（第 4 章）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（第 8 章）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
+<h2 id="92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</h2>
+<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见第 4 章）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 AlphaEvolve（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 OpenEvolve，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
+<table>
+<thead>
+<tr>
+<th>年份月</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1975</td>
+<td>遗传算法：进化搜索的方法论起点</td>
+<td>John Holland（密歇根大学）</td>
+<td>Adaptation in Natural and Artificial Systems</td>
+</tr>
+<tr>
+<td>2023.3</td>
+<td>Reflexion：语言化反思的情景式在线学习</td>
+<td>Noah Shinn 等</td>
+<td>arXiv:2303.11366；NeurIPS 2023（详见第 4 章）</td>
+</tr>
+<tr>
+<td>2023.5</td>
+<td>Voyager：Minecraft 技能库与自动课程</td>
+<td>Guanzhi Wang 等（NVIDIA/Caltech 等）</td>
+<td>arXiv:2305.16291</td>
+</tr>
+<tr>
+<td>2023.10</td>
+<td>DSPy：提示词作为编译产物的程序化优化</td>
+<td>Omar Khattab 等（斯坦福）</td>
+<td>arXiv:2310.03714；ICLR 2024</td>
+</tr>
+<tr>
+<td>2024.1</td>
+<td>AlphaCodium：测试驱动的迭代编码流程</td>
+<td>Tal Ridnik、Ido Rivero（Codium AI/Qodo）</td>
+<td>arXiv:2401.08500</td>
+</tr>
+<tr>
+<td>2025.5</td>
+<td>AlphaEvolve：进化编码智能体与算法发现引擎</td>
+<td>Alexander Novikov 等（Google DeepMind）</td>
+<td>发布于官方博客；论文 arXiv:2506.13131</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>OpenEvolve：AlphaEvolve 的开源复刻</td>
+<td>开源社区</td>
+<td>GitHub 开源</td>
+</tr>
+</tbody>
+</table>
+<p>演化脉络清晰可循：进化计算给了循环骨架（1975），LLM 让"变异算子"从随机位翻转升级为有语义的改写（这是质的飞跃——变异不再是盲目的）；Reflexion 证明语言反馈可用（2023.3），Voyager 把反馈固化为可复用技能（2023.5），DSPy 把优化对象从"答案"上移到"提示程序"（2023.10），AlphaCodium 给出工程化的测试驱动流程（2024.1），AlphaEvolve 则汇成完整闭环并在真实生产系统上兑现（2025）。</p>
+<h2 id="93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</h2>
+<p>第一，复利效应。不带学习的智能体第 1000 次执行与第 1 次没有区别；带学习的智能体把每次执行变成训练数据，边际成本递减、边际质量递增——这是产品层面真实的护城河。第二，免训练的适应速度。环境变了、接口换了、新坑出现了，改一个技能条目或经验条目即时生效，不需要数据集、训练与发布。第三，可审计的学习。学到的每一条经验都是文本，可以审查"它最近学到了什么"，错误经验可以定点删除——与不可解释的权重更新相比，治理成本天差地别。第四，系统级改进的实证。AlphaEvolve 的结果证明这套闭环不只在玩具基准上有效：它为 Google 的 Borg 数据中心调度找到的启发式平均回收约 0.7% 的全球算力并已在生产运行一年以上，把 Gemini 训练中一个关键矩阵乘 kernel 提速 23%（整体训练时间减约 1%），甚至改进了支撑其自身模型训练的基础设施——智能体改进自己赖以运行的系统，这是自我改进叙事第一次获得工程注脚。</p>
+<h2 id="94-实际应用与案例">9.4 实际应用与案例</h2>
+<p><strong>测试驱动的编码智能体。</strong> 按 AlphaCodium 流程：先让模型反思问题、推理公共测试用例的输入输出关系，再生成 AI 补充测试覆盖边界，然后"生成→运行→看报错→修复"迭代。关键设计点：生成补充测试比直接生成完整解法容易得多，先用廉价信号铺路；已通过的公共测试作为"锚点"，后续修改不得打破。</p>
+<p><strong>技能库式助手。</strong> 仿 Voyager：把每次成功完成的工作（一段 SQL、一个宏、一段数据处理脚本）经人工确认或自动验证后存入技能库，带描述与适用条件，相似任务出现时检索复用。关键设计点：技能必须"执行通过才入库"，未验证的候选技能单独存放。</p>
+<p><strong>提示程序优化。</strong> 用 DSPy 把手写提示的管线改写为声明式模块，用小标注集自动编译出少样本示例与指令。关键设计点：优化器需要度量函数（metric），把"答案对不对"写成代码；换底层模型后重跑编译即可再适配。</p>
+<p><strong>客服经验库复利。</strong> 每个成功解决的工单沉淀为"症状→解法→适用条件"条目，失败工单沉淀为"这类问题不要这样做"。关键设计点：条目要有信任等级（人工审核 &gt; 自动沉淀），并定期用新工单回测旧条目的命中率。</p>
+<p><strong>系统与调度优化。</strong> 仿 AlphaEvolve 对数据中心调度的用法：任何"方案可自动评估"的工程问题（缓存策略、分片规则、正则/查询改写）都可以放进进化循环。关键设计点：评估器用生产镜像回放或沙箱压测，绝不能拿线上流量当第一个实验场。</p>
+<p><strong>数学与算法发现。</strong> 面向有明确判定标准的开放问题（组合构造、算法复杂度），进化循环产出候选构造、评估器机械验证。关键设计点：问题必须能形式化为可执行的评分函数，这是 AlphaEvolve 选题的第一标准。</p>
+<h2 id="95-深度讲解">9.5 深度讲解</h2>
+<h3 id="951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>非参数化（提示/技能/经验）</th>
+<th>参数化（微调/RL）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>反馈成本</td>
+<td>单次运行即产生</td>
+<td>需成规模的标注/交互数据</td>
+</tr>
+<tr>
+<td>生效速度</td>
+<td>即时（写库即用）</td>
+<td>一轮训练+发布周期</td>
+</tr>
+<tr>
+<td>可审计性</td>
+<td>文本工件，可读可回滚</td>
+<td>权重不可读，依赖评测代理</td>
+</tr>
+<tr>
+<td>能力上限</td>
+<td>受基座模型能力封顶</td>
+<td>可改变能力本身</td>
+</tr>
+<tr>
+<td>边际成本</td>
+<td>每条经验便宜，库大了检索与维护变贵</td>
+<td>数据与算力贵，摊薄后单能力便宜</td>
+</tr>
+<tr>
+<td>失效方式</td>
+<td>经验污染、检索漂移</td>
+<td>灾难性遗忘、过拟合</td>
+</tr>
+</tbody>
+</table>
+<p>选型的经验法则：改"怎么用模型"选非参数化，改"模型本身会不会"选参数化。提示层面能解决的表达问题（格式、流程、领域知识注入、错误规避）不要动权重；当非参数化工件积累出稳定模式（同一类提示修改反复出现）、或需要把能力下沉到更小更便宜的模型以降本时，再把工件蒸馏成微调数据——两条路线是接力关系而非对立关系。</p>
+<h3 id="952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</h3>
+<p>进化循环有四个环节，每个环节都有工程要点。<strong>生成</strong>：AlphaEvolve 用双模型 ensemble——快速模型（Gemini Flash）大量产出想法保证搜索广度，强模型（Gemini Pro）对有希望的候选做深度改写，相当于"广撒网+重点培养"的成本最优组合。变异的形式很重要：让 LLM 输出对现有代码的定向修改（diff/替换块），比每次从头重写更容易保留已验证的部分。<strong>评估</strong>：这是整个循环的命门。评估器必须廉价（每次评估几分钟内）、自动（无人参与）、可信（评分与真实目标一致）。AlphaEvolve 的评估流水线先跑小样例快速淘汰废品，再做完整评分，甚至让另一个 LLM 评估难以程序化的属性（可读性等）。<strong>选择</strong>：进化数据库不是简单 top-k，AlphaEvolve 借鉴 MAP-Elites 一类质量-多样性思想并配合岛屿模型——既保留最优个体，也保留不同特征维度上的差异化个体，防止种群过早收敛到单一套路。<strong>终止</strong>：满分即停、代数预算、调用预算三者取严，进化循环没有预算控制就是一台烧钱机。</p>
+<h3 id="953-技能库与自动课程">9.5.3 技能库与自动课程</h3>
+<p>Voyager 的两个设计值得单独拆解。其一是<strong>技能的验证门槛</strong>：只有执行成功（Minecraft 中任务达成）的代码才获得入库资格，技能天然可信；每条技能带文档字符串描述功能，检索靠查询与描述的嵌入相似度，而不是全文匹配。其二是<strong>自动课程</strong>：让智能体自己问自己"按我当前的能力，下一步学什么有点挑战但可达"，环境反馈自动判卷。课程机制解决的是技能库冷启动与停滞问题——没有课程，智能体会重复练习已会的东西；课程让库的生长沿着难度曲线推进。迁移到业务场景：技能库型产品的课程可以由"高频失败任务"驱动——失败聚类分析自动生成下一个要沉淀的技能主题，这与 Voyager 的自动课程在结构上同构。</p>
+<h3 id="954-从经验回放到经验库">9.5.4 从经验回放到经验库</h3>
+<p>Reflexion 的情景记忆只服务单次任务（几轮尝试之间），把它变成跨会话资产需要跨过三道坎。<strong>抽象层级</strong>：单次反思是"这次我错在哪"，经验库条目必须是"这类情境下应如何"——要再抽一层模式，条目 schema 建议：触发条件/情境、采取的行动、结果、教训、置信度、来源。<strong>信任分级</strong>：自动沉淀的经验初始置信度低，被复用且成功的次数累积置信度，人工审核直接给高置信；检索时低置信经验只作参考、高置信经验可直接影响行为。<strong>防腐</strong>：经验库与记忆库一样需要去重、合并与过期（第 8 章的机制全部适用），此外还要防"回音室"——智能体检索自己的经验、按经验行动、又把行动结果写成新经验，若评估信号有偏，错误会在库里自我强化。打断回音室的手段是引入外部信号（真实用户反馈、独立评审）定期校准。</p>
+<h3 id="955-失效模式与反模式">9.5.5 失效模式与反模式</h3>
+<p><strong>评估器被攻破（Goodhart 陷阱）</strong>：进化循环是最强力的 Goodhart 放大器——它不优化你以为的目标，只优化你的评分函数。测试覆盖不全时，进化会找到"通过测试但错误"的解；评分函数有代理缝隙，进化一定钻进去。对策：评估器分层（快筛+全量）、定期人工抽查高分个体、评估集与选择集分离。<strong>自我强化回音室</strong>：如上所述，无外部信号的自评闭环会让偏见固化。<strong>库膨胀与检索退化</strong>：技能/经验条目无限增长后，相似条目互相稀释，检索精度下降，旧技能与新环境不符却不自知。对策：容量上限、定期合并去重、复用失败即降权。<strong>环境漂移</strong>：经验是历史的快照，接口升级、业务规则变化后，旧经验从资产变成误导源。对策：经验条目带时间与适用范围，关键条目复用前做低成本验证。<strong>成本失控</strong>：进化循环、批量评估、技能验证都在放大调用量。对策：调用预算硬编码、廉价评估器前置过滤、高分个体缓存复用。</p>
+<h3 id="956-何时不要用">9.5.6 何时不要用</h3>
+<p>没有可靠评估器的任务（开放创意、主观审美、一次性的复杂决策）不适合进化循环——没有可信的适应度函数，循环只会收敛到噪声。任务量太小的场景不值得建经验库——复利需要足够多的复利周期。环境每周剧变的业务，经验还没沉淀就已过期，学习机制的成本收不回。这三类场景的正确选择是：把资源投在更好的单次执行（更强的模型、更好的提示），而不是投在学习机制上。</p>
+<h2 id="96-工程落地实践代码示例">9.6 工程落地：实践代码示例</h2>
+<h3 id="961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</h3>
+<p>最小可用版"技能库 + 确定性评估器 + 进化循环"：进化一个金额抽取提示词，评估器是确定性的精确匹配（这是循环能工作的前提），带调用预算、满分即停、变异失败降级与技能库防膨胀。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第 9 章 框架无关实现：技能库 + 评估器 + 进化循环（最小可用版）。
+
+任务示例：进化一个&quot;从文本中提取订单金额（整数，单位元）&quot;的提示词。
+评估器是确定性的（精确匹配），这正是进化循环能成立的前提。
+
+运行前设置环境变量：
+  export AGENT_LLM_API_KEY=...        # 必填
+  export AGENT_LLM_BASE_URL=...       # 可选
+  export AGENT_LLM_MODEL=...          # 可选，默认 gpt-4o-mini
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import os
+import re
+from dataclasses import dataclass
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+)
+MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+
+
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;调用 OpenAI 兼容接口。失败抛异常，由调用方决定降级。&quot;&quot;&quot;
+    messages = ([{&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system}] if system else []) + [
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+    ]
+    resp = client.chat.completions.create(
+        model=MODEL, messages=messages, temperature=temperature
+    )
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+# ---------- 评估集：小而硬，与选择逻辑隔离 ----------
+
+EVAL_SET: list[tuple[str, int]] = [
+    (&quot;订单总额 428 元，已支付&quot;, 428),
+    (&quot;实付199元&quot;, 199),
+    (&quot;金额：¥3,200（含税）&quot;, 3200),
+    (&quot;退款 15 元后的余额是 985 元&quot;, 985),
+    (&quot;本月消费合计 12,088元&quot;, 12088),
+]
+
+
+def parse_amount(reply: str) -&gt; int | None:
+    &quot;&quot;&quot;从模型回复中解析整数金额；解析失败返回 None（按答错计）。&quot;&quot;&quot;
+    m = re.search(r&quot;\d[\d,]*&quot;, (reply or &quot;&quot;).replace(&quot; &quot;, &quot;&quot;))
+    if not m:
+        return None
+    try:
+        return int(m.group(0).replace(&quot;,&quot;, &quot;&quot;))
+    except ValueError:
+        return None
+
+
+def evaluate(prompt: str) -&gt; tuple[float, list[str]]:
+    &quot;&quot;&quot;评估一个提示词：返回（得分 0~1，失败样例描述）。LLM 异常按答错计。&quot;&quot;&quot;
+    score, fails = 0.0, []
+    for text, gold in EVAL_SET:
+        try:
+            reply = llm(f&quot;{prompt}\n\n输入：{text}\n只输出整数金额。&quot;,
+                        temperature=0.0)
+            got = parse_amount(reply)
+        except Exception:
+            got = None  # 调用失败：如实按错误处理，不重试到通过为止
+        if got == gold:
+            score += 1.0 / len(EVAL_SET)
+        else:
+            fails.append(f&quot;「{text[:16]}」期望{gold}实得{got}&quot;)
+    return score, fails
+
+
+# ---------- 技能库：通过评估的提示词沉淀为可复用、可检索的技能 ----------
+
+@dataclass
+class Skill:
+    &quot;&quot;&quot;一条技能 = 经验证的提示词 + 得分 + 适用记录。&quot;&quot;&quot;
+
+    name: str
+    prompt: str
+    score: float
+    note: str = &quot;&quot;
+
+
+class SkillLibrary:
+    &quot;&quot;&quot;技能库：有容量上限，防膨胀；按得分排序供检索复用。&quot;&quot;&quot;
+
+    def __init__(self, capacity: int = 20) -&gt; None:
+        self.skills: list[Skill] = []
+        self.capacity = capacity
+
+    def add(self, skill: Skill) -&gt; None:
+        if skill.score &lt; 1.0 and any(s.prompt == skill.prompt for s in self.skills):
+            return  # 不完美且重复：不收录
+        self.skills.append(skill)
+        self.skills.sort(key=lambda s: -s.score)
+        if len(self.skills) &gt; self.capacity:  # 容量上限：只留最优
+            self.skills = self.skills[: self.capacity]
+
+    def best(self) -&gt; Skill | None:
+        return self.skills[0] if self.skills else None
+
+
+# ---------- 进化循环：生成 -&gt; 评估 -&gt; 选择 -&gt; 变异 ----------
+
+POP_SIZE = 3   # 每代变异体数量
+MAX_GEN = 3    # 代数预算（叠加调用预算，双重止损）
+
+
+def mutate(prompt: str, fails: list[str]) -&gt; str:
+    &quot;&quot;&quot;用 LLM 对最优提示做有语义的变异；变异失败则原样保留（退化但不断环）。&quot;&quot;&quot;
+    fails_txt = &quot;\n&quot;.join(fails) or &quot;（无失败样例，请提升鲁棒性）&quot;
+    try:
+        out = llm(
+            &quot;下面这个提示词在部分样例上失败：\n提示词：\n&quot; + prompt
+            + &quot;\n失败情况：\n&quot; + fails_txt
+            + &quot;\n改写提示词以修复失败，保持简短。只输出新提示词本身。&quot;,
+            system=&quot;你是提示词工程专家。&quot;,
+            temperature=0.7,
+        )
+        return out.strip() or prompt
+    except Exception:
+        return prompt
+
+
+def evolve(seed: str, library: SkillLibrary) -&gt; Skill | None:
+    &quot;&quot;&quot;主循环：逐代评估种群，满分即停；否则选最优变异出下一代。&quot;&quot;&quot;
+    population = [seed]
+    best: Skill | None = None
+    for gen in range(MAX_GEN):
+        scored: list[tuple[str, float, list[str]]] = []
+        for p in population:
+            s, fails = evaluate(p)
+            skill = Skill(f&quot;amount-extract-g{gen}&quot;, p, s, &quot;; &quot;.join(fails[:2]))
+            library.add(skill)
+            if best is None or s &gt; best.score:
+                best = skill
+            scored.append((p, s, fails))
+            print(f&quot;[gen {gen}] score={s:.2f} fails={len(fails)}&quot;)
+        if best and best.score &gt;= 0.999:  # 满分提前停止，省预算
+            break
+        scored.sort(key=lambda x: -x[1])
+        top_prompt, _, top_fails = scored[0]  # 选择：截断式选最优
+        population = [mutate(top_prompt, top_fails) for _ in range(POP_SIZE)]
+    return best
+
+
+if __name__ == &quot;__main__&quot;:
+    lib = SkillLibrary()
+    seed_prompt = &quot;从输入文本中提取订单金额，输出一个整数（单位元），不要输出其他内容。&quot;
+    winner = evolve(seed_prompt, lib)
+    if winner is None:
+        raise SystemExit(&quot;进化未产出任何可用技能&quot;)  # 诚实失败，不硬凑结果
+    print(&quot;\n最优技能得分：&quot;, winner.score)
+    print(&quot;提示词：&quot;, winner.prompt)
+    print(&quot;失败记录：&quot;, winner.note or &quot;无&quot;)
+    print(&quot;技能库规模：&quot;, len(lib.skills))
+</code></pre>
+<h3 id="962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</h3>
+<p>DSPy 把手写提示的"手工雕琢"替换为声明式模块加自动编译：模块定义输入输出签名（Signature），优化器（如 BootstrapFewShot）用少量标注样例自动生成少样本演示并注入。以下按 dspy 2.5+/3.x API 编写，字段名随版本演进请以官方文档为准。</p>
+<pre><code class="language-python">&quot;&quot;&quot;第 9 章 框架集成实现：DSPy 版提示程序优化。
+
+安装：pip install &quot;dspy&gt;=2.5&quot;
+运行前：export AGENT_LLM_API_KEY=... 等（与本章其余示例一致）。
+注：按 dspy 2.5+/3.x API 编写，以官方文档为准。
+&quot;&quot;&quot;
+import os
+
+import dspy
+
+lm = dspy.LM(
+    model=f&quot;openai/{os.environ.get('AGENT_LLM_MODEL', 'gpt-4o-mini')}&quot;,
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+    api_base=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+    max_tokens=512,
+)
+dspy.configure(lm=lm)
+
+
+class ExtractAmount(dspy.Signature):
+    &quot;&quot;&quot;从文本中提取订单金额，输出整数（单位元）。&quot;&quot;&quot;
+
+    text: str = dspy.InputField(desc=&quot;包含金额的原始文本&quot;)
+    amount: int = dspy.OutputField(desc=&quot;金额整数，单位元&quot;)
+
+
+class AmountExtractor(dspy.Module):
+    &quot;&quot;&quot;声明式模块：不手写提示，交给优化器编译。&quot;&quot;&quot;
+
+    def __init__(self) -&gt; None:
+        super().__init__()
+        self.extract = dspy.ChainOfThought(ExtractAmount)
+
+    def forward(self, text: str):
+        return self.extract(text=text)
+
+
+TRAIN: list[tuple[str, int]] = [
+    (&quot;订单总额 428 元，已支付&quot;, 428),
+    (&quot;实付199元&quot;, 199),
+    (&quot;金额：¥3,200（含税）&quot;, 3200),
+    (&quot;退款 15 元后的余额是 985 元&quot;, 985),
+]
+
+
+def metric(example, pred, trace=None) -&gt; bool:
+    &quot;&quot;&quot;度量函数：优化器用它判卷；解析失败一律算错。&quot;&quot;&quot;
+    try:
+        return int(pred.amount) == example.amount
+    except Exception:
+        return False
+
+
+def build_trainset() -&gt; list[dspy.Example]:
+    out = [dspy.Example(text=t, amount=a).with_inputs(&quot;text&quot;) for t, a in TRAIN]
+    if not out:
+        raise ValueError(&quot;训练集为空，无法编译&quot;)
+    return out
+
+
+if __name__ == &quot;__main__&quot;:
+    trainset = build_trainset()
+    program = AmountExtractor()
+
+    # 先跑未编译基线（失败不阻断，继续编译）
+    try:
+        base = program(text=trainset[0].text)
+        print(&quot;基线输出：&quot;, base.amount)
+    except Exception as exc:
+        print(&quot;基线调用失败（继续编译流程）：&quot;, exc)
+
+    optimizer = dspy.BootstrapFewShot(
+        metric=metric, max_bootstrapped_demos=2, max_labeled_demos=2
+    )
+    optimized = optimizer.compile(program, trainset=trainset)
+
+    for text, gold in [(&quot;本月消费合计 12,088元&quot;, 12088), (&quot;运费 8 元已含&quot;, 8)]:
+        try:
+            pred = optimized(text=text)
+            print(f&quot;{text} -&gt; {pred.amount}（期望 {gold}）&quot;)
+        except Exception as exc:
+            print(f&quot;{text} -&gt; 调用失败：{exc}&quot;)
+    # 进阶：dspy.MIPROv2(metric=metric, auto=&quot;light&quot;) 可同时优化指令与少样本示例
+</code></pre>
+<h3 id="963-生产化改造清单">9.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：评估调用失败按错误计分而非重试到通过；进化无产出时显式退出并保留最优种子。</li>
+<li><strong>预算控制</strong>：代数、种群、总调用数、总费用四重预算硬编码；满分即停。</li>
+<li><strong>评估器治理</strong>：评估集与选择集分离；高分个体定期人工抽查，防 Goodhart。</li>
+<li><strong>并发评估</strong>：种群内并行调用（线程池/asyncio），评估阶段是循环的延迟大头。</li>
+<li><strong>缓存</strong>：相同提示词+样例的评估结果缓存；进化重跑不重复计费。</li>
+<li><strong>可观测</strong>：每代记录最优/平均得分、失败样例、变异来源，进化轨迹可回放可审计。</li>
+<li><strong>技能库治理</strong>：容量上限、去重合并、复用失败自动降权、定期用新评测集回测全库。</li>
+<li><strong>成本控制</strong>：廉价评估器前置快筛；变异用小模型、终选用强模型的双档组合。</li>
+</ul>
+<h2 id="97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</h2>
+<h3 id="本章小结">本章小结</h3>
+<p>智能体的学习不必然发生在权重里。非参数化路线把经验固化为提示、技能、经验与程序四类文本工件，用"捕获—工件化—复用—修正"的闭环换取即时生效、可审计、低成本的持续改进；进化循环在此之上加入主动搜索，用生成-评估-选择-变异把改进自动化。从 Holland 的进化计算骨架，到 Reflexion 的语言化反馈、Voyager 的技能库、DSPy 的提示编译，再到 AlphaEvolve 在数学开放问题与 Google 生产系统上的双重兑现，这条路线已经完成了从原型到生产的关键一跃。它的一切收益都以一个前提为抵押：存在廉价、自动、可信的评估器——守护这个前提，是学习型智能体系统的第一职责。</p>
+<h3 id="核心要点">核心要点</h3>
+<ul>
+<li>非参数化学习改工件不改权重：即时生效、可读可审计、可回滚，是智能体迭代的首选路线。</li>
+<li>经验必须工件化：情境、行动、结果、教训、置信度、来源，六要素缺一不可。</li>
+<li>进化循环的命门是评估器：廉价、自动、可信三条件缺一，循环就在优化噪声。</li>
+<li>变异要用有语义的 LLM 改写（diff 式），保留已验证部分；双模型 ensemble 平衡广度与深度。</li>
+<li>选择要兼顾质量与多样性（MAP-Elites 思想），防止种群过早收敛到单一套路。</li>
+<li>技能"验证通过才入库"，经验按置信度分级，低置信经验只参考不主导。</li>
+<li>警惕 Goodhart 陷阱与回音室：评估集分离、人工抽查、外部信号定期校准。</li>
+<li>预算硬编码：代数、调用数、费用三重上限；没有预算的进化循环是烧钱机。</li>
+</ul>
+<h3 id="结论">结论</h3>
+<p>学习与适应把智能体从"一次性交付的工具"变成"越用越好的系统"。这件事在工程上已经不需要信仰：Voyager 证明了技能可以积累，DSPy 证明了提示可以编译，AlphaCodium 证明了流程可以自我修正，AlphaEvolve 证明了进化循环能刷新五十六年的算法纪录并优化支撑自身的生产系统。工程师要做的判断始终朴素：这个任务有没有可信的评估信号？经验值不值得沉淀？循环的预算和防腐机制配齐了没有？三问过关，就让系统开始积累复利；不过关，就诚实地把资源投在单次执行的质量上——知道何时不学，同样是这门手艺的一部分。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第8章 记忆管理</span></a><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第10章 模型上下文协议</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l2"><a href="#96-工程落地实践代码示例">9.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>

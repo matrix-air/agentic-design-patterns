@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第6章 规划 · 智能体设计模式</title>
+<meta name="description" content="让智能体在行动前把目标分解为可执行的子任务序列，在执行偏差出现时按触发条件重规划，用显式中间结构换长程任务的稳定性与可观测性。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">第一部分 · 核心模式</span>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a class="active" href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">第一部分 · 核心模式</div>
+      <h1>第6章 规划 <span class="en-title">Planning</span></h1>
+      <p class="chapter-summary">让智能体在行动前把目标分解为可执行的子任务序列，在执行偏差出现时按触发条件重规划，用显式中间结构换长程任务的稳定性与可观测性。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p><strong>一句话定义</strong>：规划让智能体在行动之前把目标分解为子任务序列，在执行中跟踪状态，并在偏差出现时按明确的触发条件修订计划。
+<strong>解决什么问题</strong>：长程任务超出单次生成能力，逐步即兴决策缺乏全局一致性 ｜ <strong>适用场景</strong>：多步骤、有依赖关系、可分解的目标导向任务 ｜ <strong>核心机制</strong>：计划生成 + 状态跟踪 + 重规划触发 + 计划验证 ｜ <strong>代价</strong>：计划本身的生成成本、环境不符时的僵化风险、过度规划对简单任务的浪费。</p>
+</blockquote>
+<h2 id="61-模式概述">6.1 模式概述</h2>
+<h3 id="611-问题背景为什么需要这个模式">6.1.1 问题背景：为什么需要这个模式</h3>
+<p>把一个二十步的任务直接交给模型逐步处理，会同时踩中三个陷阱。其一是组合漂移：每步决策都是独立采样，模型对"全局目标"的把握随上下文变长而稀释，走到第八步时常常已经忘了第三步为什么那么做。其二是错误累积：前面步骤的小偏差不被察觉，后续在错误的前提下继续建设，成品与目标相去甚远。其三是不可观测：没有显式的中间结构，失败时无法定位坏在哪一环，也无法告诉用户"完成了多少"。这三个陷阱的共同根源是"计划只存在于模型的隐式状态里"。规划模式的做法是把计划显式化：行动之前先产出一份子任务清单作为一等公民的数据结构，执行时逐项核对状态，发现偏差时带着证据修订。计划一旦显式，进度可报、失败可定位、修订有据——长程任务从"赌模型状态够稳"变成"管理一份可审计的工作分解结构"。</p>
+<h3 id="612-核心机制它如何工作">6.1.2 核心机制：它如何工作</h3>
+<p>规划模式的最小系统有四个部件。计划生成：把目标交给模型，产出结构化的子任务清单（通常是带顺序或依赖的 JSON 数组），每条子任务应在执行器能力范围内。执行：按序或按依赖拓扑执行，每项产出结果与状态。状态跟踪：维护每个子任务的状态（待办/完成/失败）与已完成产出，这是后续一切决策的依据。重规划：触发条件命中时——子任务反复失败、观察与计划假设不符、环境变化、预算超限——带着已完成状态与失败证据重新生成剩余计划。两个贯穿全局的设计决策是：计划与执行分离到什么程度（一次性全计划，还是边走边计划）；计划写到多细（细到每条工具调用，还是粗到里程碑）。这两问没有普适答案，6.5 节展开这些权衡。</p>
+<h3 id="613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</h3>
+<p>与 ReAct 的关系最微妙：ReAct 每步基于全部历史重新决策，规划隐式发生在模型内部，好处是适应快，坏处是全局一致性弱、每步昂贵。规划模式把它改成"一次计划、分步执行"，是互补而非替代——执行器内部常常就是一个 ReAct 循环。与工具使用是整体与局部：每条计划项的最小执行单元就是工具调用，计划验证的第一课是核对计划引用的工具是否真实存在。与反思是证据链：Reflexion 式的失败反思为重规划提供"为什么失败"的证据，没有反思的重规划只是换个姿势再赌一次。与 Tree of Thoughts 是搜索化：当"生成一份好计划"本身需要探索——分支、评估、回溯——规划就从序列生成升级为树搜索。与多智能体是分派：计划项是天然的分工单元，管理者智能体的核心工作就是把计划项派给合适的执行者（CrewAI 的 hierarchical 模式即此形态）。</p>
+<h2 id="62-起源与历史最早是谁提出来的">6.2 起源与历史：最早是谁提出来的</h2>
+<p>LLM 时代的"规划"并非新发明，它站在四十年符号 AI 的遗产上。1971 年 SRI 的 STRIPS 用"前提条件—添加效果—删除效果"三元组把动作与规划问题形式化，此后五十年所有规划系统的底层词汇都由它定义。1970 年代中期，Sacerdoti 的 NOAH 系统开创了分层任务网络（HTN）路线：不直接搜索动作序列，而是把复合任务按方法库逐层分解为原子任务——这个"按分解方法库做任务分解"的思想，就是今天 LLM 智能体任务分解的直接祖先。1987 年，哲学家 Bratman 在《Intention, Plans, and Practical Reason》中论证：理性主体的行为由意图驱动，意图具有坚持性——不因一点风吹草动就推翻重来；Rao 与 Georgeff 在 1991 年将 BDI（信念—愿望—意图）形式化为可计算的智能体架构，代表性实现 PRS 此后十年广泛用于实时决策系统，"意图坚持性"至今仍是重规划抑制的理论依据；2002 年 Nau 等人的 SHOP2 把 HTN 做成实用规划系统。2023 年，LLM 让规划范式重装登场：HuggingGPT 把"任务规划—模型选择—任务执行—响应汇总"定为四阶段流水线；同年 4 月开源社区用百余行 Python 的 BabyAGI 任务循环引爆了 agent 浪费大赛——它的初版循环没有终止条件，恰好成为"无停止条件规划"的反面教材；5 月一个月内连出三篇：Plan-and-Solve 把"先计划再执行"做成提示策略，Tree of Thoughts 把规划做成带评估与回溯的树搜索，ReWOO 用变量占位符让计划可以一次性生成而不必预知执行结果；11 月的 ADaPT 补上最后一块拼图：不必预先分解到最细，执行失败时再按需递归分解。</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>事件</th>
+<th>提出者/机构</th>
+<th>出处</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1971年</td>
+<td>STRIPS：以"前提—添加—删除"形式化动作与规划问题</td>
+<td>Fikes &amp; Nilsson（SRI）</td>
+<td>Artificial Intelligence 期刊</td>
+</tr>
+<tr>
+<td>1970年代中期</td>
+<td>NOAH 系统：分层任务网络（HTN）思想的原型，规划即任务分解</td>
+<td>Sacerdoti</td>
+<td>NOAH 系统</td>
+</tr>
+<tr>
+<td>1987年</td>
+<td>《Intention, Plans, and Practical Reason》奠定 BDI 哲学基础：意图具有坚持性</td>
+<td>Bratman</td>
+<td>专著</td>
+</tr>
+<tr>
+<td>1991/1995年</td>
+<td>BDI 逻辑形式化与 PRS 系统，确立智能体架构范式</td>
+<td>Rao &amp; Georgeff</td>
+<td>KR 1991 等系列工作</td>
+</tr>
+<tr>
+<td>2002年</td>
+<td>SHOP2 将 HTN 推向实用规划系统</td>
+<td>Nau et al.</td>
+<td>SHOP2 系统</td>
+</tr>
+<tr>
+<td>2023年3月</td>
+<td>HuggingGPT：任务规划—模型选择—任务执行—响应汇总四阶段</td>
+<td>Shen et al.（浙江大学/Microsoft）</td>
+<td>arXiv:2303.17580（NeurIPS 2023）</td>
+</tr>
+<tr>
+<td>2023年5月</td>
+<td>Plan-and-Solve：先制定计划再逐步执行的提示策略</td>
+<td>Wang et al.</td>
+<td>arXiv:2305.04091（ACL 2023）</td>
+</tr>
+<tr>
+<td>2023年5月</td>
+<td>Tree of Thoughts：把规划做成带评估与回溯的树搜索</td>
+<td>Yao et al.（Princeton/DeepMind）</td>
+<td>arXiv:2305.10601（NeurIPS 2023）</td>
+</tr>
+<tr>
+<td>2023年5月</td>
+<td>ReWOO：计划一次性生成、变量占位符传递以省 token</td>
+<td>Xu et al.</td>
+<td>arXiv:2305.18323</td>
+</tr>
+<tr>
+<td>2023年11月</td>
+<td>ADaPT：按需递归分解——执行失败时才继续拆，适配任务复杂度与执行器能力</td>
+<td>Prasad et al.（UNC Chapel Hill/Saarland/AI2）</td>
+<td>arXiv:2311.05772（NAACL 2024 Findings）</td>
+</tr>
+</tbody>
+</table>
+<p>四十年跨度的对照很有启发：符号规划解决"从形式化世界模型推出正确动作序列"，假设世界可知、动作可精确描述，因而在封闭领域成功、在开放世界失灵；LLM 规划反过来——世界模型内化在参数里，可以处理模糊目标与开放环境，但换来了正确性无法保证。今天工程上的"规划模式"，实质是用 LLM 的语义能力做分解与调度，用经典规划时代的形式纪律（状态、依赖、验证、坚持性）约束它的散漫。</p>
+<h2 id="63-发挥的作用为什么重要">6.3 发挥的作用：为什么重要</h2>
+<p>规划的第一价值是一致性：显式计划是跨步骤的全局约束，执行器每步只需"完成当前子任务"，不再独自背负整个目标，上下文稀释与目标遗忘被结构性缓解。第二价值是可观测：计划即进度条——"5 步中已完成 2 步，第 3 步失败，正在重试"，对用户、对运维、对审计都是透明的；失败定位也从"整个任务失败了"细化到"第 N 项失败，原因是……"。第三价值是成本结构：ReWOO 的变量占位符演示了分离式规划的经济学——计划只生成一次，执行时不必带着全部历史反复推理，长任务的 token 开销显著低于逐步即兴；计划还是天然的并行单元，无依赖子任务可并发执行。第四价值是失败管理：显式计划把"重试什么"从模糊问题变成清晰决策——重试、绕过还是分解失败项，各有明确依据与代价；没有计划，重试就退化为"从头再来"。第五价值最易被忽略：计划是人与智能体之间最有效的对齐界面——执行前让人审一眼计划，几秒钟的阅读就能拦下方向性错误，比事后检查几百轮执行轨迹便宜得多。</p>
+<h2 id="64-实际应用与案例">6.4 实际应用与案例</h2>
+<p><strong>多跳问答与深度调研。</strong> 把"某技术路线的现状与竞争格局"分解为"界定子问题—逐项检索—交叉核实—汇总"的计划，检索子任务按依赖并行。关键设计点是计划里显式列出"需要核实的具体断言"，汇总阶段只允许引用已核实条目。</p>
+<p><strong>大型代码重构。</strong> 把"回调风格迁移到 async/await"分解为模块级子任务，每项含涉及文件、预期改动与验证方式（跑哪些测试）。关键设计点是每完成一项就运行验证，验证失败触发该项级重规划而非全盘重来。</p>
+<p><strong>旅行与日程安排。</strong> 目标分解为"定约束（日期预算）—订大项（交通住宿）—填空档（活动）—查冲突"，依赖关系决定执行顺序。关键设计点是预订类写操作前置人工确认，计划本身作为用户可见的清单可编辑。</p>
+<p><strong>数据分析流水线。</strong> "取数—清洗—建模—可视化—成文"五段式计划，每段产出中间工件供下一段引用。关键设计点是 ReWOO 式占位符：计划在取数前生成，后续步骤引用"清洗结果"这个变量而非预知其内容。</p>
+<p><strong>客服工单跨系统处理。</strong> 退款工单分解为"核验订单—查政策—计算金额—创建退款单—发通知"，各步骤对接不同系统工具。关键设计点是写操作步骤设失败兜底（人工接管队列），计划状态同步到工单系统供人工查看。</p>
+<p><strong>具身与模拟环境任务。</strong> ALFWorld 类文本环境里"把干净的杯子放到桌上"，ADaPT 的做法是先给执行器一个粗计划，发现"找到杯子"这步执行不了再递归分解为"搜索厨房—检查水槽—清洗"。关键设计点是分解深度由执行器能力决定，不做无谓的预分解。</p>
+<h2 id="65-深度讲解">6.5 深度讲解</h2>
+<h3 id="651-计划执行分离-vs-交织一个光谱而非二选一">6.5.1 计划—执行分离 vs 交织：一个光谱而非二选一</h3>
+<p>把"何时产生计划"画成一条光谱，四个锚点各有其位。光谱左端是纯交织（ReAct 式）：没有显式计划，每步基于全部历史即时决策。优点是适应性最强——每步吸收最新观察；缺点是全局一致性弱，且每步都要重新推理全部上下文，长任务又贵又漂。第二个锚点是一次性分离（plan-and-execute，HuggingGPT、Plan-and-Solve）：开始时生成完整计划，然后逐项执行。优点是全局结构清晰、进度可报、token 经济；缺点是计划期的假设得不到执行期验证，一处假设失效就可能让整份计划作废——环境越开放，这个缺陷越致命。第三个锚点是分离但带占位符（ReWOO）：计划一次性生成，但计划里引用的中间结果写成变量（#E1、#E2），执行时才填充。这解决了分离式的一个深层矛盾：好的计划需要预知执行结果，而结果在计划时并不存在——占位符让计划可以引用未来。第四个锚点是按需递归（ADaPT）：先给粗计划，执行器能做就做；某项失败，才对该项递归分解。ADaPT 的实验显示这种"惰性分解"在 ALFWorld、WebShop 等环境比 ReAct 与固定 plan-and-execute 的成功率高十几个到三十个百分点，它的洞察是：分解粒度应该由执行器实际能力决定，而能力只有试了才知道。工程上的选择经验：环境稳定、步骤清晰的任务用分离式；环境多变、探索性强的任务用交织式或按需递归；大多数生产系统取中——顶层计划分离、底层执行交织，即"计划管方向，ReAct 管脚下"。</p>
+<h3 id="652-计划粒度细到哪一步算合适">6.5.2 计划粒度：细到哪一步算合适</h3>
+<p>粒度是规划里最考验手感的参数，两头都是坑。太细（细到每条工具调用）等于把执行也计划完了：计划生成的 token 成本暴涨，对执行期信息的利用率为零——执行器变成照本宣科的傀儡，环境一变计划全线报废。太粗（"第一步：研究；第二步：写作"）等于没计划：执行器面对的仍是原始复杂度，规划的全部收益（可观测、可定位、可重试）消失。合适的粒度有一条可操作判据：每条计划项应是执行器一次可验证的能力单元——一个 LLM 调用或一小组工具调用能完成，且有明确的是非判据。粒度还应随执行器能力浮动：执行器更强，粒度可放粗（ADaPT 的动态适应本质就是自动寻找匹配点）；计划项之间保留顺序依赖而非全序（哪些必须串行、哪些可并行要显式区分），过强的全序约束会杀掉并行机会，也让局部重排变难。</p>
+<h3 id="653-重规划触发条件与修订纪律">6.5.3 重规划触发条件与修订纪律</h3>
+<p>重规划比不规划更危险的地方在于：它可能把好的部分也推翻。因此触发条件必须显式、可判定，修订必须带纪律。四个标准触发器。其一是子任务反复失败：同一计划项重试超过阈值（通常 2 次），说明不是运气问题而是计划问题——该分解、换路或放弃。其二是假设被证伪：计划建立在对环境的假设上（如"API 支持批量查询"），执行观察与假设冲突时应立即触发，而不是硬推到失败为止。其三是外部变化：长程任务中环境更新、用户改需求。其四是预算越界：步数或成本过半而进度不足一半，说明工作量估计错了。修订纪律有三条。带证据重规划：新计划的输入必须包含已完成项及结果、失败项及原因——白板重规划等于抹掉状态、重复烧钱。意图坚持性：源自 BDI 的原则——局部失败默认局部修订（分解或绕过该项），全盘推翻需过明确的理由门槛，否则智能体会陷入"计划抖动"，每遇挫折就重来，永远走不远。修订留痕：每次重规划记录版本与理由，这是事后审计"为什么走到这一步"的唯一依据。</p>
+<h3 id="654-计划验证执行前与执行中">6.5.4 计划验证：执行前与执行中</h3>
+<p>计划在执行前就该过一遍验证，性价比极高。结构验证是第一层：计划非空、描述非空、无循环依赖、引用的工具/资源存在于注册表——这些检查不需要 LLM，几行代码即可。可行性评审是第二层：让模型（或人）以评审视角检查——每项可执行吗？依赖顺序对吗？有无遗漏步骤与明显冗余？Tree of Thoughts 的思路在此适用：对关键计划做多候选生成加评估，取最优而非首生成。执行中验证是第三层：每完成一项，用产出对照该项的完成判据；观察与预期不符（哪怕这项"成功"了）也记为计划风险信号。第四层防"计划—执行漂移"：长任务中执行器可能悄悄偏离计划自作主张，状态跟踪必须以计划为锚——执行结果回填到对应计划项，对不上号的就是漂移警报。</p>
+<h3 id="655-失效模式与何时不要规划">6.5.5 失效模式与何时不要规划</h3>
+<p>三个典型失效。计划幻觉：计划引用不存在的工具、不存在的数据源，或包含逻辑上不可达的步骤——结构验证能拦下大半。过度坚持：计划已明显失效仍硬推到底，这是 BDI 坚持性矫枉过正的镜像，解法是把 6.5.3 的触发器写成硬性检查而非模型自觉。计划抖动：与过度坚持相反，遇挫即全盘重规划，在"重来"与"硬推"之间震荡——解法是意图坚持性加修订门槛。何时不要规划也要说清：单步任务规划是纯开销；强探索性任务（"看看这个代码库哪里有问题"）探索本身就是任务，预设计划反而限制视野；环境变化快于计划周期的任务，计划在生成时就过期了，交织式决策更诚实。规划的正确姿态是把它当可选项：判断"这个任务要不要显式计划"，本身就是智能体路由的第一步。</p>
+<h2 id="66-工程落地实践代码示例">6.6 工程落地：实践代码示例</h2>
+<h3 id="661-框架无关实现完整可运行">6.6.1 框架无关实现（完整可运行）</h3>
+<p>下面是一个 plan→execute→replan 状态机。骨架决策包括：计划结构验证（非空、条目数上限、描述非空）；子任务执行带可判定的成功标准（未完成须显式标记 UNRESOLVED）；重试上限触发局部重规划；重规划必须携带已完成结果与失败原因；重规划次数设硬上限，耗尽即如实报告失败。</p>
+<pre><code class="language-python">&quot;&quot;&quot;规划模式：plan -&gt; execute -&gt; replan 状态机（框架无关实现）。
+
+依赖：pip install openai
+环境变量：
+  AGENT_LLM_BASE_URL  OpenAI 兼容接口地址（默认 https://api.openai.com/v1）
+  AGENT_LLM_API_KEY   API Key（必填）
+  AGENT_LLM_MODEL     模型名（默认 gpt-4o-mini）
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;),
+    api_key=os.environ[&quot;AGENT_LLM_API_KEY&quot;],
+)
+MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+
+
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
+    &quot;&quot;&quot;调用一次大模型，返回文本回复。&quot;&quot;&quot;
+    messages = []
+    if system:
+        messages.append({&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system})
+    messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt})
+    resp = client.chat.completions.create(
+        model=MODEL, messages=messages, temperature=temperature
+    )
+    return resp.choices[0].message.content or &quot;&quot;
+
+
+# ---------- 状态定义 ----------
+
+@dataclass
+class Step:
+    &quot;&quot;&quot;计划项：一条子任务及其执行状态。&quot;&quot;&quot;
+
+    description: str
+    status: str = &quot;pending&quot;  # pending / done / failed
+    attempts: int = 0
+    result: str = &quot;&quot;
+
+
+@dataclass
+class PlanState:
+    &quot;&quot;&quot;整个任务的状态机状态。&quot;&quot;&quot;
+
+    goal: str
+    steps: list[Step] = field(default_factory=list)
+    replans: int = 0
+    outcome: str = &quot;running&quot;  # running / success / failed
+
+
+# ---------- 计划生成与验证 ----------
+
+PLAN_SYSTEM = (
+    &quot;你是任务规划器。把目标分解为子任务清单。要求：每条是一个执行器一次可完成的&quot;
+    &quot;能力单元；只分解、不执行；按执行顺序排列。&quot;
+)
+
+
+def make_plan(goal: str, context: str = &quot;&quot;) -&gt; list[Step]:
+    &quot;&quot;&quot;生成计划。结构验证失败时带错误重试一次，两次都失败则抛异常。&quot;&quot;&quot;
+    prompt = (
+        f&quot;【目标】{goal}\n&quot;
+        + (f&quot;【已知进展与教训】\n{context}\n&quot; if context else &quot;&quot;)
+        + &quot;只输出 JSON 数组，格式：[{\&quot;description\&quot;: \&quot;子任务描述\&quot;}, ...]，3 到 6 条。&quot;
+    )
+    last_err = &quot;&quot;
+    for attempt in range(2):  # 错误路径：解析/验证失败重试一次
+        raw = llm(prompt, system=PLAN_SYSTEM + (f&quot;\n上轮问题：{last_err}&quot; if last_err else &quot;&quot;))
+        try:
+            text = raw.strip()
+            if text.startswith(&quot;```&quot;):
+                text = text.strip(&quot;`&quot;).lstrip(&quot;json&quot;)
+            data = json.loads(text)
+            steps = [Step(description=str(item[&quot;description&quot;])) for item in data]
+            if not steps:
+                raise ValueError(&quot;计划为空&quot;)
+            if len(steps) &gt; 8:
+                raise ValueError(f&quot;计划条目过多（{len(steps)}），请合并到 8 条以内&quot;)
+            if any(not s.description.strip() for s in steps):
+                raise ValueError(&quot;存在空描述的计划项&quot;)
+            return steps
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            last_err = f&quot;{type(exc).__name__}: {exc}，请严格按 JSON 数组格式输出&quot;
+    raise RuntimeError(f&quot;计划生成失败：{last_err}&quot;)
+
+
+# ---------- 执行 ----------
+
+def execute_step(step: Step, state: PlanState) -&gt; None:
+    &quot;&quot;&quot;执行单个计划项。成功标准可判定：模型无法完成时必须显式写 UNRESOLVED。&quot;&quot;&quot;
+    done_part = &quot;\n&quot;.join(
+        f&quot;- {s.description} -&gt; {s.result}&quot; for s in state.steps if s.status == &quot;done&quot;
+    )
+    reply = llm(
+        f&quot;完成子任务：{step.description}\n【总体目标】{state.goal}\n&quot;
+        f&quot;【已完成子任务及结果】\n{done_part or '（无）'}\n&quot;
+        &quot;如果你无法完成该子任务，输出必须以 [UNRESOLVED]: 开头并说明原因；&quot;
+        &quot;否则直接给出该子任务的成果。&quot;
+    )
+    step.attempts += 1
+    if &quot;[UNRESOLVED]&quot; in reply[:30]:
+        step.result = reply.strip()
+        print(f&quot;  执行失败(第{step.attempts}次)：{reply[:60]}&quot;)
+    else:
+        step.status, step.result = &quot;done&quot;, reply.strip()
+        print(f&quot;  完成：{step.description[:40]} -&gt; {step.result[:50]}&quot;)
+
+
+# ---------- 重规划 ----------
+
+def replan(state: PlanState) -&gt; None:
+    &quot;&quot;&quot;局部重规划：携带已完成结果与失败原因，只重排未完成部分。
+
+    修订纪律：默认只替换未完成项，已完成项的结果作为上下文保留——
+    白板重规划等于抹掉状态、重复烧钱。
+    &quot;&quot;&quot;
+    failed = [s for s in state.steps if s.status == &quot;failed&quot;]
+    failure_note = &quot;\n&quot;.join(
+        f&quot;-「{s.description}」失败原因：{s.result}&quot; for s in failed
+    )
+    done_part = &quot;\n&quot;.join(
+        f&quot;- {s.description} -&gt; {s.result}&quot; for s in state.steps if s.status == &quot;done&quot;
+    )
+    context = (
+        f&quot;以下子任务已完成，新计划必须复用其结果、不得重复：\n{done_part}\n&quot;
+        f&quot;以下子任务多次失败，新计划应换路线、拆细或绕过：\n{failure_note}&quot;
+    )
+    state.steps = [
+        s for s in state.steps if s.status == &quot;done&quot;
+    ] + make_plan(state.goal, context=context)
+    print(f&quot;[重规划 #{state.replans}] 新计划：&quot;)
+    for i, s in enumerate([x for x in state.steps if x.status == &quot;pending&quot;], 1):
+        print(f&quot;  {i}. {s.description[:50]}&quot;)
+
+
+# ---------- 状态机主循环 ----------
+
+def run(goal: str, max_attempts: int = 2, max_replans: int = 2) -&gt; PlanState:
+    &quot;&quot;&quot;plan -&gt; execute -&gt; replan 主状态机。
+
+    触发条件：同一计划项连续失败 max_attempts 次 -&gt; 局部重规划；
+    终止条件：全部完成（成功）/ 重规划次数耗尽（如实报失败）。
+    &quot;&quot;&quot;
+    state = PlanState(goal=goal)
+    state.steps = make_plan(goal)
+    print(&quot;[初始计划]&quot;)
+    for i, s in enumerate(state.steps, 1):
+        print(f&quot;  {i}. {s.description[:50]}&quot;)
+
+    while state.outcome == &quot;running&quot;:
+        pending = [s for s in state.steps if s.status == &quot;pending&quot;]
+        if not pending:
+            state.outcome = &quot;success&quot;
+            break
+        step = pending[0]
+        print(f&quot;[执行] {step.description[:50]}&quot;)
+        execute_step(step, state)
+        if step.status != &quot;done&quot;:
+            if step.attempts &gt;= max_attempts:
+                step.status = &quot;failed&quot;
+                state.replans += 1
+                if state.replans &gt; max_replans:
+                    state.outcome = &quot;failed&quot;  # 硬闸：重规划耗尽，如实报告
+                    break
+                replan(state)
+        if all(s.status == &quot;done&quot; for s in state.steps):
+            state.outcome = &quot;success&quot;
+    return state
+
+
+if __name__ == &quot;__main__&quot;:
+    result = run(goal=(
+        &quot;为'团队周报自动化'写一份实施方案：包括数据从哪来、汇总什么指标、&quot;
+        &quot;如何自动分发给五个部门。要求分点、可直接执行。&quot;
+    ))
+    print(&quot;\n=== 结果 ===&quot;)
+    print(&quot;结局：&quot;, result.outcome, &quot;| 重规划次数：&quot;, result.replans)
+    for s in result.steps:
+        print(f&quot;[{s.status}] {s.description[:40]}&quot;)
+</code></pre>
+<h3 id="662-框架集成实现crewaihierarchical-process">6.6.2 框架集成实现（CrewAI，hierarchical process）</h3>
+<p>CrewAI 的 hierarchical 模式是"计划—分派—验收"分离的最短实现：管理者（manager）由 LLM 充当规划器，决定把任务派给谁、何时算完成；执行者只对分派的子任务负责。以下基于 crewai 0.x（2024–2025 系列）公开 API 编写；CrewAI 版本迭代较快，若参数名有出入请以所装版本官方文档为准。API Key 通过环境变量读取（CrewAI 默认读取 OPENAI_API_KEY 及相关模型配置）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;规划模式的 CrewAI 实现：hierarchical process，由 manager 分解与分派任务。
+
+依赖：pip install crewai
+说明：hierarchical 模式下 manager_llm 充当&quot;规划器&quot;，负责分解、分派与验收；
+     agents 是执行器，只对分派的子任务负责。
+&quot;&quot;&quot;
+import os
+
+from crewai import Agent, Crew, Process, Task
+
+MODEL = os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;)
+
+researcher = Agent(
+    role=&quot;资深行业研究员&quot;,
+    goal=&quot;高效收集并核实与任务相关的关键事实&quot;,
+    backstory=&quot;十年行业研究经验，只报告可核实的内容，不臆测数据。&quot;,
+    allow_delegation=False,
+    verbose=False,
+)
+writer = Agent(
+    role=&quot;首席分析撰稿人&quot;,
+    goal=&quot;把研究结论整合为结构清晰、有明确建议的短报告&quot;,
+    backstory=&quot;技术分析师出身，用词克制，每个结论都注明依据。&quot;,
+    allow_delegation=False,
+    verbose=False,
+)
+
+research_task = Task(
+    description=(
+        &quot;为报告《{topic}》收集三类信息：市场规模与增速、主要玩家、&quot;
+        &quot;最近一年的两个关键变化。只列经核实的事实。&quot;
+    ),
+    expected_output=&quot;5-8 条要点，每条一句话，并注明信息性质（公开报道/行业共识）。&quot;,
+    agent=researcher,
+)
+report_task = Task(
+    description=(
+        &quot;基于研究要点撰写一页纸决策简报。结构固定：结论先行、三条依据、&quot;
+        &quot;一条风险提示。若研究要点不足以支撑结论，如实说明缺口而不是编造。&quot;
+    ),
+    expected_output=&quot;300 字以内的中文简报。&quot;,
+    agent=writer,
+)
+
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, report_task],
+    process=Process.hierarchical,               # 管理者模式：计划-分派-验收分离
+    manager_llm=MODEL,                          # manager 即规划器：决定谁做什么、何时算完成
+    verbose=True,
+)
+
+if __name__ == &quot;__main__&quot;:
+    result = crew.kickoff(inputs={&quot;topic&quot;: &quot;端侧 AI 芯片市场&quot;})
+    print(&quot;最终交付：\n&quot;, result.raw)
+</code></pre>
+<h3 id="663-生产化改造清单">6.6.3 生产化改造清单</h3>
+<ul>
+<li><strong>错误处理</strong>：计划 JSON 解析失败带错误重试一次，再失败降级为单步执行并标注"无计划模式"；执行异常计为该项失败而非中断任务。</li>
+<li><strong>超时</strong>：计划生成设独立超时（计划是关键路径）；每个计划项执行设超时并计入失败重试。</li>
+<li><strong>并发</strong>：依赖关系解析后，无依赖计划项并发执行；写操作项保持串行与业务顺序。</li>
+<li><strong>缓存</strong>：计划按（目标、上下文哈希）缓存；已完成计划项结果持久化，重跑任务从断点续做而非从头再来。</li>
+<li><strong>可观测</strong>：记录计划版本、每项状态流转、重规划触发原因；"重规划次数高"与"单项反复失败"是首要告警。</li>
+<li><strong>成本控制</strong>：计划用强模型、执行按项难度选模型；设任务级步数与 token 预算，预算过半进度不足时主动触发重评估。</li>
+<li><strong>计划验证</strong>：结构验证代码化（非空、条目上限、依赖无环）；引用的工具/资源与注册表对账；执行前一次模型可行性评审。</li>
+<li><strong>重规划治理</strong>：修订必须携带已完成状态与失败原因；全盘重规划设更高门槛与审批；版本留痕可审计。</li>
+<li><strong>人工介入点</strong>：计划执行前展示给用户确认（对齐性价比最高的一步）；写操作项与高风险项设审批闸。</li>
+<li><strong>评测</strong>：建任务分解评测集（可执行性、粒度、依赖正确性、完成率），换模型或改提示后回归。</li>
+</ul>
+<h2 id="67-概览-核心要点-结论">6.7 概览 / 核心要点 / 结论</h2>
+<h3 id="671-本章小结">6.7.1 本章小结</h3>
+<p>规划模式把长程任务从"赌模型隐式状态的稳定性"改写为"管理一份显式的工作分解结构"：计划生成、状态跟踪、重规划触发、计划验证四个部件各司其职。计划—执行的分离程度是一条光谱——从 ReAct 的纯交织，到一次性分离（HuggingGPT、Plan-and-Solve）、占位符分离（ReWOO），再到按需递归（ADaPT）——选择依据是环境的稳定性与执行器的能力，工程上最常见的答案是"计划管方向、ReAct 管脚下"。四十年经典规划留下的形式纪律（STRIPS 的状态形式化、HTN 的分解方法库、BDI 的意图坚持性）在 LLM 时代不是古董，而是治住计划幻觉、过度坚持与计划抖动的药方。</p>
+<h3 id="672-核心要点">6.7.2 核心要点</h3>
+<ul>
+<li>显式计划的三重收益：跨步骤全局一致、进度可观测可定位、失败可局部重试而非从头再来。</li>
+<li>计划—执行分离是光谱不是二选一：环境稳定用分离式，环境多变用交织或按需递归，生产常见形态是顶层分离、底层交织。</li>
+<li>计划粒度的判据：每条计划项是执行器一次可验证的能力单元；粒度随执行器能力浮动（ADaPT 的核心洞察）。</li>
+<li>ReWOO 的占位符解决了分离式的深层矛盾：计划可以引用尚未产生的执行结果，一次生成、不必预知。</li>
+<li>重规划四触发器：子任务反复失败、假设被证伪、环境变化、预算越界；修订纪律是带证据、局部优先、版本留痕；意图坚持性（BDI 遗产）要求局部失败默认局部修订，全盘推翻需过门槛。</li>
+<li>计划验证四层：结构验证（代码化）、可行性评审、执行中对判据、防计划—执行漂移。</li>
+<li>三种失效要有对策：计划幻觉靠结构验证，过度坚持靠硬性触发器，计划抖动靠修订门槛。</li>
+<li>单步任务、强探索任务、环境快变任务不要规划；"是否需要计划"本身就是路由的第一步。</li>
+</ul>
+<h3 id="673-结论">6.7.3 结论</h3>
+<p>规划的价值不在"有一份计划"这个形式，而在它把长程任务的失败模式从不可诊断的"整体跑偏"变成可管理的"第 N 项需要处理"。LLM 让生成一份像样的计划变得便宜，但计划的好坏——粒度是否匹配执行器、依赖是否真实、假设是否站得住——仍然取决于工程纪律。实践者的功课是记住两个决策、一条纪律：分离与交织怎么选看环境，粒度粗细怎么看执行器，重规划必须带着证据与门槛。做到这三点，规划就从一篇"看起来周密的文字"变成智能体系统里最硬的那根骨架。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch05-tool-use.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第5章 工具使用</span></a><a class="pager" href="../chapters/ch07-multi-agent.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第7章 多智能体协作</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#61-模式概述">6.1 模式概述</a></li><li class="toc-l3"><a href="#611-问题背景为什么需要这个模式">6.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#612-核心机制它如何工作">6.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#62-起源与历史最早是谁提出来的">6.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#63-发挥的作用为什么重要">6.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#64-实际应用与案例">6.4 实际应用与案例</a></li><li class="toc-l2"><a href="#65-深度讲解">6.5 深度讲解</a></li><li class="toc-l3"><a href="#651-计划执行分离-vs-交织一个光谱而非二选一">6.5.1 计划—执行分离 vs 交织：一个光谱而非二选一</a></li><li class="toc-l3"><a href="#652-计划粒度细到哪一步算合适">6.5.2 计划粒度：细到哪一步算合适</a></li><li class="toc-l3"><a href="#653-重规划触发条件与修订纪律">6.5.3 重规划触发条件与修订纪律</a></li><li class="toc-l3"><a href="#654-计划验证执行前与执行中">6.5.4 计划验证：执行前与执行中</a></li><li class="toc-l3"><a href="#655-失效模式与何时不要规划">6.5.5 失效模式与何时不要规划</a></li><li class="toc-l2"><a href="#66-工程落地实践代码示例">6.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#661-框架无关实现完整可运行">6.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#662-框架集成实现crewaihierarchical-process">6.6.2 框架集成实现（CrewAI，hierarchical process）</a></li><li class="toc-l3"><a href="#663-生产化改造清单">6.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#67-概览-核心要点-结论">6.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#671-本章小结">6.7.1 本章小结</a></li><li class="toc-l3"><a href="#672-核心要点">6.7.2 核心要点</a></li><li class="toc-l3"><a href="#673-结论">6.7.3 结论</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+</body>
+</html>
