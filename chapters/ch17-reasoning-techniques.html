@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,13 +31,25 @@
 <p><strong>一句话定义</strong>：让模型在给出答案之前先生成显式的中间推理——用提示引出、用采样与投票去噪、用树搜索扩展、或用训练把思考内化——并以测试时算力分配把"更多思考"兑换成更高正确率。
 <strong>解决什么问题</strong>：模型一步作答时多步错误率是各步错误率的乘积，且算力不随难度变化 ｜ <strong>适用场景</strong>：数学与逻辑推理、代码生成与调试、多跳问答、智能体的规划与决策节点 ｜ <strong>核心机制</strong>：思维链提示 → 自洽性投票 → 思维树/图搜索 → 过程监督 → 推理模型（内化思维链）｜ <strong>代价</strong>：token 成本与延迟随思维链长度线性上涨，长链有走神与错误传播风险，显式推理的解释未必是答案的真实因果。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　让模型先写草稿再交卷：提示引出思维链（一句话示例或一句"一步步思考"），采样投票（自洽性）压制单链随机错误，思维树把推理变成可搜索的空间，推理模型把长思考内化进训练目标。三步落地：结构化抽取答案 → 自洽性投票并盯**一致性** → 一致性低再升级思维树或推理模型。何时别用：一步可答且有廉价外部校验的任务，直接作答更便宜也更稳。</div>
+
 <h2 id="171-模式概述">17.1 模式概述</h2>
 <h3 id="1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</h3>
 <p>让语言模型直接回答"袋中有 5 个红球 3 个白球，摸两次都摸到红球的概率"，它经常一步蹦出个错误数字——像极了不做草稿的人在心算。问题有两个来源。其一是<strong>误差乘法</strong>：一个五步的推理任务，若每步正确率 90%，一步作答的整体正确率只有约 59%；中间步骤不显式化，错误既无法定位也无法纠正。其二是<strong>算力错配</strong>：一步作答的模式下，"1+1 等于几"与"三位数乘法"消耗同样的计算，简单问题浪费算力，困难问题又算力不足——计算量没有随问题难度伸缩的通道。</p>
 <p>推理技术的解法在直觉上平凡、在效果上惊人：<strong>让模型先写草稿再交卷</strong>。把中间步骤作为文本显式生成出来，每一步的生成都能以先前步骤为条件，模型实际上获得了更多的串行计算；步骤写在纸面上，错误变得可见、可检查、可投票。从 2022 年的思维链提示开始，这条路线逐步升级为完整的谱系——采样投票去噪（自洽性）、树上搜索扩展（思维树）、逐步打分监督（过程奖励）、直至 2024 年后的推理模型把整个思考过程内化到训练目标里。</p>
 <h3 id="1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</h3>
-<p>推理技术的机制可以沿"推理在哪里发生"分为三代。<strong>第一代：提示引出</strong>。在少样本示例里展示"问题→分步推理→答案"的格式（思维链，CoT），或者干脆附加一句"让我们一步一步思考"（零样本思维链），模型就会把答案前的 token 预算花在中间推理上。<strong>第二代：采样与搜索</strong>。自洽性（Self-Consistency）对同一问题温度采样多条思维链、抽取最终答案做多数投票，用冗余压制单链的随机错误；思维树（ToT）把推理重组为树——每层生成多个候选"想法"、用模型自评或外部校验打分、可回溯地搜索，思维第一次成为可搜索的空间；思维图（GoT）进一步把推理单元组织成任意图，允许合并与聚合。<strong>第三代：训练内化</strong>。过程监督（逐步打分的奖励模型）与强化学习把"长而正确的思维链"变成训练目标，o1 系列与 DeepSeek-R1 这类推理模型在回答前生成成千上万 token 的内部思考，把"深思"变成了模型的原生行为而非提示技巧。</p>
+<p>推理技术的机制可以沿"推理在哪里发生"分为三代。<strong>第一代：提示引出</strong>。在少样本示例里展示"问题→分步推理→答案"的格式（思维链，CoT），或者干脆附加一句"让我们一步一步思考"（零样本思维链），模型就会把答案前的 token 预算花在中间推理上。<strong>第二代：采样与搜索</strong>。自洽性（Self-Consistency）对同一问题温度采样多条思维链、抽取最终答案做多数投票，用冗余压制单链的随机错误；思维树（ToT）把推理重组为树——每层生成多个候选"想法"、用模型自评或外部校验打分、可回溯地搜索，思维第一次成为可搜索的空间；思维图（GoT）进一步把推理单元组织成任意图，允许合并与聚合。<strong>第三代：训练内化</strong>。过程监督（逐步打分的奖励模型）与强化学习把"长而正确的思维链"变成训练目标，<a href="https://openai.com/index/learning-to-reason-with-llms/">o1 系列</a>与 <a href="https://api-docs.deepseek.com/">DeepSeek-R1</a> 这类推理模型在回答前生成成千上万 token 的内部思考，把"深思"变成了模型的原生行为而非提示技巧。</p>
 <p>三代机制共享同一个控制旋钮：<strong>测试时算力</strong>。同一个问题，可以只推理一次，也可以采样二十次投票，可以搜两层树，也可以让推理模型思考三分钟——推理技术工程化的核心，就是把这个旋钮按问题难度和 SLO 拧到合适的位置。</p>
+<div class="mermaid">flowchart LR
+    Q["问题输入"] --> D{"难度估计（一致性等轻量信号）"}
+    D -->|"简单"| S1["系统 1：一步作答"]
+    D -->|"困难"| S2["系统 2：显式思维链"]
+    S2 --> SC["自洽性投票：采样 n 条链"]
+    SC -->|"高一致"| A["最终答案"]
+    S1 --> A
+    SC -->|"分歧 → 升级"| RM["推理模型更长思考（测试时算力上调）"]
+    RM --> A</div>
+<div class="fig-caption">图 17-1：系统 1 / 系统 2 与测试时算力分配——难度决定走一步作答还是显式推理，投票的一致与分歧决定"再想多少"；算力沿"一步作答 → 多链投票 → 推理模型"逐级上调，收益边际递减，故按难度分配而非无脑拉满。</div>
 <h3 id="1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</h3>
 <p>推理技术与<strong>反思</strong>（第 4 章）是同一枚硬币的两面：推理是前向展开（答案产生前的思考），反思是回看修正（答案产生后的审视）；自洽性投票与反思的"再试一次"常串联使用——一致性低就触发反思。思维树本质上是<strong>规划</strong>（第 6 章）在推理空间的实例：候选分支、评估、回溯，与任务规划的分解评估同构。<strong>ReAct 式交错</strong>把推理节点嵌进<strong>工具调用</strong>（第 5 章）循环——观察之后、行动之前插入一个简短的"想法"，这正是智能体循环中最小粒度的推理节点。推理模型选型与<strong>路由</strong>（第 2 章）和<strong>资源感知优化</strong>（第 16 章）直接相关：按难度把请求分流到普通模型与推理模型，是 2024 年后级联的新维度。显式思维链的每一步都是<strong>异常处理</strong>（第 12 章）的检查点素材，而"思考多少步"的预算约束属于<strong>目标与监控</strong>（第 11 章）。</p>
 <h2 id="172-起源与历史最早是谁提出来的">17.2 起源与历史：最早是谁提出来的</h2>
@@ -55,61 +68,61 @@
 <td>2022-01</td>
 <td>思维链（CoT）：少样本示例引出显式中间推理</td>
 <td>Wei 等（Google）</td>
-<td>arXiv:2201.11903，NeurIPS 2022</td>
+<td><a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a>，NeurIPS 2022</td>
 </tr>
 <tr>
 <td>2022-03</td>
 <td>自洽性（Self-Consistency）：多链采样 + 多数投票</td>
 <td>Wang 等（Google）</td>
-<td>arXiv:2203.11171，ICLR 2023</td>
+<td><a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a>，ICLR 2023</td>
 </tr>
 <tr>
 <td>2022-05</td>
 <td>零样本思维链：一句"一步一步思考"即可引出推理</td>
 <td>Kojima 等（东京大学等）</td>
-<td>arXiv:2205.11916，NeurIPS 2022</td>
+<td><a href="https://arxiv.org/abs/2205.11916">arXiv:2205.11916</a>，NeurIPS 2022</td>
 </tr>
 <tr>
 <td>2022-10</td>
 <td>ReAct：推理与行动交错，思维进入智能体循环</td>
 <td>Yao 等（普林斯顿大学/Google Brain）</td>
-<td>arXiv:2210.03629，ICLR 2023</td>
+<td><a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a>，ICLR 2023</td>
 </tr>
 <tr>
 <td>2023-05</td>
 <td>思维树（ToT）：推理成为可搜索的树</td>
 <td>Yao 等（普林斯顿大学/Google DeepMind）</td>
-<td>arXiv:2305.10601，NeurIPS 2023</td>
+<td><a href="https://arxiv.org/abs/2305.10601">arXiv:2305.10601</a>，NeurIPS 2023</td>
 </tr>
 <tr>
 <td>2023-05</td>
 <td>过程监督："Let's Verify Step by Step"证明逐步奖励优于终局奖励</td>
 <td>Lightman 等（OpenAI）</td>
-<td>arXiv:2305.20050，ICLR 2024</td>
+<td><a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a>，ICLR 2024</td>
 </tr>
 <tr>
 <td>2023-08</td>
 <td>思维图（GoT）：推理单元组织为任意图，支持聚合与回溯</td>
 <td>Besta 等（ETH Zurich）</td>
-<td>arXiv:2308.09687，AAAI 2024</td>
+<td><a href="https://arxiv.org/abs/2308.09687">arXiv:2308.09687</a>，AAAI 2024</td>
 </tr>
 <tr>
 <td>2024-08</td>
 <td>测试时计算最优分配：按难度分配算力，小模型可胜约 14 倍大模型</td>
 <td>Snell 等（UC Berkeley）</td>
-<td>arXiv:2408.03314</td>
+<td><a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a></td>
 </tr>
 <tr>
 <td>2024-09</td>
 <td>o1-preview 发布：推理模型品类开端</td>
 <td>OpenAI</td>
-<td>官方发布</td>
+<td><a href="https://openai.com/index/learning-to-reason-with-llms/">官方发布</a></td>
 </tr>
 <tr>
 <td>2025-01</td>
 <td>DeepSeek-R1：GRPO 纯强化学习涌现长思维链</td>
 <td>DeepSeek</td>
-<td>arXiv:2501.12948</td>
+<td><a href="https://arxiv.org/abs/2501.12948">arXiv:2501.12948</a></td>
 </tr>
 </tbody>
 </table>
@@ -128,6 +141,10 @@
 <li><strong>智能体的规划节点</strong>：任务开始时用思维树做子目标分解与可行性初筛（第 6 章），执行中每个关键决策点附简短 rationale 落入轨迹日志。关键设计点：规划深度的边际收益递减很快，两层树通常够用，把预算留给执行中的反思。</li>
 <li><strong>推理模型替身</strong>：高价值低频任务（合同审查、根因分析）直接换用推理模型，用"思考预算"控制成本；前端展示结论而非原始思维链。关键设计点：按第 2 章路由把这类请求从高 QPS 主链路摘出，延迟可容忍是前提。</li>
 </ul>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>OpenAI o1：推理模型品类的开局成绩单</strong>。2024 年 9 月 <a href="https://openai.com/index/learning-to-reason-with-llms/">OpenAI 官方发布</a>给出的对照数据是"测试时算力换正确率"的第一份工业级证据：2024 年 AIME 考试上 GPT-4o 平均只解出约 12%（1.8/15），o1 单次作答 74%，64 样本共识投票 83%，再用学习到的评分函数对 1000 个样本重排后达 93%（13.9/15，跻身全美前 500 名考生之列）；竞赛编程上 o1 在 Codeforces 达到第 89 百分位，GPQA diamond 上首次超过人类博士专家。注意其结构：<strong>投票与重排的每一步都是本章技术在模型内外的直接应用</strong>。</p>
+<p><strong>DeepSeek-R1：开源推理模型的破圈</strong>。2025 年 1 月 20 日 DeepSeek 发布并开源（MIT 许可）DeepSeek-R1（<a href="https://arxiv.org/abs/2501.12948">论文</a>）：纯强化学习（GRPO）训练使长思维链无过程标注即自发涌现，AIME 2024 达 79.8%（略超 o1-1217）、MATH-500 达 97.3%、Codeforces Elo 2029（超过 96.3% 的人类参赛者）；API 定价每百万输出 token 16 元（约 2.19 美元），约为 o1 同期价格的零头（<a href="https://api-docs.deepseek.com/quick_start/pricing">官方定价</a>）。发布一周内登顶中美 App Store 免费榜，微软 Azure、英伟达 NIM、亚马逊 Bedrock 先后接入——<strong>低成本开源把推理模型从稀缺品变成了默认选项</strong>。</p>
+<p><strong>Kimi k1.5：非 MCTS 路线的工程验证</strong>。月之暗面 2025 年 1 月 22 日提交的 <a href="https://arxiv.org/abs/2501.12599">Kimi k1.5 技术报告</a>给出一条与 R1 互为印证的 RL 路线：把 RL 上下文扩到 128k、用部分回放（partial rollout）提效，<strong>不依赖蒙特卡洛树搜索、值函数与过程奖励模型</strong>，长 CoT 版在 AIME 77.5、MATH 500 96.2、Codeforces 第 94 百分位上达到 o1 水平；其 long2short 方法（长度惩罚 + 模型合并）把长链推理的先验迁移回短链模型，直接回答了"测试时算力账单怎么压"。</p>
 <h2 id="175-深度讲解">17.5 深度讲解</h2>
 <h3 id="1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</h3>
 <p>卡尼曼把人类认知分为系统 1（快速、自动、直觉）与系统 2（缓慢、费力、审慎），这个类比精确地描摹了推理技术的位置：一步作答是系统 1——从问题直接跳到答案；显式思维链是系统 2 的替身——用串行的语言生成模拟"把工作记忆摊在纸上算"。类比很好用，但有两条边界必须刻在心里。第一条：<strong>模型的"深思"仍是 next-token prediction</strong>。思维链不是在另一个计算模式里运行，它只是把计算摊开成更多 token——收益真实存在（串行计算的叠加），但机制与人类慎思不同，因此思维链会犯人类慎思不会犯的错：中间步骤写对了、答案却抄错；或前一步的小错在链上滚成雪球。第二条：<strong>解释未必是原因</strong>。思维链读起来像推理，但研究反复提示它可能是事后合理化——改变提示里的暗示因素，模型会为同一个（被暗示的）答案写出截然不同的"推理"。工程含义有二：其一，思维链的可解释性价值是"可检查"而非"必真诚"，审计高风险决策不能只看它写的理由；其二，过程监督之所以有效，部分原因正是逐步打分比只看终局更难被表面合理化骗过。</p>
@@ -281,7 +298,7 @@ if __name__ == &quot;__main__&quot;:
     print(f&quot;[ToT] 最终回答：{final[:120]}…&quot;)
 </code></pre>
 <h3 id="1762-框架集成实现langgraph自洽性作为状态机循环">17.6.2 框架集成实现（LangGraph：自洽性作为状态机循环）</h3>
-<p>LangGraph 把自洽性的"采样—判停—汇总"表达为图：generate 节点每次产出一张选票，条件边在票数不足时回到自身、攒够 N 票进入 aggregate 汇总。示例基于 langgraph 0.2.x 的 StateGraph API 与 langchain-openai 的 ChatOpenAI；如版本不同，节点与条件边的写法以官方文档为准。</p>
+<p><a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> 把自洽性的"采样—判停—汇总"表达为图：generate 节点每次产出一张选票，条件边在票数不足时回到自身、攒够 N 票进入 aggregate 汇总。示例基于 langgraph 0.2.x 的 StateGraph API 与 langchain-openai 的 ChatOpenAI；如版本不同，节点与条件边的写法以官方文档为准。</p>
 <pre><code class="language-python">&quot;&quot;&quot;第17章：LangGraph 实现自洽性——采样循环 + 多数投票汇总。
 
 依赖：pip install langgraph langchain-openai（示例基于 langgraph 0.2.x StateGraph API）
@@ -383,12 +400,37 @@ if __name__ == &quot;__main__&quot;:
 <li>显式思维链有失真风险：解释可能是事后合理化，高风险审计不能只读它写的理由。</li>
 </ul>
 <h3 id="1773-结论">17.7.3 结论</h3>
-<p>推理技术的真正贡献，是打破了"模型能力=训练时投入"的单一等式：同一个模型，让它想、多想、按需想，表现可以差出一个数量级。这让工程者第一次拥有了模型权重之外的杠杆——思考本身成为可调度、可计价、可优化的资源。而杠杆的另一端挂着代价：每一分"想得更多"都要用 token、延迟与复杂度来付账。用好的姿势与第 16 章一脉相承：账本上记下每次思考的成本，SLO 里写明质量的底线，然后让难度决定谁值得深思。</p></div>
+<p>推理技术的真正贡献，是打破了"模型能力=训练时投入"的单一等式：同一个模型，让它想、多想、按需想，表现可以差出一个数量级。这让工程者第一次拥有了模型权重之外的杠杆——思考本身成为可调度、可计价、可优化的资源。而杠杆的另一端挂着代价：每一分"想得更多"都要用 token、延迟与复杂度来付账。用好的姿势与第 16 章一脉相承：账本上记下每次思考的成本，SLO 里写明质量的底线，然后让难度决定谁值得深思。</p>
+<h2 id="178-延伸阅读与参考链接">17.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>Wei 等. Chain-of-Thought Prompting Elicits Reasoning in Large Language Models（2022）：思维链。<a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a></li>
+<li>Wang 等. Self-Consistency Improves Chain of Thought Reasoning（2022）：采样投票。<a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a></li>
+<li>Yao 等. ReAct: Synergizing Reasoning and Acting（2022）：思维进入智能体循环。<a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a></li>
+<li>Yao 等. Tree of Thoughts（2023）：在思维上搜索。<a href="https://arxiv.org/abs/2305.10601">arXiv:2305.10601</a></li>
+<li>Lightman 等. Let's Verify Step by Step（2023）：过程监督与 PRM800K。<a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a></li>
+<li>Snell 等. Scaling LLM Test-Time Compute Optimally（2024）：测试时算力的定量标尺。<a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a></li>
+<li>DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning（2025）。<a href="https://arxiv.org/abs/2501.12948">arXiv:2501.12948</a></li>
+<li>Kimi Team. Kimi k1.5: Scaling Reinforcement Learning with LLMs（2025）。<a href="https://arxiv.org/abs/2501.12599">arXiv:2501.12599</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li><a href="https://openai.com/index/learning-to-reason-with-llms/">OpenAI o1 发布页</a>：AIME / Codeforces / GPQA 成绩与"训练时、测试时算力双扩展"曲线的官方出处。</li>
+<li><a href="https://api-docs.deepseek.com/quick_start/pricing">DeepSeek API 文档与定价</a>：R1 各版本 token 计价与缓存命中折扣。</li>
+<li><a href="https://langchain-ai.github.io/langgraph/">LangGraph 官方文档</a>：StateGraph、条件边与循环的参考实现。</li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>GitHub Copilot 多模型选择器（2024-10）：<a href="https://github.blog/jp/2024-10-30-press-releases-github-universe-2024/">Universe 2024 官方公告</a>——o1-preview / o1-mini 进入 Copilot Chat 的推理档位。</li>
+<li>Cursor Router（2026-07）：<a href="https://cursor.com/changelog/router">官方 changelog</a>——按请求把困难任务路由给前沿推理模型。</li>
+<li>OpenAI o1-preview 发布页：<a href="https://openai.com/index/introducing-openai-o1-preview/">Introducing OpenAI o1-preview</a>——推理模型安全性与限速的官方说明。</li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch16-resource-aware-optimization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第16章 资源感知优化</span></a><a class="pager" href="../chapters/ch18-guardrails-safety.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第18章 护栏机制</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#171-模式概述">17.1 模式概述</a></li><li class="toc-l3"><a href="#1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#172-起源与历史最早是谁提出来的">17.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#174-实际应用与案例">17.4 实际应用与案例</a></li><li class="toc-l2"><a href="#175-深度讲解">17.5 深度讲解</a></li><li class="toc-l3"><a href="#1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</a></li><li class="toc-l3"><a href="#1752-结果监督与过程监督">17.5.2 结果监督与过程监督</a></li><li class="toc-l3"><a href="#1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</a></li><li class="toc-l3"><a href="#1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</a></li><li class="toc-l3"><a href="#1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</a></li><li class="toc-l3"><a href="#1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</a></li><li class="toc-l2"><a href="#176-工程落地实践代码示例">17.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1761-框架无关实现完整可运行">17.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1762-框架集成实现langgraph自洽性作为状态机循环">17.6.2 框架集成实现（LangGraph：自洽性作为状态机循环）</a></li><li class="toc-l3"><a href="#1763-生产化改造清单">17.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#177-概览-核心要点-结论">17.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1771-本章小结">17.7.1 本章小结</a></li><li class="toc-l3"><a href="#1772-核心要点">17.7.2 核心要点</a></li><li class="toc-l3"><a href="#1773-结论">17.7.3 结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#171-模式概述">17.1 模式概述</a></li><li class="toc-l3"><a href="#1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#172-起源与历史最早是谁提出来的">17.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#174-实际应用与案例">17.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#175-深度讲解">17.5 深度讲解</a></li><li class="toc-l3"><a href="#1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</a></li><li class="toc-l3"><a href="#1752-结果监督与过程监督">17.5.2 结果监督与过程监督</a></li><li class="toc-l3"><a href="#1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</a></li><li class="toc-l3"><a href="#1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</a></li><li class="toc-l3"><a href="#1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</a></li><li class="toc-l3"><a href="#1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</a></li><li class="toc-l2"><a href="#176-工程落地实践代码示例">17.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1761-框架无关实现完整可运行">17.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1762-框架集成实现langgraph自洽性作为状态机循环">17.6.2 框架集成实现（LangGraph：自洽性作为状态机循环）</a></li><li class="toc-l3"><a href="#1763-生产化改造清单">17.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#177-概览-核心要点-结论">17.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1771-本章小结">17.7.1 本章小结</a></li><li class="toc-l3"><a href="#1772-核心要点">17.7.2 核心要点</a></li><li class="toc-l3"><a href="#1773-结论">17.7.3 结论</a></li><li class="toc-l2"><a href="#178-延伸阅读与参考链接">17.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

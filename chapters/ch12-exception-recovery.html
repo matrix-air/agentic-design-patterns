@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第三部分 · 容错与扩展</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,12 +31,25 @@
 <p><strong>一句话定义</strong>：为智能体的每一步预先设计失败路径——瞬时错误用退避重试、持续错误用熔断降级、长流程用检查点续跑、副作用用幂等与补偿兜底——使"失败"成为可恢复的常态而非灾难。
 <strong>解决什么问题</strong>：智能体执行链路上模型、工具、编排、语义四层都会失败，默认行为（崩溃或静默吞掉）都不可接受 ｜ <strong>适用场景</strong>：长时自治任务、有副作用的操作链、调用不稳定外部依赖的工作流 ｜ <strong>核心机制</strong>：错误分类 → 重试/熔断/降级 → 检查点恢复 → 幂等与补偿 ｜ <strong>代价</strong>：代码复杂度与状态管理成本上升；重试与恢复本身消耗资源；恢复语义（恰好一次的幻觉）需要小心设计。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　智能体的模型、工具、编排、语义四层都会失败，崩溃与静默吞错都不可接受。解法：<b>先分类再行动</b>——瞬时错误退避重试（必须加抖动），持续错误熔断＋降级，长流程检查点续跑，写操作幂等键＋SAGA 补偿。三步：①给每类错误映射策略；②整条链只在一层重试；③检查点存"结果＋完整上下文"。何时别用：纯内存、可整体重算的短任务——直接失败重抛更简单，容错复杂度须与任务价值匹配。</div>
+
 <h2 id="121-模式概述">12.1 模式概述</h2>
 <h3 id="1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</h3>
 <p>一个生产级智能体的故障面远大于传统程序。传统程序只担心自己的代码和依赖，而智能体叠加了四层不确定性：<strong>模型层</strong>（限流、超时、内容策略拒绝，以及输出本身的随机性——同样的输入两次调用结果不同）、<strong>工具层</strong>（网络抖动、权限过期、返回格式突变、部分成功）、<strong>编排层</strong>（死循环、状态丢失、并发写冲突）、<strong>语义层</strong>（调用"成功"返回 200，内容却是错的）。更麻烦的是 LLM 应用的依赖质量普遍低于传统分布式系统：重试一个 HTTP 接口，第二次大概率还是同样的错误；重试一次模型调用，第二次可能就对了——非确定性让"重试"这个老工具的适用边界发生了位移。</p>
 <p>默认的两个行为都不可接受。直接崩溃：一个跑了四十步的自治任务在第三十九步崩掉，全部进度作废。静默吞掉（catch 后继续）：错误状态渗入后续步骤，最终产出一个"看似完整实则错误"的结果，比崩溃更难排查。异常处理与恢复模式的立场是：<strong>失败是智能体运行的常态输入，必须像设计正常路径一样显式设计失败路径</strong>——每一步都要回答四个问题：失败了重试几次？重试无果怎么办（降级到什么）？崩掉之后从哪续跑？如果这一步有副作用，重走一遍会不会造成二次伤害？</p>
 <h3 id="1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</h3>
-<p>机制由四层组成，逐层递进。<strong>第一层：错误分类</strong>。拿到异常先分类再行动——瞬时错误（限流 429、超时、网络抖动）可重试；永久错误（参数非法 400、权限不足 403）重试无意义，直接走失败路径；语义错误（返回了但错了）不能原样重试，要修改输入或校验后再试。<strong>第二层：重试与退避</strong>。可重试错误用指数退避加抖动（full jitter），配合重试次数上限与总预算；只重试幂等操作。<strong>第三层：熔断与降级</strong>。某依赖连续失败超过阈值就熔断——在一段时间内直接快速失败，不再发起真实调用，让依赖喘息、让自己止损；同时提供降级路径（备用模型、缓存、静态结果），保证主链路不可用时业务仍能以低质量继续。<strong>第四层：检查点与恢复</strong>。把工作流状态（已完成步骤与结果、当前上下文）持久化，进程崩溃后从最近检查点恢复，已完成的步骤凭幂等记录跳过而不是重做；对有副作用的写操作，用幂等键去重，对无法重做的复合操作用 SAGA 式补偿（逆序执行补偿动作回滚）。</p>
+<p>机制由四层组成，逐层递进。<strong>第一层：错误分类</strong>。拿到异常先分类再行动——瞬时错误（限流 429、超时、网络抖动）可重试；永久错误（参数非法 400、权限不足 403）重试无意义，直接走失败路径；语义错误（返回了但错了）不能原样重试，要修改输入或校验后再试。<strong>第二层：重试与退避</strong>。可重试错误用指数退避加抖动（full jitter），配合重试次数上限与总预算；只重试幂等操作。<strong>第三层：熔断与降级</strong>。某依赖连续失败超过阈值就熔断——在一段时间内直接快速失败，不再发起真实调用，让依赖喘息、让自己止损；同时提供降级路径（备用模型、缓存、静态结果），保证主链路不可用时业务仍能以低质量继续。<strong>第四层：检查点与恢复</strong>。把工作流状态（已完成步骤与结果、当前上下文）持久化，进程崩溃后从最近检查点恢复，已完成的步骤凭幂等记录跳过而不是重做；对有副作用的写操作，用幂等键去重，对无法重做的复合操作用 SAGA 式补偿（逆序执行补偿动作回滚）。四层机制的协同关系如下图所示。</p>
+<div class="mermaid">flowchart TD
+    A["调用依赖"] --> B{"错误分类"}
+    B --> C["瞬时错误：退避重试（full jitter）"]
+    B --> E["永久错误：不重试，走失败路径"]
+    C --> OK["成功：写检查点"]
+    C --> T["次数与预算耗尽"]
+    T --> CB["熔断器：闭合 → 打开 → 半开"]
+    CB --> DG["降级：备用模型 / 缓存 / 静态话术"]
+    DG --> H["依赖恢复（半开探测成功）"]
+    H --> A</div>
+<div class="fig-caption">图 12-1：错误分类驱动的重试-熔断-降级状态机——瞬时错误重试，重试穷尽触发熔断统计，熔断打开期以降级维持服务，半开探测成功后回到主路径。</div>
 <h3 id="1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</h3>
 <p>与<strong>目标监控</strong>（第 11 章）互为攻守：监控判定"预算耗尽、连续失败"后把控制权交给恢复机制；恢复机制的重试与降级动作又必须被监控记录，否则降级会悄悄变成常态。与<strong>工具调用/MCP</strong>的关系在边界上：超时、重试、熔断应实现于工具调用包装层（客户端一侧），让业务编排代码保持干净。与<strong>规划/路由</strong>的关系是恢复的两种出口：可修复的失败（瞬时错误）就地恢复，不可修复的失败改道（换工具、换模型、换路径）。与<strong>人机协同</strong>的关系是最后一道闸：所有自动恢复手段穷尽后，正确动作是把现场打包升级给人，而不是假装问题不存在。</p>
 <h2 id="122-起源与历史最早是谁提出来的">12.2 起源与历史：最早是谁提出来的</h2>
@@ -54,13 +68,13 @@
 <td>1960s</td>
 <td>PL/I 的 ON 条件：异常处理首次成为通用编程语言机制</td>
 <td>IBM（PL/I 设计团队）</td>
-<td>PL/I 语言设计</td>
+<td><a href="https://en.wikipedia.org/wiki/PL/I">PL/I 语言设计</a></td>
 </tr>
 <tr>
 <td>1987</td>
 <td>SAGA 模型：长事务拆分为子事务链，失败时逆序执行补偿事务</td>
 <td>Hector Garcia-Molina, Kenneth Salem</td>
-<td>SIGMOD'87《Sagas》</td>
+<td>SIGMOD'87<a href="https://dl.acm.org/doi/10.1145/31999.32012">《Sagas》</a></td>
 </tr>
 <tr>
 <td>1990s</td>
@@ -72,50 +86,50 @@
 <td>2007</td>
 <td>《Release It!》系统化稳定性模式：熔断器、舱壁、超时、快速失败</td>
 <td>Michael Nygard</td>
-<td>Pragmatic Bookshelf</td>
+<td><a href="https://pragprog.com/titles/mnee2/release-it-second-edition/">Pragmatic Bookshelf（第 2 版）</a></td>
 </tr>
 <tr>
 <td>2012-12</td>
 <td>Netflix 开源 Hystrix：熔断、舱壁、降级在微服务间大规模工程化</td>
 <td>Netflix</td>
-<td>GitHub 开源（InfoQ 2012-12 报道）</td>
+<td><a href="https://github.com/Netflix/Hystrix">GitHub 开源</a>（InfoQ 2012-12 报道）</td>
 </tr>
 <tr>
 <td>2015-03</td>
 <td>《Exponential Backoff And Jitter》：证明无抖动的指数退避会在并发下成簇冲击，提出 full jitter</td>
 <td>Marc Brooker</td>
-<td>AWS Architecture Blog，2015-03-04</td>
+<td><a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">AWS Architecture Blog，2015-03-04</a></td>
 </tr>
 <tr>
 <td>2017</td>
 <td>Uber Cadence 发布（durable execution 引擎），后由其团队独立发展为 Temporal</td>
 <td>Uber</td>
-<td>开源发布</td>
+<td><a href="https://github.com/uber/cadence">Cadence 开源发布</a>，现为 <a href="https://temporal.io">Temporal</a></td>
 </tr>
 <tr>
 <td>2022</td>
 <td>RFC 9110《HTTP Semantics》明确方法幂等语义：GET/PUT/DELETE 幂等，POST 不幂等</td>
 <td>IETF</td>
-<td>RFC 9110</td>
+<td><a href="https://www.rfc-editor.org/rfc/rfc9110">RFC 9110</a></td>
 </tr>
 <tr>
 <td>2023</td>
 <td>Instructor 库普及"结构化输出校验失败→带错误信息重问"模式</td>
 <td>Jason Liu</td>
-<td>开源项目</td>
+<td><a href="https://python.useinstructor.com">开源项目</a></td>
 </tr>
 <tr>
 <td>2024</td>
 <td>LangGraph Checkpointer：智能体工作流的检查点持久化与恢复成为框架标配</td>
 <td>LangChain</td>
-<td>LangGraph 官方文档</td>
+<td><a href="https://langchain-ai.github.io/langgraph/">LangGraph 官方文档</a></td>
 </tr>
 </tbody>
 </table>
 <p>演化脉络的主线是"失败处理的重心不断上移"。语言层（PL/I 到 try/catch）解决的是单进程内失败的表达与清理；事务层（SAGA）解决跨系统原子性——长事务持有锁不可行，就用补偿把"回滚"变成显式的业务动作；服务层（Nygard 的模式与 Hystrix 的实践）解决依赖故障的隔离与止损；durable execution（Cadence/Temporal）把"进程可以死、流程必须活"变成基础设施承诺。智能体框架（LangGraph Checkpointer、ADK 的异常处理、Instructor 的输出重试）承接了全部四层，并新增了本领域特有的问题：模型输出不可重放（同样的 prompt 重试会得到不同结果），因此检查点必须连同"上下文快照"一起存，恢复才不失真。</p>
 <h2 id="123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</h2>
 <p>第一，它把长任务的平均完成率从"运气"变成"设计值"。工具调用失败率哪怕只有 3%，一个 30 步的任务全程无故障的概率也不到 40%；没有重试，多数任务死于偶发抖动而非能力不足。重试、降级、检查点这三件事把存活曲线重新拉直。</p>
-<p>第二，它保护系统不被故障放大摧毁。没有熔断的智能体集群遇到模型服务故障时，所有智能体同时疯狂重试——这本身就是一次自造的 DDoS（重试风暴）；退避加抖动控制重试节奏，熔断控制总量，错误预算控制整体风险敞口。容错设计的第一受益者常常不是当前这次任务，而是整个共享依赖。</p>
+<p>第二，它保护系统不被故障放大摧毁。没有熔断的智能体集群遇到模型服务故障时，所有智能体同时疯狂重试——这本身就是一次自造的 DDoS（重试风暴）；退避加抖动控制重试节奏，熔断控制总量，错误预算控制整体风险敞口。<strong>容错设计的第一受益者常常不是当前这次任务，而是整个共享依赖</strong>。</p>
 <p>第三，它让"有副作用的智能体"成为可能。读操作失败可以重来，写操作失败重来可能双倍扣款。幂等键、检查点、SAGA 补偿共同给出工程答案：至少一次的投递 + 恰好一次的效果。没有这一层，智能体永远只能停留在"只读"的安全区。</p>
 <h2 id="124-实际应用与案例">12.4 实际应用与案例</h2>
 <p><strong>模型 API 调用加固</strong>。场景：智能体核心的每一次推理调用都依赖外部 API。做法：429/超时用指数退避加抖动重试（带次数上限与总时长预算），内容策略拒绝不重试原文而是改写后重试一次，连续失败触发熔断并降级到备用模型。关键设计点：区分"可重试"与"不可重试"的 HTTP 语义；重试计数要随请求头透传，避免中间层重复叠加重试造成放大。</p>
@@ -124,6 +138,10 @@
 <p><strong>长时研究/爬取任务断点续跑</strong>。场景：数小时的采集任务，浏览器崩溃、机器重启随时可能发生。做法：每完成一个单元（一个页面、一个子问题）即写检查点；重启后从检查点恢复，跳过已完成单元。关键设计点：检查点粒度按"可安全重做的最小副作用单元"划，太细则开销大，太粗则重做面大。</p>
 <p><strong>熔断降级保可用</strong>。场景：检索依赖抖动，智能体答不了问题。做法：熔断器打开后自动降级到缓存答案或"基于本地知识 + 明确标注信息可能过期"的答复，并在响应里打降级标记。关键设计点：降级必须可观测（指标与日志标记降级原因），否则用户默默忍受低质答案、没人知道系统早已带病运行。</p>
 <p><strong>批量作业的失败隔离</strong>。场景：一千条工单的批量处理，个别工单触发模型异常。做法：单条失败落死信队列带完整上下文，不阻断整批；整批结束统一重放死信。关键设计点：失败条目要记录原始输入与错误分类，重放前先修根因，避免重放风暴。</p>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Temporal 的 durable execution 生产舰队</strong>。Temporal 官方客户数据显示：Netflix 有 150 多个工程团队、500 多个命名空间跑在 Temporal 上，每月执行超过 70 亿次动作且仅由 3 名全职工程师运维；OpenAI 在不到一年内把 Temporal 用量提升 60 倍，Snap、Salesforce、NVIDIA 亦在其客户名单——"进程可以死、流程必须活"正是本章检查点恢复模式的基础设施化。来源：<a href="https://temporal.io/llm-info">Temporal 官方客户与规模数据页</a>。</p>
+<p><strong>Stripe 的幂等键设计</strong>。Stripe API 对所有 POST 型写操作要求客户端生成并在重试中复用 <code>Idempotency-Key</code> 请求头，服务端在窗口期内对同键请求去重并返回首次结果——本章"至少一次投递 + 客户端幂等键 + 服务端去重 = 恰好一次效果"公式的行业标杆实现，也是智能体涉及支付的写操作必须对齐的接口契约。来源：<a href="https://docs.stripe.com/api/idempotent_requests">Stripe API 幂等请求官方文档</a>。</p>
+<p><strong>AWS Step Functions 的声明式 Retry/Catch</strong>。Step Functions 把本章机制做进了状态机语言：每个状态可配 Retry（IntervalSeconds、MaxAttempts、BackoffRate，退避乘数默认 2.0），重试穷尽后由 Catch 把错误路由到回退状态，形成声明式的"错误分类 → 重试 → 失败路径"；其 Standard 工作流另提供恰好一次的状态转移语义。来源：<a href="https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html">AWS Step Functions 错误处理官方文档</a>。</p>
 <h2 id="125-深度讲解">12.5 深度讲解</h2>
 <h3 id="1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</h3>
 <p>智能体故障的分类学直接决定策略，值得给出完整映射。<strong>模型故障</strong>：限流（429）与过载（5xx）是瞬时的，退避重试有效；上下文超限是永久的，重试无益，要裁剪上下文；内容策略拒绝介于两者之间——原样重试大概率再拒，改写输入后重试可能通过；生成质量随机劣化（幻觉、跑题）属于语义故障，重试同 prompt 是抛硬币。<strong>工具故障</strong>：网络与超时是瞬时；权限与配额是永久（需人工或换凭据）；格式漂移（上游改了返回结构）是"语义故障的工具版"，要靠输出校验发现；部分成功（批量操作完成一半后断连）最危险，盲目重试=重复执行，必须先查幂等记录。<strong>编排故障</strong>：死循环、状态丢失、并发写冲突；这类故障重试的是"代码"而不是"请求"，检查点与状态版本化是对策。<strong>语义故障</strong>——返回了但错了，是 agent 特有且最阴险的一层：它不抛异常，没有错误码，只有第 11 章的判据与校验能抓住它。抓住后的正确动作不是原样重试（同输入大概率同错误），而是改变条件再试：换提示词、加约束、换模型，或把校验错误作为反馈注入。一句话原则：<strong>抛异常的错误用重试治，不抛异常的错误用校验治</strong>。</p>
@@ -136,11 +154,20 @@
 <h3 id="1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</h3>
 <p><strong>幂等</strong>解决"同一操作执行多次，效果如同一次"。HTTP 语义里 GET/PUT/DELETE 天然幂等而 POST 不幂等（RFC 9110）；工程实践是客户端生成幂等键（UUID，随请求携带，服务端在窗口期内去重）——支付、下单、发消息这些 POST 型操作都必须补上这层。智能体的特殊性在于"重试决策是自动做出的"，人尚可在重试前想一下"是不是已经扣过款了"，自动重试不会想，所以幂等保护必须内建于工具实现而非依赖调用方自觉。<strong>补偿</strong>解决"已经发生、无法撤销的操作如何退回"。SAGA 的洞见是把长事务拆成子事务链，每个子事务登记对应的补偿动作，失败时逆序执行补偿：下单的补偿是取消，扣款的补偿是退款，发邮件的补偿是……没有（不能撤回，只能发更正邮件）。这提示补偿设计的分级：可精确撤销（数据库写）、可业务对冲（退款）、不可撤销只能披露（外发消息）——第三类必须在执行前的确认闸门里拦截，而不是事后补救。补偿链自身的故障处理常被遗忘：补偿也可能失败，补偿要幂等、要重试、最终失败进人工队列；同时记录"补偿中"状态，防止系统在半回滚状态下接受新请求。</p>
 <h3 id="1256-降级链与失效模式">12.5.6 降级链与失效模式</h3>
-<p>降级链是一张预先画好的能力阶梯：主模型 → 备用模型 → 缓存答案 → 静态话术 + 转人工。设计要点：每一级的触发条件明确（不是"感觉不行了"就降）、每一级的效果损失被明确接受、降级动作全程打标（响应头、日志、指标），并有"自动回梯"机制——依赖恢复后自动切回主路径。最危险的反模式是降级成为常态：主依赖故障两周无人发现，因为用户拿到的"都还行"。对策是降级率本身进告警。</p>
+<p>降级链是一张预先画好的能力阶梯：主模型 → 备用模型 → 缓存答案 → 静态话术 + 转人工。设计要点：每一级的触发条件明确（不是"感觉不行了"就降）、每一级的效果损失被明确接受、降级动作全程打标（响应头、日志、指标），并有"自动回梯"机制——依赖恢复后自动切回主路径。最危险的反模式是<strong>降级成为常态</strong>：主依赖故障两周无人发现，因为用户拿到的"都还行"。对策是降级率本身进告警。</p>
 <p>失效模式清单，每一条都值得当作 review checklist：<strong>无限重试</strong>（没有次数与总预算上限）；<strong>重试非幂等操作</strong>（双倍扣款制造机）；<strong>吞异常继续</strong>（<code>except: pass</code> 让错误状态污染后续所有步骤）；<strong>把重试当修复</strong>（永久错误重试十次只是把失败变贵）；<strong>检查点不含上下文</strong>（恢复后模型失忆，行为断裂）；<strong>降级路径从未被测试</strong>（真出事时降级路径自己崩）；<strong>半开探测风暴</strong>（熔断恢复期的探测没限流）；<strong>死信队列无消费者</strong>（失败被"记录"了，但没人重放）。何时可以不用这套机制：纯内存、无副作用、可整体重算的短任务，直接失败重抛最简单——容错机制的复杂度必须与任务的价值和不可重做性匹配。</p>
 <h2 id="126-工程落地实践代码示例">12.6 工程落地：实践代码示例</h2>
 <h3 id="1261-框架无关实现完整可运行">12.6.1 框架无关实现（完整可运行）</h3>
-<p>一个带指数退避（full jitter）、熔断器、检查点恢复与幂等跳过的健壮执行器。核心演示不依赖模型即可完整运行（重试、熔断、降级、崩溃恢复、幂等跳过全部展示）；最后一步用 <code>llm()</code> 做摘要，未配置模型环境变量时自动走降级路径——这本身就是一次真实的降级演示。</p>
+<p>一个带指数退避（full jitter）、熔断器、检查点恢复与幂等跳过的健壮执行器。核心演示不依赖模型即可完整运行（重试、熔断、降级、崩溃恢复、幂等跳过全部展示）；最后一步用 <code>llm()</code> 做摘要，未配置模型环境变量时自动走降级路径——这本身就是一次真实的降级演示。单步骤内部的四层决策管线见下图。</p>
+<div class="mermaid">flowchart LR
+    S["进入步骤"] --> I{"检查点已有结果？"}
+    I --> SKIP["幂等跳过"]
+    I --> BR{"熔断器放行？"}
+    BR --> DG["降级执行并打标"]
+    BR --> RT["执行，失败按 jitter 退避重试"]
+    RT --> OK["成功：写检查点"]
+    RT --> DG</div>
+<p>图 12-2：RobustExecutor 单步骤的四层决策管线——幂等跳过 → 熔断检查 → 退避重试 → 降级落盘，对应 12.6.1 代码中 <code>run_step</code> 的四个阶段。</p>
 <pre><code class="language-python">&quot;&quot;&quot;健壮执行器：指数退避(full jitter) + 熔断器 + 检查点恢复 + 幂等跳过 + 降级链。
 
 依赖：pip install openai（未配置 AGENT_LLM_API_KEY 时自动降级，不影响主演示）
@@ -480,12 +507,35 @@ if __name__ == &quot;__main__&quot;:
 <li>降级链预画能力阶梯且全程打标；降级率进告警，防止降级悄然成为常态。</li>
 </ul>
 <h3 id="结论">结论</h3>
-<p>判断一个智能体系统是否生产就绪，看的不是演示时的流畅，而是故障时的剧本：重试是否克制、熔断是否及时、降级是否有标、恢复是否无副作用。这些剧本的每一行都来自半个多世纪的工程积累，智能体并没有推翻它们，只是让"语义故障"加入进来、让"不可重放"提高了检查点的成本。把失败路径当作一等公民来设计的团队，才能把智能体放进真正重要的业务流程里。</p></div>
+<p>判断一个智能体系统是否生产就绪，<strong>看的不是演示时的流畅，而是故障时的剧本</strong>：重试是否克制、熔断是否及时、降级是否有标、恢复是否无副作用。这些剧本的每一行都来自半个多世纪的工程积累，智能体并没有推翻它们，只是让"语义故障"加入进来、让"不可重放"提高了检查点的成本。把失败路径当作一等公民来设计的团队，才能把智能体放进真正重要的业务流程里。</p>
+<h2 id="128-延伸阅读与参考链接">12.8 延伸阅读与参考链接</h2>
+<p><strong>论文与经典</strong></p>
+<ul>
+<li>SAGA 原始论文（Garcia-Molina &amp; Salem，SIGMOD 1987，补偿事务的源头）：<a href="https://dl.acm.org/doi/10.1145/31999.32012">dl.acm.org/doi/10.1145/31999.32012</a></li>
+<li>《Release It!》第二版（Nygard，熔断器/舱壁/超时的系统化出处）：<a href="https://pragprog.com/titles/mnee2/release-it-second-edition/">pragprog.com</a></li>
+<li>Exponential Backoff And Jitter（Marc Brooker，AWS 2015，full jitter 的定量论证）：<a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li>RFC 9110《HTTP Semantics》（GET/PUT/DELETE 幂等、POST 不幂等的方法语义）：<a href="https://www.rfc-editor.org/rfc/rfc9110">rfc-editor.org/rfc/rfc9110</a></li>
+<li>Temporal 文档（durable execution、Activity 自动重试与恢复）：<a href="https://docs.temporal.io/">docs.temporal.io</a></li>
+<li>AWS Step Functions 错误处理（Retry/Catch 声明式重试与回退状态）：<a href="https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html">docs.aws.amazon.com</a></li>
+<li>Stripe 幂等请求（Idempotency-Key 的行业标杆实现）：<a href="https://docs.stripe.com/api/idempotent_requests">docs.stripe.com/api/idempotent_requests</a></li>
+<li>Instructor（结构化输出校验失败自动回传重试）：<a href="https://python.useinstructor.com">python.useinstructor.com</a></li>
+<li>LangGraph 官网（Checkpointer 持久化与断点恢复）：<a href="https://langchain-ai.github.io/langgraph/">langchain-ai.github.io/langgraph</a></li>
+<li>Netflix Hystrix（熔断器在微服务间大规模工程化的开源起点）：<a href="https://github.com/Netflix/Hystrix">github.com/Netflix/Hystrix</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>Temporal 官方客户与规模数据（Netflix 150+ 团队、每月 70 亿+ 动作、OpenAI 用量增长 60 倍、Snap 等）：<a href="https://temporal.io/llm-info">temporal.io/llm-info</a></li>
+<li>AWS Well-Architected Agentic AI Lens：智能体负载的幂等任务执行模式（确定性幂等键、条件写）：<a href="https://docs.aws.amazon.com/wellarchitected/latest/agentic-ai-lens/agentrel06-bp04.html">docs.aws.amazon.com/wellarchitected</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch11-goal-monitoring.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第11章 目标设定与监控</span></a><a class="pager" href="../chapters/ch13-human-in-the-loop.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第13章 人在回路</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#121-模式概述">12.1 模式概述</a></li><li class="toc-l3"><a href="#1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#122-起源与历史最早是谁提出来的">12.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#124-实际应用与案例">12.4 实际应用与案例</a></li><li class="toc-l2"><a href="#125-深度讲解">12.5 深度讲解</a></li><li class="toc-l3"><a href="#1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</a></li><li class="toc-l3"><a href="#1252-重试与退避节奏设计的定量细节">12.5.2 重试与退避：节奏设计的定量细节</a></li><li class="toc-l3"><a href="#1253-熔断舱壁与错误预算">12.5.3 熔断、舱壁与错误预算</a></li><li class="toc-l3"><a href="#1254-检查点与恢复非确定性带来的新难题">12.5.4 检查点与恢复：非确定性带来的新难题</a></li><li class="toc-l3"><a href="#1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</a></li><li class="toc-l3"><a href="#1256-降级链与失效模式">12.5.6 降级链与失效模式</a></li><li class="toc-l2"><a href="#126-工程落地实践代码示例">12.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1261-框架无关实现完整可运行">12.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1262-框架集成实现langgraph-checkpointer崩溃恢复">12.6.2 框架集成实现（LangGraph Checkpointer：崩溃恢复）</a></li><li class="toc-l3"><a href="#1263-生产化改造清单">12.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#127-概览-核心要点-结论">12.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#121-模式概述">12.1 模式概述</a></li><li class="toc-l3"><a href="#1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#122-起源与历史最早是谁提出来的">12.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#124-实际应用与案例">12.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#125-深度讲解">12.5 深度讲解</a></li><li class="toc-l3"><a href="#1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</a></li><li class="toc-l3"><a href="#1252-重试与退避节奏设计的定量细节">12.5.2 重试与退避：节奏设计的定量细节</a></li><li class="toc-l3"><a href="#1253-熔断舱壁与错误预算">12.5.3 熔断、舱壁与错误预算</a></li><li class="toc-l3"><a href="#1254-检查点与恢复非确定性带来的新难题">12.5.4 检查点与恢复：非确定性带来的新难题</a></li><li class="toc-l3"><a href="#1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</a></li><li class="toc-l3"><a href="#1256-降级链与失效模式">12.5.6 降级链与失效模式</a></li><li class="toc-l2"><a href="#126-工程落地实践代码示例">12.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1261-框架无关实现完整可运行">12.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1262-框架集成实现langgraph-checkpointer崩溃恢复">12.6.2 框架集成实现（LangGraph Checkpointer：崩溃恢复）</a></li><li class="toc-l3"><a href="#1263-生产化改造清单">12.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#127-概览-核心要点-结论">12.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#128-延伸阅读与参考链接">12.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

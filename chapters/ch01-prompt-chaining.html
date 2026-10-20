@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,6 +31,8 @@
 <p><strong>一句话定义</strong>：把一个复杂任务拆解为一串顺序执行的提示步骤，每步只做一件事，上一步的结构化输出作为下一步的输入。
 <strong>解决什么问题</strong>：单条提示任务过载导致质量崩塌、错误无法定位 ｜ <strong>适用场景</strong>：流程固定、步骤可枚举的多阶段任务（抽取→校验→总结、大纲→撰写→润色）｜ <strong>核心机制</strong>：步骤单一职责 + 结构化中间结果 + 逐步校验与重试 ｜ <strong>代价</strong>：延迟线性叠加、错误会沿链条传播、步骤接口需要人工设计。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　提示链把一条装不下的大提示拆成**只做一件事**的顺序小步骤：前一步的 JSON 输出经校验后注入下一步，程序串联流程，模型只管单步。三步上手：先定每步输入输出 schema → 再写提示并做结构校验（失败带错误反馈重试）→ 最后检查点落盘支持断点重跑。换来的是错误可定位、每步可测试；代价是延迟线性叠加。**步骤边界无法稳定枚举、或单步已够可靠**时别用——链外 if-else 一多，说明你需要的是路由或规划。</div>
+
 <h2 id="11-模式概述">1.1 模式概述</h2>
 <h3 id="111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</h3>
 <p>给一个大模型下达这样一条指令："阅读这份 50 页的合同，抽取全部关键条款，对每条做法律风险评估，输出中文摘要，再翻译成英文。"这条提示几乎注定失败，但失败的方式值得拆开看。第一，注意力稀释：模型要在一次前向计算中同时照顾抽取的完整性、评估的专业性、摘要的凝练与翻译的忠实，任何两种要求发生冲突时它只能随机取舍。第二，错误不可归因：输出里金额抄错了一个数，你分不清是抽取错了、评估时看错了还是摘要时手滑了，唯一的调试手段是整条重跑。第三，上下文挤占：50 页原文加上四类任务的说明与输出示例，轻松挤爆上下文窗口，模型被迫"省着记"，遗漏成为常态。</p>
@@ -37,11 +40,23 @@
 <h3 id="112-核心机制它如何工作">1.1.2 核心机制：它如何工作</h3>
 <p>一个提示链由三样东西构成：步骤序列、步骤间的数据契约、以及穿插其间的校验点。执行时程序按顺序调用模型：第一步的提示里包含原始输入与本步的输出格式要求（通常是 JSON schema）；模型返回后，程序先做结构校验（字段齐全吗、类型对吗、枚举值合法吗），通过则把结果写入一个逐步增长的状态对象，再把其中本步需要的部分注入下一步的提示。校验失败则携带错误信息重试，重试预算耗尽就走失败路径——终止链条并报警，或者降级用保守默认值。</p>
 <p>两个设计要点决定了链条的成败。其一，每步必须单一职责：一步只承载一类判断，判断标准可以在提示里写清楚、在输出里验证清楚。其二，中间结果必须结构化且自包含：步骤之间不共享对话历史，每个提示都要把"它需要知道的一切"显式带进来——这既是链可靠的前提，也是它可调试的原因：任何一步的输入输出都能单独取出来人工检查。</p>
+<div class="mermaid">flowchart LR
+    IN["原始输入"] --> S1["步骤 1：字段抽取"]
+    S1 --> V1{"结构校验"}
+    V1 -->|"通过"| S2["步骤 2：风险检查"]
+    S2 --> V2{"结构校验"}
+    V2 -->|"通过"| S3["步骤 3：摘要生成"]
+    S3 --> OUT["最终输出"]
+    V1 -->|"失败，重试未耗尽"| S1
+    V2 -->|"失败，重试未耗尽"| S2
+    V1 -->|"重试耗尽"| FAIL["fail-fast 终止"]
+    V2 -->|"重试耗尽"| FAIL</div>
+<div class="fig-caption">图 1-1：提示链的执行结构——每个步骤单一职责，步骤之间隔着结构校验门；校验失败带错误反馈重试，重试预算耗尽即走 fail-fast 失败路径，绝不把未校验的中间结果传给下游。</div>
 <h3 id="113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</h3>
-<p>提示链是多数其他模式的骨架。路由（第 2 章）决定"进哪条链"或在链中选择分支；并行化（第 3 章）让链的某些环节扇出并发再汇合；反思（第 4 章）本质上是在链尾追加"自查并修订"的步骤；规划（第 6 章）生成的计划，落实时往往就是一条动态生成的链；异常处理（第 12 章）给链上每个步骤加装重试与回滚。反过来说，当你发现自己在链外写大量 if-else 决定"下一步跑不跑、跑哪个"，那是路由或规划的职责范围到了，不该再往链里硬塞。Anthropic 的分类法把提示链列为最基础的工作流模式，其他工作流几乎都是它的组合与变奏。</p>
+<p>提示链是多数其他模式的骨架。路由（第 2 章）决定"进哪条链"或在链中选择分支；并行化（第 3 章）让链的某些环节扇出并发再汇合；反思（第 4 章）本质上是在链尾追加"自查并修订"的步骤；规划（第 6 章）生成的计划，落实时往往就是一条动态生成的链；异常处理（第 12 章）给链上每个步骤加装重试与回滚。反过来说，当你发现自己在链外写大量 if-else 决定"下一步跑不跑、跑哪个"，那是路由或规划的职责范围到了，不该再往链里硬塞。<a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic 的分类法</a>把提示链列为最基础的工作流模式，其他工作流几乎都是它的组合与变奏。</p>
 <h2 id="12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</h2>
 <p>提示链的学术源头是 2022 年谷歌研究团队的两篇工作。思维链（Chain-of-Thought, CoT）证明：让模型在给出答案前显式写出中间推理步骤，可以大幅提升复杂推理任务的可靠性——这确立了"把一个大问题摊开成多个中间步骤"的价值。同年五月的 Least-to-Most Prompting 则更进一步：先把问题分解为一系列由简到繁的子问题，再按顺序逐个求解，后一个子问题可以使用前面子问题的答案。它就是"分解 + 顺序求解 + 中间结果传递"这一结构的直接原型，与本章的模式只差"由程序编排"这一层工程外皮。</p>
-<p>工程化发生在 2022 年 10 月 LangChain 开源发布之后。LangChain 把 chain 做成一等公民——顺序组合、管道传递、可插拔的组件，让"链"从一个论文里的实验设置变成了每个工程师信手可得的构件。2023 年 6 月 OpenAI 上线 function calling、8 月上线 JSON mode，解决了链条最疼的接口问题：模型可以按 schema 稳定输出结构化数据，步骤间的数据契约第一次有了工程保障。2024 年 12 月 Anthropic《Building Effective Agents》把 Prompt Chaining 正式列为最基础的工作流模式，完成了从论文技巧到行业共识的定名。</p>
+<p>工程化发生在 2022 年 10 月 <a href="https://docs.langchain.com">LangChain</a> 开源发布之后。LangChain 把 chain 做成一等公民——顺序组合、管道传递、可插拔的组件，让"链"从一个论文里的实验设置变成了每个工程师信手可得的构件。2023 年 6 月 OpenAI 上线 function calling、8 月上线 JSON mode，解决了链条最疼的接口问题：模型可以按 schema 稳定输出结构化数据，步骤间的数据契约第一次有了工程保障。2024 年 12 月 <a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic《Building Effective Agents》</a>把 Prompt Chaining 正式列为最基础的工作流模式，完成了从论文技巧到行业共识的定名。</p>
 <table>
 <thead>
 <tr>
@@ -56,25 +71,25 @@
 <td>2022-01</td>
 <td>思维链（CoT）：写出中间推理步骤，复杂推理可靠性显著提升</td>
 <td>Wei 等，Google Research</td>
-<td>arXiv:2201.11903，NeurIPS 2022</td>
+<td><a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a>，NeurIPS 2022</td>
 </tr>
 <tr>
 <td>2022-05</td>
 <td>Least-to-Most Prompting：分解为子问题、由简到繁依次求解</td>
 <td>Zhou 等，Google Research</td>
-<td>arXiv:2205.10625，ICLR 2023</td>
+<td><a href="https://arxiv.org/abs/2205.10625">arXiv:2205.10625</a>，ICLR 2023</td>
 </tr>
 <tr>
 <td>2022-10</td>
 <td>LangChain 开源发布，把 chain 做成可组合的工程对象</td>
 <td>Harrison Chase，LangChain</td>
-<td>GitHub 开源项目</td>
+<td><a href="https://docs.langchain.com">GitHub 开源项目 / 官方文档</a></td>
 </tr>
 <tr>
 <td>2023-06</td>
 <td>OpenAI 上线 function calling，模型按 schema 输出结构化调用参数</td>
 <td>OpenAI</td>
-<td>官方 API 公告</td>
+<td><a href="https://platform.openai.com/docs/guides/function-calling">官方 API 指南</a></td>
 </tr>
 <tr>
 <td>2023-08</td>
@@ -86,7 +101,7 @@
 <td>2024-12</td>
 <td>《Building Effective Agents》将 Prompt Chaining 列为最基础的工作流模式</td>
 <td>Anthropic</td>
-<td>官方工程博客</td>
+<td><a href="https://www.anthropic.com/engineering/building-effective-agents">官方工程博客</a></td>
 </tr>
 </tbody>
 </table>
@@ -103,6 +118,10 @@
 <li><strong>代码变更流水线</strong>：需求澄清→实现方案→代码生成→测试用例生成。把"写代码"和"写测试"拆开，避免同一次生成里测试迁就实现的自我印证。</li>
 <li><strong>多语种发布流水线</strong>：翻译→术语一致性检查→目标语言风格润色。术语检查步骤持有术语表并逐条比对，是典型的"带外部知识的小步骤"。</li>
 </ul>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Dify（开源 LLM 应用开发平台）的可视化工作流</strong>。Dify 的 Workflow 与 Chatflow 让用户在画布上把 LLM 节点、代码节点、知识检索节点按序连线，前一个节点的输出变量经显式引用注入下一个节点的提示，官方文档将这一定位为"用结构化、可重复的过程编排模型、工具与逻辑"。节点级配置提供失败重试、错误分支与 fail-fast 三种错误处理策略——正是本章"步骤契约 + 校验 + 失败路径"的低代码形态。（来源：Dify 官方文档，<a href="https://docs.dify.ai/en/use-dify/build/workflow-chatflow">https://docs.dify.ai/en/use-dify/build/workflow-chatflow</a>）</p>
+<p><strong>扣子（Coze）工作流</strong>。扣子官方文档说明工作流"通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排"，推荐用于步骤较多、对输出准确性与格式有严格要求的场景（如旅行规划、报告分析）；其大模型节点支持指定 JSON 输出格式并引用上游节点的输出参数，节点异常时可配置重试、返回设定内容或转入异常分支，与本章的结构化中间结果与显式失败路径设计一一对应。（来源：扣子官方文档，<a href="https://www.coze.cn/open/docs/guides/agent_workflow">https://www.coze.cn/open/docs/guides/agent_workflow</a>）</p>
+<p><strong>Anthropic《Building Effective Agents》中的 Prompt Chaining</strong>。Anthropic 2024 年 12 月的工程指南把提示链列为五种基础工作流之首：把任务分解为顺序 LLM 调用，并在中间步骤插入程序化检查门（gate）确认流程仍在正轨；官方给出的典型用法是"生成营销文案→翻译成不同语言"与"写文档大纲→检查大纲是否达标→按大纲成文"。Anthropic 同时明确这是以延迟换准确率的交易，只适合能干净分解为固定子任务的情况。（来源：<a href="https://www.anthropic.com/engineering/building-effective-agents">https://www.anthropic.com/engineering/building-effective-agents</a>）</p>
 <h2 id="15-深度讲解">1.5 深度讲解</h2>
 <p><strong>机制细节：步骤边界的划分。</strong> 划分步骤有一条可操作的经验法则：如果一个提示里需要向模型解释两类彼此独立的质量标准，就该拆。比如"抽取金额并判断该条款是否对己方不利"，抽取的正确标准是"与原文一致"，判断的标准是"商业语义"，两套标准塞在一个提示里，模型就会顾此失彼。拆开的反向检验是中间数据的体积：如果步骤 A 传给步骤 B 的中间 JSON 比 A 的最终输出还长，说明拆得过碎，接口成本已经吃掉收益，应该合并。步骤接口应当先于提示设计——先写清楚每步输入输出的 schema，再写提示正文，顺序反了很容易滑向"每步都在即兴发挥"。</p>
 <p><strong>机制细节：中间表示与上下文裁剪。</strong> 步骤间传递什么，比步骤怎么写更重要。默认原则是最小传递：只传下游需要的字段，不传整个中间结果，更不传原始全文。但有两个例外。一是溯源需要：当下游输出需要引用原文位置（如"第 7 条第 2 款"），上游就必须保留引用锚点字段，否则下游只能编造引用。二是语义完整性：抽取"风险条款"时如果只传风险条款本身，评估步骤就失去了上下文对比的对象（同一个条款，在没有免责条款保护时是高风险，有保护时是中风险），此时应传"风险条款 + 关联条款"。上下文裁剪的本质是在成本与信息完整性之间逐字段权衡，没有普适答案，只有可辩护的取舍。</p>
@@ -475,12 +494,33 @@ if __name__ == &quot;__main__&quot;:
 <li>链外的 if-else 多到说不清执行路径时，说明你需要的是路由或规划，不是更长的链。</li>
 </ul>
 <h3 id="173-结论">1.7.3 结论</h3>
-<p>提示链是智能体工程里的"函数分解"：朴素、古老、却撑起了几乎所有可靠系统的第一层骨架。它的全部技巧在于克制——克制拆分的粒度，克制每步传递的信息，克制对动态性的欲望。先用链把流程跑通并让每一步都可验证，你的系统就有了被继续优化的资格。</p></div>
+<p>提示链是智能体工程里的"函数分解"：朴素、古老、却撑起了几乎所有可靠系统的第一层骨架。它的全部技巧在于克制——克制拆分的粒度，克制每步传递的信息，克制对动态性的欲望。先用链把流程跑通并让每一步都可验证，你的系统就有了被继续优化的资格。</p>
+<h2 id="18-延伸阅读与参考链接">1.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>思维链提示（Chain-of-Thought Prompting），Wei et al., Google Research, 2022，NeurIPS 2022：<a href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a></li>
+<li>Least-to-Most Prompting（由简到繁的分解式求解），Zhou et al., Google Research, 2022，ICLR 2023：<a href="https://arxiv.org/abs/2205.10625">arXiv:2205.10625</a></li>
+<li>ReAct：语言模型推理与行动的协同（提示链通往工具使用的桥梁），Yao et al., 2022，ICLR 2023：<a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li>LangChain 官方文档（LCEL 链式组合与 RunnablePassthrough.assign 状态增长）：<a href="https://docs.langchain.com">https://docs.langchain.com</a></li>
+<li>LangGraph 官方文档（以状态图表达步骤编排与条件流转）：<a href="https://langchain-ai.github.io/langgraph/">https://langchain-ai.github.io/langgraph/</a></li>
+<li>OpenAI function calling 指南（步骤间数据契约的工程保障）：<a href="https://platform.openai.com/docs/guides/function-calling">https://platform.openai.com/docs/guides/function-calling</a></li>
+<li>CrewAI 官方文档（多步任务编排的另一种框架表达）：<a href="https://docs.crewai.com">https://docs.crewai.com</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>Anthropic《Building Effective Agents》（Prompt Chaining 官方定名与 gate 设计）：<a href="https://www.anthropic.com/engineering/building-effective-agents">https://www.anthropic.com/engineering/building-effective-agents</a></li>
+<li>Dify Workflow &amp; Chatflow 官方文档（可视化节点串联与错误处理策略）：<a href="https://docs.dify.ai/en/use-dify/build/workflow-chatflow">https://docs.dify.ai/en/use-dify/build/workflow-chatflow</a></li>
+<li>扣子（Coze）工作流官方文档（大模型节点 JSON 输出与异常分支）：<a href="https://www.coze.cn/open/docs/guides/agent_workflow">https://www.coze.cn/open/docs/guides/agent_workflow</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch00-preface.html"><span class="pager-dir">← 上一章</span><span class="pager-title">前言</span></a><a class="pager" href="../chapters/ch02-routing.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第2章 路由</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#11-模式概述">1.1 模式概述</a></li><li class="toc-l3"><a href="#111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#112-核心机制它如何工作">1.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#14-实际应用与案例">1.4 实际应用与案例</a></li><li class="toc-l2"><a href="#15-深度讲解">1.5 深度讲解</a></li><li class="toc-l2"><a href="#16-工程落地实践代码示例">1.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#161-框架无关实现完整可运行">1.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#162-框架集成实现langchain-lcel">1.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#163-生产化改造清单">1.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#171-本章小结">1.7.1 本章小结</a></li><li class="toc-l3"><a href="#172-核心要点">1.7.2 核心要点</a></li><li class="toc-l3"><a href="#173-结论">1.7.3 结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#11-模式概述">1.1 模式概述</a></li><li class="toc-l3"><a href="#111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#112-核心机制它如何工作">1.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#14-实际应用与案例">1.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#15-深度讲解">1.5 深度讲解</a></li><li class="toc-l2"><a href="#16-工程落地实践代码示例">1.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#161-框架无关实现完整可运行">1.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#162-框架集成实现langchain-lcel">1.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#163-生产化改造清单">1.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#171-本章小结">1.7.1 本章小结</a></li><li class="toc-l3"><a href="#172-核心要点">1.7.2 核心要点</a></li><li class="toc-l3"><a href="#173-结论">1.7.3 结论</a></li><li class="toc-l2"><a href="#18-延伸阅读与参考链接">1.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

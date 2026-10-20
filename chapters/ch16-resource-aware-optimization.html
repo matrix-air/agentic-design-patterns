@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,6 +31,8 @@
 <p><strong>一句话定义</strong>：把每次请求的质量、成本与延迟当作显式调度的三样资源，通过级联升级、模型分级、多级缓存、上下文瘦身与批处理错峰，在 SLO 约束下用最少资源买到合格质量。
 <strong>解决什么问题</strong>：全量请求都用最强模型时成本失控、延迟超标，一刀切降配又伤质量 ｜ <strong>适用场景</strong>：推理成本占比高、延迟敏感、上下文膨胀、模型选型困难的生产智能体 ｜ <strong>核心机制</strong>：质量-成本-延迟三角权衡；级联置信升级 + 分级模型池 + 缓存命中 + 按优先级裁剪上下文 + 批处理错峰 ｜ <strong>代价</strong>：架构复杂度上升，升级判据失灵会静默伤质量，缓存有陈旧与串户泄漏风险。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　把每次请求的质量、成本、延迟当成可调度资源：级联让便宜模型先答、置信度不达标才升级贵模型；缓存（精确/语义/提示前缀）把重复流量打到接近零；上下文按"先历史、再工具、再检索"瘦身；离线任务走批处理半价。三步落地：先建按请求记账的成本账本，再定每类请求的 SLO，最后上**级联与缓存**。何时别用：月账单不值一台服务器、或还没有质量底线可依——先建账本，调度不必先行。</div>
+
 <h2 id="161-模式概述">16.1 模式概述</h2>
 <h3 id="1611-问题背景为什么需要这个模式">16.1.1 问题背景：为什么需要这个模式</h3>
 <p>一个日调用百万次的客服智能体，如果把每条请求都交给最强模型，账单会以肉眼可见的速度侵蚀整条产品线的毛利；如果为了省钱统一换成小模型，复杂问题的解决率立刻下滑，投诉转人工率上涨——省下的推理费又从人工成本里加倍还了回去。这不是个别团队的困境，而是 LLM 应用 economics 的结构性矛盾：<strong>最强模型贵而慢，最弱模型便宜而快，而真实流量里任务的难度分布高度不均</strong>——多数请求是"查个状态、报个时间"，少数请求才真正需要深度推理。一刀切的处理方式，要么为简单请求支付奢侈品价格，要么让困难请求承受劣质答案。</p>
@@ -37,10 +40,22 @@
 <h3 id="1612-核心机制它如何工作">16.1.2 核心机制：它如何工作</h3>
 <p>资源感知优化不是单一技术，而是一组作用于请求生命周期不同阶段的调度机制，共同受一份显式的 SLO（质量底线、成本上限、延迟目标）约束。<strong>级联（cascade）</strong>作用于请求入口之后：便宜模型先答，答案通过置信度评估与机械校验就采纳，不通过则升级到更贵的模型重答——把"该花多少钱"的决定推迟到"看过问题难度之后"。<strong>模型分级</strong>作用于基础设施层：把可用模型按能力、价格、延迟组织成 frontier / standard / mini 三档池，级联与路由（第 2 章）都在这个池子上调度。<strong>缓存</strong>作用于重复流量：完全相同的问询走精确缓存，语义相近的问询走相似度缓存，固定前缀（系统提示、工具定义）走供应商的提示缓存，命中即免掉大部分推理成本。<strong>上下文瘦身</strong>作用于每次调用的打包阶段：按"先裁历史、再裁工具、再裁检索"的优先级把上下文压到必要体积，必要时用压缩模型做有损摘要。<strong>批处理与错峰</strong>作用于时间维度：无实时性要求的任务（夜间报告、数据标注、回填）走批处理接口半价执行，把流量从高峰挪到低谷。</p>
 <p>这些机制共享同一套记账基础：每个请求记录用了哪个模型、多少 token、缓存是否命中、是否升级，成本与质量数据汇入同一张账本。没有账本，一切优化都是猜；有了账本，"级联拦截率、缓存命中率、P95 延迟、每请求均价"才成为可以优化的数字。</p>
+<div class="mermaid">flowchart TD
+    Q["用户查询"] --> C{"缓存命中？精确 / 语义"}
+    C -->|"命中"| RET["返回缓存答案"]
+    C -->|"未命中"| MINI["mini 档先答 + 自评置信度"]
+    MINI --> GATE{"机械校验 + 置信度达标？"}
+    GATE -->|"达标"| OK["采纳返回"]
+    GATE -->|"不达标"| FRONT["升级 frontier 档重答"]
+    FRONT --> FINAL["校验后返回"]
+    RET --> LEDGER["成本账本：模型 / token / 命中 / 升级"]
+    OK --> LEDGER
+    FINAL --> LEDGER</div>
+<div class="fig-caption">图 16-1：资源感知级联的骨架——查询先过缓存，mini 档先答并以"自评置信度 + 机械校验"把关，不达标才升级 frontier，每条路径都写进成本账本。</div>
 <h3 id="1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</h3>
 <p>级联是<strong>路由</strong>（第 2 章）的运行时形态：路由按先验特征分流，级联按"处理得怎么样"的事后证据升降舱，两者常叠加成"入口粗分流 + 通道内级联"的两级结构。上下文瘦身与<strong>记忆</strong>（第 8 章）共享同一批手段（摘要、淘汰、压缩），差别在目的：记忆为长期效果存取，瘦身只为本次调用减负。降级（第 12 章）是资源优化在故障态的极端形式——容量不足时主动降低服务等级保可用性。级联的置信评估借用了<strong>反思</strong>（第 4 章）的自评技术，批处理的任务编排复用<strong>并行化</strong>（第 3 章）的模式。最后，一切优化必须有<strong>评估</strong>（第 19 章）兜底：省下的每一分钱，都要用"质量没有跌破底线"的证据来换。</p>
 <h2 id="162-起源与历史最早是谁提出来的">16.2 起源与历史：最早是谁提出来的</h2>
-<p>"用更少的计算换同样的能力"比大模型老得多。2015 年 Hinton 等人的知识蒸馏给出了这条路线的训练期原型：大模型的输出分布里含有比硬标签更多的"暗知识"，让小模型去模仿它，小模型就能获得远超其体量的表现——这为后来一切"小模型替大模型干活"的方案提供了理论地基。2022 年 Leviathan 等人的投机解码把效率做到了解码期：小草稿模型连猜多个 token，大模型一次并行验证，数学上保证输出分布不变而速度提升数倍。2023 年成为系统级优化的爆发年：GPTCache 把语义缓存变成通用组件，FrugalGPT 用严格实验回答了"级联到底能省多少"——把 Q&amp;A 任务的成本降到约 1/88 而保持 GPT-4 级精度，vLLM 用分页 KV 管理把服务吞吐提升 2~4 倍，LLMLingua 则证明上下文本身也是可压缩的资源。2024 年起，头部供应商把优化内化成平台能力：批处理半价、提示缓存自动折扣，工程师从"自己造轮子"转向"选对开关"。</p>
+<p>"用更少的计算换同样的能力"比大模型老得多。2015 年 Hinton 等人的知识蒸馏给出了这条路线的训练期原型：大模型的输出分布里含有比硬标签更多的"暗知识"，让小模型去模仿它，小模型就能获得远超其体量的表现——这为后来一切"小模型替大模型干活"的方案提供了理论地基。2022 年 Leviathan 等人的投机解码把效率做到了解码期：小草稿模型连猜多个 token，大模型一次并行验证，数学上保证输出分布不变而速度提升数倍。2023 年成为系统级优化的爆发年：<a href="https://github.com/zilliztech/GPTCache">GPTCache</a> 把语义缓存变成通用组件，FrugalGPT 用严格实验回答了"级联到底能省多少"——把 Q&amp;A 任务的成本降到约 1/88 而保持 GPT-4 级精度，<a href="https://github.com/vllm-project/vllm">vLLM</a> 用分页 KV 管理把服务吞吐提升 2~4 倍，<a href="https://github.com/microsoft/LLMLingua">LLMLingua</a> 则证明上下文本身也是可压缩的资源。2024 年起，头部供应商把优化内化成平台能力：批处理半价、提示缓存自动折扣，工程师从"自己造轮子"转向"选对开关"。</p>
 <table>
 <thead>
 <tr>
@@ -55,67 +70,67 @@
 <td>2015-03</td>
 <td>知识蒸馏：大模型的"暗知识"可压缩进小模型，确立训练期降本路线</td>
 <td>Hinton、Vinyals、Dean（Google）</td>
-<td>arXiv:1503.02531</td>
+<td><a href="https://arxiv.org/abs/1503.02531">arXiv:1503.02531</a></td>
 </tr>
 <tr>
 <td>2022-11</td>
 <td>投机解码：草稿模型起草、大模型并行验证，输出分布不变而加速 2~3 倍</td>
 <td>Leviathan 等（Google）</td>
-<td>arXiv:2211.17192，ICML 2023</td>
+<td><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a>，ICML 2023</td>
 </tr>
 <tr>
 <td>2023-03</td>
 <td>GPTCache 开源：LLM 语义缓存成为通用组件</td>
 <td>Zilliz 主导</td>
-<td>GitHub 开源项目</td>
+<td><a href="https://github.com/zilliztech/GPTCache">GitHub 开源项目</a></td>
 </tr>
 <tr>
 <td>2023-05</td>
 <td>FrugalGPT：级联把 Q&amp;A 成本降到约 1/88 而保持 GPT-4 级精度</td>
 <td>Chen、Zaharia、Zou（斯坦福）</td>
-<td>arXiv:2305.05176</td>
+<td><a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></td>
 </tr>
 <tr>
 <td>2023-09</td>
 <td>vLLM（PagedAttention）：分页 KV 管理提升服务吞吐 2~4 倍</td>
 <td>Kwon 等（UC Berkeley）</td>
-<td>arXiv:2309.06180，SOSP 2023</td>
+<td><a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a>，SOSP 2023</td>
 </tr>
 <tr>
 <td>2023-10</td>
 <td>LLMLingua 提示压缩：用小模型裁剪上下文，论文报告最高约 20 倍</td>
 <td>Jiang 等（微软）</td>
-<td>arXiv:2310.05736，ACL 2024</td>
+<td><a href="https://arxiv.org/abs/2310.05736">arXiv:2310.05736</a>，ACL 2024</td>
 </tr>
 <tr>
 <td>2023 起</td>
 <td>OpenRouter 提供多厂商模型统一接入、计费与路由的网关服务</td>
 <td>OpenRouter</td>
-<td>官方文档</td>
+<td><a href="https://openrouter.ai/docs">官方文档</a></td>
 </tr>
 <tr>
 <td>2024-04</td>
 <td>OpenAI Batch API 上线：异步批处理任务半价计费</td>
 <td>OpenAI</td>
-<td>官方公告</td>
+<td><a href="https://platform.openai.com/docs/guides/batch">官方文档</a></td>
 </tr>
 <tr>
 <td>2024-06</td>
 <td>RouteLLM：偏好数据训练的路由器，同等质量下成本降约 2~3 倍</td>
 <td>LMSYS</td>
-<td>arXiv:2406.18665</td>
+<td><a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></td>
 </tr>
 <tr>
 <td>2024-08</td>
 <td>Anthropic Prompt Caching 正式可用：提示前缀缓存成为平台能力</td>
 <td>Anthropic</td>
-<td>官方文档</td>
+<td><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">官方文档</a></td>
 </tr>
 <tr>
 <td>2024-10</td>
 <td>OpenAI 自动提示缓存：命中前缀自动折扣，无需改造代码</td>
 <td>OpenAI</td>
-<td>官方文档</td>
+<td><a href="https://platform.openai.com/docs/guides/prompt-caching">官方文档</a></td>
 </tr>
 </tbody>
 </table>
@@ -131,9 +146,13 @@
 <li><strong>文档批量处理的错峰账单</strong>：数千份合同的夜间抽取任务走 Batch API 半价执行，24 小时完成窗口对报表场景毫无损失；只有用户实时上传的单份合同走同步链路。关键设计点：批处理与实时链路要用同一套输出校验，半价不等于低质。</li>
 <li><strong>RAG 问答的语义缓存</strong>：知识库问答中大量问题高度相似，GPTCache 式的相似度缓存把"怎么退款""退款怎么操作"合并为一次检索与生成。关键设计点：缓存键要带知识库版本号，知识更新即失效，否则答案停在旧世界。</li>
 <li><strong>长会话助手的提示缓存</strong>：系统提示加工具定义约 4000 token，每轮对话都重复付费；启用供应商前缀缓存后命中部分按大幅折扣计费，长会话的输入成本近乎腰斩。关键设计点：把易变内容放到提示末尾，保持前缀稳定，缓存才有命中率。</li>
-<li><strong>多租户网关的统一路由</strong>：平台侧用 OpenRouter 式网关统一接入多家模型，按租户等级、任务类型与当期价格路由，单家供应商故障时沿备选列表自动切换。关键设计点：网关层做失败转移，业务层完全不感知模型切换。</li>
+<li><strong>多租户网关的统一路由</strong>：平台侧用 <a href="https://openrouter.ai">OpenRouter</a> 式网关统一接入多家模型，按租户等级、任务类型与当期价格路由，单家供应商故障时沿备选列表自动切换。关键设计点：网关层做失败转移，业务层完全不感知模型切换。</li>
 <li><strong>端侧助手的蒸馏与投机解码</strong>：手机端部署蒸馏后的小模型处理唤醒词理解与草稿生成，联网时才调用云端大模型；本地解码用投机解码提速。关键设计点：离线小模型的能力边界要显式声明，避免用户把草稿当终稿。</li>
 </ul>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Cursor 的 Auto 模型选档</strong>。AI 代码编辑器 Cursor 长期提供 Auto 档——用户不指定模型时，由平台按"任务适配度与可靠性"自动选型（<a href="https://cursor.com/docs/account/pricing">官方文档</a>）；2026 年 7 月其演化为 Cursor Router，按请求对任务类型与复杂度分类，把简单编辑路由给高性价比模型、困难长任务交给前沿推理模型，并提供 Cost / Balance / Intelligence 三档优化目标，官方公告报告企业实测成本较全量使用前沿模型降低 30~60%（<a href="https://cursor.com/changelog/router">官方 changelog</a>）。这是<strong>级联路由从团队的工程实践变成产品默认开关</strong>的标志。</p>
+<p><strong>GitHub Copilot 的多模型选择器</strong>。2024 年 10 月 GitHub Universe 大会上，GitHub 宣布 Copilot 从单一 GPT 模型转向多模型：开发者可在 VS Code 与 github.com 的 Copilot Chat 中按任务从 Claude 3.5 Sonnet、Gemini 1.5 Pro、GPT-4o、o1-preview、o1-mini 里选型，组织管理员可管控团队成员可用的模型清单（<a href="https://github.blog/jp/2024-10-30-press-releases-github-universe-2024/">官方公告</a>）。CEO Dohmke 的表述——"没有单一模型能适用于所有场景"——正是模型分级（frontier / standard / mini）思想在亿级用户产品上的落地。</p>
+<p><strong>LiteLLM 企业网关与 OpenRouter 聚合流量</strong>。开源 LLM 网关 <a href="https://www.litellm.ai/customers">LiteLLM</a> 的公开客户页记载：NVIDIA 工程师用它把 100 多个模型端点收敛为单一访问层，Netflix 团队称新模型接入从数小时改造缩短到一天内，Okta 换后端模型只需改网关配置而不触发新的安全评审，AT&amp;T 数据办公室报告编码类 AI 任务成本最多下降 56%。作为对照面，<a href="https://openrouter.ai/rankings">OpenRouter 的公开用量榜</a>按经 API 处理的 token 量实时排名数百万开发者的真实流量——<strong>聚合路由与统一计费已成多模型时代的公共基础设施</strong>（开源仓库：<a href="https://github.com/BerriAI/litellm">github.com/BerriAI/litellm</a>）。</p>
 <h2 id="165-深度讲解">16.5 深度讲解</h2>
 <h3 id="1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</h3>
 <p>三个目标互为汇率：更强模型换来质量、付出成本与延迟；更大缓存换来延迟与成本、付出新鲜度风险；更长思考换来质量、付出延迟与 token。资源感知优化不承诺"三者全要"，它承诺的是<strong>让每次交换发生在汇率最有利的地方</strong>。把这件事从口头变成工程，靠的是每类请求一份显式 SLO：质量底线（如"抽取消息字段准确率 ≥ 98%"）、延迟目标（P95 ≤ 3 秒）、成本上限（每请求均价 ≤ x 元）。SLO 的真正作用是划定<strong>不可交易区</strong>：质量底线以下的省钱是亏损——错误答案的下游处理成本（返工、投诉、人工）远超省下的推理费。工程上常见的错误是把三角当成静态配置；正确的做法是按请求类别分别设定——闲聊类请求的质量底线可以低、成本目标必须狠，支付类请求恰好相反——并在流量结构变化时重新校准。</p>
@@ -453,12 +472,35 @@ if __name__ == &quot;__main__&quot;:
 <li>账本先行：每请求的模型、token、命中、升级记录是一切优化的前置条件。</li>
 </ul>
 <h3 id="1673-结论">16.7.3 结论</h3>
-<p>资源感知优化的本质，是承认"所有请求生而平等"是成本结构上最昂贵的假设。级联、分级、缓存、瘦身、批处理五种机制共同把一份计算送到边际收益最大的位置——简单请求安静地走便宜通道，困难请求自动获得更强算力，重复问题直接命中记忆。这套机制不制造智能，它制造的是<strong>让智能可负担的汇率</strong>；而维护这个汇率的，是账本的诚实、判据的独立与对质量底线的敬畏。</p></div>
+<p>资源感知优化的本质，是承认"所有请求生而平等"是成本结构上最昂贵的假设。级联、分级、缓存、瘦身、批处理五种机制共同把一份计算送到边际收益最大的位置——简单请求安静地走便宜通道，困难请求自动获得更强算力，重复问题直接命中记忆。这套机制不制造智能，它制造的是<strong>让智能可负担的汇率</strong>；而维护这个汇率的，是账本的诚实、判据的独立与对质量底线的敬畏。</p>
+<h2 id="168-延伸阅读与参考链接">16.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>Hinton、Vinyals、Dean. Distilling the Knowledge in a Neural Network（2015）：知识蒸馏开山之作。<a href="https://arxiv.org/abs/1503.02531">arXiv:1503.02531</a></li>
+<li>Leviathan 等. Fast Inference from Transformers via Speculative Decoding（2022）：投机解码。<a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a></li>
+<li>Chen、Zaharia、Zou. FrugalGPT: How to Use Large Language Models While Lowering Cost and Improving Performance（2023）：级联省钱的数量级实验。<a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></li>
+<li>Kwon 等. Efficient Memory Management for LLM Serving with PagedAttention（2023）：vLLM。<a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a></li>
+<li>Jiang 等. LLMLingua: Compressing Prompts for Accelerated Inference（2023）：提示压缩。<a href="https://arxiv.org/abs/2310.05736">arXiv:2310.05736</a></li>
+<li>LMSYS. RouteLLM: Learning to Route LLMs with Preference Data（2024）：学习式路由器。<a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li><a href="https://openrouter.ai">OpenRouter</a>：多厂商模型统一网关与计费；<a href="https://openrouter.ai/rankings">公开用量榜</a>按经 API 处理的真实 token 量排名。</li>
+<li><a href="https://platform.openai.com/docs/guides/batch">OpenAI Batch API</a> 与 <a href="https://platform.openai.com/docs/guides/prompt-caching">Prompt Caching</a>：批处理半价与自动前缀缓存折扣的平台开关；<a href="https://openai.com/api/pricing/">定价页</a>。</li>
+<li><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Anthropic Prompt Caching</a>：前缀缓存的设计要点与计费折扣说明。</li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>Cursor：<a href="https://cursor.com/docs/account/pricing">模型与定价文档（Auto 档）</a>、<a href="https://cursor.com/changelog/router">Cursor Router 公告</a>（2026-07）。</li>
+<li>GitHub：<a href="https://github.blog/jp/2024-10-30-press-releases-github-universe-2024/">Universe 2024 多模型 Copilot 官方公告</a>（2024-10-29）。</li>
+<li>LiteLLM：<a href="https://www.litellm.ai/customers">客户案例页</a>（NVIDIA / Netflix / Okta / AT&amp;T）；开源仓库 <a href="https://github.com/BerriAI/litellm">github.com/BerriAI/litellm</a>。</li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch15-agent-communication-a2a.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第15章 智能体间通信</span></a><a class="pager" href="../chapters/ch17-reasoning-techniques.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第17章 推理技术</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#161-模式概述">16.1 模式概述</a></li><li class="toc-l3"><a href="#1611-问题背景为什么需要这个模式">16.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1612-核心机制它如何工作">16.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#162-起源与历史最早是谁提出来的">16.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#163-发挥的作用为什么重要">16.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#164-实际应用与案例">16.4 实际应用与案例</a></li><li class="toc-l2"><a href="#165-深度讲解">16.5 深度讲解</a></li><li class="toc-l3"><a href="#1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</a></li><li class="toc-l3"><a href="#1652-级联与置信度升级frugalgpt-的账怎么算">16.5.2 级联与置信度升级：FrugalGPT 的账怎么算</a></li><li class="toc-l3"><a href="#1653-模型分级frontier-standard-mini-的档位设计">16.5.3 模型分级：frontier / standard / mini 的档位设计</a></li><li class="toc-l3"><a href="#1654-缓存命中率经济学">16.5.4 缓存命中率经济学</a></li><li class="toc-l3"><a href="#1655-上下文瘦身的优先级先历史再工具再检索">16.5.5 上下文瘦身的优先级：先历史、再工具、再检索</a></li><li class="toc-l3"><a href="#1656-批处理与错峰">16.5.6 批处理与错峰</a></li><li class="toc-l3"><a href="#1657-失效模式反模式与何时不要用">16.5.7 失效模式、反模式与何时不要用</a></li><li class="toc-l2"><a href="#166-工程落地实践代码示例">16.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1661-框架无关实现完整可运行">16.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1662-框架集成实现openai-兼容客户端openrouter-风格的多模型统一路由">16.6.2 框架集成实现（OpenAI 兼容客户端：OpenRouter 风格的多模型统一路由）</a></li><li class="toc-l3"><a href="#1663-生产化改造清单">16.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#167-概览-核心要点-结论">16.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1671-本章小结">16.7.1 本章小结</a></li><li class="toc-l3"><a href="#1672-核心要点">16.7.2 核心要点</a></li><li class="toc-l3"><a href="#1673-结论">16.7.3 结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#161-模式概述">16.1 模式概述</a></li><li class="toc-l3"><a href="#1611-问题背景为什么需要这个模式">16.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1612-核心机制它如何工作">16.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1613-与相邻模式的关系与组合">16.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#162-起源与历史最早是谁提出来的">16.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#163-发挥的作用为什么重要">16.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#164-实际应用与案例">16.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#165-深度讲解">16.5 深度讲解</a></li><li class="toc-l3"><a href="#1651-质量-成本-延迟三角与-slo">16.5.1 质量-成本-延迟三角与 SLO</a></li><li class="toc-l3"><a href="#1652-级联与置信度升级frugalgpt-的账怎么算">16.5.2 级联与置信度升级：FrugalGPT 的账怎么算</a></li><li class="toc-l3"><a href="#1653-模型分级frontier-standard-mini-的档位设计">16.5.3 模型分级：frontier / standard / mini 的档位设计</a></li><li class="toc-l3"><a href="#1654-缓存命中率经济学">16.5.4 缓存命中率经济学</a></li><li class="toc-l3"><a href="#1655-上下文瘦身的优先级先历史再工具再检索">16.5.5 上下文瘦身的优先级：先历史、再工具、再检索</a></li><li class="toc-l3"><a href="#1656-批处理与错峰">16.5.6 批处理与错峰</a></li><li class="toc-l3"><a href="#1657-失效模式反模式与何时不要用">16.5.7 失效模式、反模式与何时不要用</a></li><li class="toc-l2"><a href="#166-工程落地实践代码示例">16.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1661-框架无关实现完整可运行">16.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1662-框架集成实现openai-兼容客户端openrouter-风格的多模型统一路由">16.6.2 框架集成实现（OpenAI 兼容客户端：OpenRouter 风格的多模型统一路由）</a></li><li class="toc-l3"><a href="#1663-生产化改造清单">16.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#167-概览-核心要点-结论">16.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1671-本章小结">16.7.1 本章小结</a></li><li class="toc-l3"><a href="#1672-核心要点">16.7.2 核心要点</a></li><li class="toc-l3"><a href="#1673-结论">16.7.3 结论</a></li><li class="toc-l2"><a href="#168-延伸阅读与参考链接">16.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

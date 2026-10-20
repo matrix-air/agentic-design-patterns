@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,16 +31,30 @@
 <p><strong>一句话定义</strong>：在请求进入处理逻辑之前，用一个轻量的判断步骤决定它该走哪条提示、哪个模型或哪个智能体。
 <strong>解决什么问题</strong>：单一处理路径无法同时满足多类任务的口径、成本与延迟要求 ｜ <strong>适用场景</strong>：多技能客服、强弱模型混部、查询分流（闲聊/检索/工具）、敏感请求前置拦截 ｜ <strong>核心机制</strong>：规则、分类器、语义相似度或级联信号产生路由决策，附置信度兜底 ｜ <strong>代价</strong>：误路由有业务代价，路由器自身需要维护与监控。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　路由把"这个请求是什么、该由谁处理"拆成处理逻辑之前的独立决策点：规则、分类器、语义相似度或级联信号给出决策，请求落进路由表的一行，各通道互不干扰。三步落地：选最轻的决策信号 → 建路由表与专用通道 → 设置信度兜底与 fail-open 出口。误路由成本不对称时**门槛向"宁可多升舱"倾斜**；任务同质、流量太小或类目未稳**时都别上路由**。</div>
+
 <h2 id="21-模式概述">2.1 模式概述</h2>
 <h3 id="211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</h3>
 <p>一个客服智能体同时要处理查账单、改密码、投诉三种请求。把它们交给同一个提示、同一个模型处理，立刻出现三种互相挤压的矛盾：口径上，查账单要精确引用数据，投诉要先安抚情绪，一套提示词无法两头兼顾；成本上，一半以上的请求是"查个余额"这种简单任务，却都在为最强模型的能力付费；风险上，改密码这类敏感操作与闲聊混在同一条路径里，护栏不知道该按哪个标准拦。问题的根源是"一刀切的处理路径"与"异质的请求分布"之间的错配。</p>
 <p>路由的解法朴素而有效：把"这个请求是什么"的判断从处理逻辑里拆出来，前移成一个独立的、可单独优化的决策点。判断本身很便宜——规则、小模型或一次向量相似度计算——但它换来的却是三条各自纯粹的处理路径：每条路径的提示只为一种任务调优，模型只为该任务的实际难度配置，护栏只为该任务的风险画像设计。</p>
 <h3 id="212-核心机制它如何工作">2.1.2 核心机制：它如何工作</h3>
 <p>路由器是一段"输入 → 目标通道"的映射逻辑，工程上由三部分组成。第一是决策信号：规则命中、分类器输出的意图标签、输入与路由规则的向量相似度，或级联中的实时代价信号。第二是路由表：每个目标通道对应一段提示、一个模型或一个子智能体，路由决策最终落到路由表的某一行。第三是兜底出口：当决策信号弱于阈值——置信度太低、多条规则同时沾边、解析失败——请求走默认通道（通常是最强也最稳的那条）或转人工，而不是硬塞给一个低把握的分支。执行完路由后，各通道独立处理，互不影响；路由器不参与处理本身，只负责"分诊"。</p>
+<div class="mermaid">flowchart LR
+    Q["用户请求"] --> R{"路由器<br/>规则 / 分类 / 语义 / 级联"}
+    R -->|"规则命中高危"| H["人工与专用通道"]
+    R -->|"意图明确，置信度高"| C["轻模型通道"]
+    R -->|"投诉等专用意图"| E["投诉专用通道"]
+    R -->|"置信度低于门槛"| S["强模型兜底"]
+    R -->|"解析失败，fail-open"| S
+    C --> OUT["响应"]
+    E --> OUT
+    S --> OUT
+    H --> OUT</div>
+<div class="fig-caption">图 2-1：入口路由的决策结构与兜底出口——低置信度与解析失败一律升舱到强模型，路由器只分诊、不处理，决策逻辑集中在这一处。</div>
 <h3 id="213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</h3>
 <p>路由与并行化（第 3 章）常一起出现：分流之后的多个通道往往并发执行再汇合。路由是静态结构上的分支，而动态链（第 1 章）里的条件步骤是链内的分支——前者在入口处分诊，后者在流程中途改道，两者可以叠加。级联路由与资源感知优化（第 16 章）是近亲：都关心成本与质量的权衡，区别在于级联只在"强弱模型"一维上排序，而资源感知优化把延迟、配额、上下文长度都纳入考量。路由器的决策质量本身需要评估与监控（第 19 章）来保障——路由分布的漂移往往先于业务指标恶化出现。</p>
 <h2 id="22-起源与历史最早是谁提出来的">2.2 起源与历史：最早是谁提出来的</h2>
-<p>路由并不是大模型时代的新发明，它的前身是对话系统时代的意图分类。2010 年代的 NLU 框架（如开源的 Rasa NLU）把"意图分类 + 实体识别"做成对话机器人的标配组件：每句话先判意图，再按意图进入对应的对话流程。2017 年公开的 SNIPS 数据集为这一任务提供了标准基准，七类用户意图（订餐厅、比价、播放音乐等）成为后来所有意图理解系统的公共考卷。</p>
+<p>路由并不是大模型时代的新发明，它的前身是对话系统时代的意图分类。2010 年代的 NLU 框架（如开源的 <a href="https://rasa.com">Rasa NLU</a>）把"意图分类 + 实体识别"做成对话机器人的标配组件：每句话先判意图，再按意图进入对应的对话流程。2017 年公开的 SNIPS 数据集为这一任务提供了标准基准，七类用户意图（订餐厅、比价、播放音乐等）成为后来所有意图理解系统的公共考卷。</p>
 <p>大模型时代的变化是路由的对象从"对话流程"扩展到了"提示、模型与智能体"，而级联路由把路由的判据从"先验意图"扩展到了"运行时代价"。2023 年 5 月，斯坦福大学的 Chen、Zaharia 与 Zou 发表 FrugalGPT：用级联——便宜模型先答，评分不达标再升级——把 LLM 推理成本降低约 88% 到 98%，第一次系统论证了"按难度分流模型"的经济价值。同年，LangChain 的路由链让"按输入动态选提示或模型"成为框架级的标准写法。2023 年末，Aurelio AI 开源 Semantic Router，把路由规则编码为向量、用相似度匹配实现零训练意图路由。2024 年 6 月，LMSYS 发表 RouteLLM，用人类偏好数据训练路由器在强弱模型间分流，在保持响应质量的前提下把成本降低约 2 到 3 倍，该工作后发表于 ICLR 2025。</p>
 <table>
 <thead>
@@ -55,44 +70,44 @@
 <td>2010 年代中后期</td>
 <td>意图分类成为对话系统 NLU 标配组件</td>
 <td>Rasa NLU 等开源框架</td>
-<td>开源项目与文档</td>
+<td><a href="https://rasa.com">开源项目与文档</a></td>
 </tr>
 <tr>
 <td>2017</td>
 <td>SNIPS 意图理解数据集公开，成为 NLU 标准基准</td>
 <td>Snips（Coucke 等）</td>
-<td>公开数据集</td>
+<td><a href="https://arxiv.org/abs/1805.10190">arXiv:1805.10190</a></td>
 </tr>
 <tr>
 <td>2023-05</td>
 <td>FrugalGPT：级联把 LLM 推理成本降低约 88%~98%</td>
 <td>Chen、Zaharia、Zou，斯坦福大学</td>
-<td>arXiv:2305.05176</td>
+<td><a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></td>
 </tr>
 <tr>
 <td>2023</td>
 <td>LangChain 路由链普及"按输入动态选提示/模型"的工程写法</td>
 <td>LangChain</td>
-<td>官方文档</td>
+<td><a href="https://docs.langchain.com">官方文档</a></td>
 </tr>
 <tr>
 <td>2023 年末</td>
 <td>Semantic Router 开源：向量相似度实现零训练意图路由</td>
 <td>Aurelio AI（Luciano 等）</td>
-<td>GitHub 开源项目</td>
+<td><a href="https://github.com/aurelio-labs/semantic-router">GitHub 开源项目</a></td>
 </tr>
 <tr>
 <td>2024-06</td>
 <td>RouteLLM：偏好数据训练路由器，同等质量成本降约 2~3 倍</td>
 <td>LMSYS</td>
-<td>arXiv:2406.18665，ICLR 2025</td>
+<td><a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a>，ICLR 2025</td>
 </tr>
 </tbody>
 </table>
 <p>演化脉络的主线是决策信号的升级：从人工规则（关键词），到统计分类器（需标注数据），到语义向量（零训练、规则热更新），再到运行时代价信号（级联与学习型路由）。信号越强，路由器自身越重；工程选择从来不是"用最先进的"，而是"用误路由代价能承受的最轻的"。</p>
 <h2 id="23-发挥的作用为什么重要">2.3 发挥的作用：为什么重要</h2>
 <p>路由的价值在三个维度同时兑现。<strong>口径与质量</strong>：每条通道的提示只为一种任务调优，系统整体的专业度等于各通道专业度的加权，而不是所有任务的平均分。<strong>成本</strong>：真实流量里简单任务永远占多数，FrugalGPT 与 RouteLLM 的数据说明，把这部分流量引向便宜模型可砍掉一半以上的推理开销，而复杂任务的质量不受影响。<strong>风险隔离</strong>：敏感操作、高危意图、已知滥用模式在入口就被摘出来走专用通道（更强的模型、更严的护栏、或直接人工），其余路径无需为最坏情况过度设防。</p>
-<p>还有一层作用常被忽视：路由是系统行为的"总开关"。上线灰度、A/B 实验、故障转移、区域隔离，都可以实现为路由表的一行改动，而不必触碰任何通道的内部逻辑。这让智能体系统的演进从"改代码"降级为"改配置"，风险与发布节奏都更可控。</p>
+<p>还有一层作用常被忽视：路由是系统行为的<strong>"总开关"</strong>。上线灰度、A/B 实验、故障转移、区域隔离，都可以实现为路由表的一行改动，而不必触碰任何通道的内部逻辑。这让智能体系统的演进从"改代码"降级为"改配置"，风险与发布节奏都更可控。</p>
 <h2 id="24-实际应用与案例">2.4 实际应用与案例</h2>
 <ul>
 <li><strong>客服多技能分诊</strong>：入口用语义路由把请求分到查账单、办业务、投诉、闲聊四条通道，投诉通道额外接情绪安抚提示与人工升级条件。关键设计点：置信度低于阈值一律走"通用强模型"通道而非猜测意图。</li>
@@ -102,9 +117,13 @@
 <li><strong>敏感请求前置拦截</strong>：涉及个人隐私操作、医疗法律建议的请求在入口摘出，走带护栏的专用链或直接转人工。关键设计点：拦截规则宁可误伤（多拦）不可漏放，误伤由后续通道的话术回收。</li>
 <li><strong>多租户 API 网关</strong>：按租户等级路由到不同配额的模型池与不同强度的护栏。关键设计点：路由决策要可审计，每条请求记录"为什么走这条通道"。</li>
 </ul>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>OpenAI GPT-5 的实时路由器（ChatGPT 自动选模型）</strong>。GPT-5 被设计为一个统一系统：一个快速模型回答大多数问题、一个深度推理模型处理难题，中间由一个实时路由器依据对话类型、复杂度、工具需求与显式意图（如提示里写"再仔细想想"）即时决定把请求交给哪个模型；路由器持续用真实信号再训练——用户手动切换模型的行为、回复的偏好率与实测正确率——随时间自我改进，达到用量上限后由 mini 版本接住剩余请求。ChatGPT 界面里的"自动选择模型"正是这一生产级路由的出口。（来源：OpenAI GPT-5 System Card，2025-08，<a href="https://arxiv.org/abs/2601.03267">arXiv:2601.03267</a>；官方页面 <a href="https://openai.com/index/gpt-5-system-card/">https://openai.com/index/gpt-5-system-card/</a>）</p>
+<p><strong>LMSYS RouteLLM（强弱模型分流的开源框架）</strong>。UC Berkeley LMSYS 团队用 Chatbot Arena 的人类偏好数据训练了四种路由器（相似度加权排名、矩阵分解、BERT 分类器、因果 LLM 分类器），在强弱模型对之间动态分流：官方博客报告在 MT Bench 上以 95% 的 GPT-4 质量减少 85% 以上的成本（MMLU 约 45%、GSM8K 约 35%），框架以 OpenAI 兼容 API 提供、<code>pip install routellm</code> 即可接入，路由器与数据集全部开源。（来源：LMSYS 官方博客 <a href="https://www.lmsys.org/blog/2024-07-01-routellm/">https://www.lmsys.org/blog/2024-07-01-routellm/</a>；代码仓库 <a href="https://github.com/lm-sys/RouteLLM">https://github.com/lm-sys/RouteLLM</a>）</p>
+<p><strong>Intercom Fin（企业客服 AI Agent 的意图分流与人工升级）</strong>。Fin 的架构分应用、AI、模型三层，其模型层是一组为客服场景定制的专用模型，其中专门有一个模型负责"判断何时把会话升级给人工"；运营侧通过 routing outcomes 把匹配条件的会话（如销售资格、自助引导、流程办理）路由到对应团队或工作流，无法处理时按默认升级规则移交人工。官方公布其平均解决率（resolution rate）在 12000 多家客户上约 76%——这是"意图分流 + 置信度兜底 + 人工出口"在客服工业界的规模化形态。（来源：Intercom 官方帮助中心 <a href="https://www.intercom.com/help/en/articles/7120684-fin-ai-agent-explained">https://www.intercom.com/help/en/articles/7120684-fin-ai-agent-explained</a>；<a href="https://www.intercom.com/">https://www.intercom.com/</a>）</p>
 <h2 id="25-深度讲解">2.5 深度讲解</h2>
 <p><strong>机制细节与变体谱系：四种路由器。</strong> 第一种是规则路由：关键词、正则、长度阈值等显式条件。它零成本、完全可解释、毫秒级完成，适合封闭域里的高置信度规则（"包含退款并包含投诉的请求进售后通道"）。它的死穴是维护腐化：用户换一种说法（"钱多扣了"与"重复扣款"），规则就静默失灵，规则库只会越积越长、互相打架。第二种是分类器路由：用小模型乃至传统机器学习模型做意图分类，这是对话系统时代延续下来的标配，需要标注数据与再训练管线，类目边界清晰时表现优秀，但长尾输入与新增类目要靠持续回灌。第三种是语义路由（Semantic Router 路线）：把每条路由规则写成示例语句并编码为向量，运行时用输入的向量与规则向量做相似度匹配，超过阈值即命中。它零训练、规则可以即时增删（加一条规则只是加一行向量），代价是阈值成为核心超参——阈值松了多条规则同时沾边产生歧义命中，紧了又漏。第四种是级联路由（FrugalGPT、RouteLLM 路线）：它与前三种有本质区别——判据不是"请求是什么"这个先验，而是"处理得怎么样"这个运行时证据。便宜模型先答，答案过不了机械校验或置信度评估就升级到贵模型。级联把"路由"变成了"分级服务"，其代价是简单请求也要先付一次便宜模型的成本，且弱模型的错误有时是"自信地错"，校验器必须独立于弱模型的自我报告。</p>
-<p><strong>机制细节：误路由的成本不对称。</strong> 路由决策要按成本矩阵设计，而不是按准确率。把复杂任务路由给弱模型，代价是答案质量——可能引发返工、投诉甚至业务损失；把简单任务路由给强模型，代价只是几秒延迟与一点预算。两侧代价经常差一个数量级，因此阈值必须向"宁可多升舱"倾斜：置信度门槛设在偏高位置，兜底通道配最强模型。更隐蔽的问题是分类器的校准性——模型输出的 0.9 未必对应 90% 的正确率，过度自信是常态，置信度阈值要用本系统真实流量回放校准，不能照搬论文数值。任何路由器都必须有"我不知道"出口：解析失败、多规则冲突、置信度全面低于阈值时走默认通道，fail-open 到强模型比 fail-close 到错误通道便宜得多。</p>
+<p><strong>机制细节：误路由的成本不对称。</strong> 路由决策要按成本矩阵设计，而不是按准确率。把复杂任务路由给弱模型，代价是答案质量——可能引发返工、投诉甚至业务损失；把简单任务路由给强模型，代价只是几秒延迟与一点预算。两侧代价经常差一个数量级，因此<strong>阈值必须向"宁可多升舱"倾斜</strong>：置信度门槛设在偏高位置，兜底通道配最强模型。更隐蔽的问题是分类器的校准性——模型输出的 0.9 未必对应 90% 的正确率，过度自信是常态，置信度阈值要用本系统真实流量回放校准，不能照搬论文数值。任何路由器都必须有"我不知道"出口：解析失败、多规则冲突、置信度全面低于阈值时走默认通道，fail-open 到强模型比 fail-close 到错误通道便宜得多。</p>
 <p><strong>机制细节：路由粒度与决策位置。</strong> 路由可以在三个粒度上发生：提示路由（同一模型，按意图换提示模板）、模型路由（按难度换模型）、智能体路由（按任务类型换工具集与子智能体）。粒度越粗，单次误路由的代价越大：提示路由错了还能靠模型兜底，智能体路由错了整条工具链都白跑。决策位置同理：入口路由（分诊）看 whole 请求，链中路由（条件步骤）看中间结果——第 1 章的动态链就是链中路由的特例。生产系统常见形态是两级路由：入口做粗粒度的模型/智能体路由，通道内部做细粒度的提示路由，两级各自简单，组合起来覆盖复杂分布。</p>
 <p><strong>失效模式与反模式。</strong> 第一个是域漂移：上线三个月后用户问法演变，规则与分类器静默劣化，而路由错误的表现是"答案质量下降"而非报错，往往要等业务指标恶化才被发现。对策是把路由分布本身做成监控指标——某个通道的流量占比突降、兜底通道占比突升，都是漂移的早期信号。第二个是级联的隐性失败：弱模型给出了格式完美、置信度很高但事实错误的答案，机械校验全部通过，错误一路下行。对策是给高风险通道叠加第二道独立信号（如引用核对、抽样人工复核），并持续审计"升级通道的捕获率"——级联真正拦下了多少次坏答案，这个数字若趋近于零，说明级联只是白白多了一次调用。第三个是语义路由的组合意图："查一下账单然后我要投诉"同时命中两条规则，路由器若不定义优先级与合并策略，就会随机选一条，用户体验随机劣化。第四个反模式是过度路由：任务本质同质却切出十几个通道，每个通道样本稀疏到无法调优，路由器本身成了最大的复杂度来源。</p>
 <p><strong>何时不要用。</strong> 单一任务类型的系统不需要路由，强行分流只会增加故障面。流量小到成本无关紧要时，统一用最强模型比维护路由器划算。路由类目还不稳定的产品早期（这周三类下周五类），先把所有流量打到一个通道积累数据，等分布稳定了再切——路由的价值建立在"你对流量分布有可靠认知"之上，认知未成，路由先行就是猜。</p>
@@ -281,7 +300,7 @@ if __name__ == &quot;__main__&quot;:
               f&quot;  答：{result['answer'][:60]}...\n&quot;)
 </code></pre>
 <h3 id="262-框架集成实现langgraph-条件边">2.6.2 框架集成实现（LangGraph 条件边）</h3>
-<p>LangGraph 的 conditional edges 是路由模式的正统表达：节点产出决策依据，条件函数返回下一个节点名。以下基于 langgraph 0.2.x 与 langchain-openai 0.2.x 编写（API 若有变动，以所用版本官方文档为准）。</p>
+<p><a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> 的 conditional edges 是路由模式的正统表达：节点产出决策依据，条件函数返回下一个节点名。以下基于 langgraph 0.2.x 与 langchain-openai 0.2.x 编写（API 若有变动，以所用版本官方文档为准）。</p>
 <pre><code class="language-python">&quot;&quot;&quot;第2章 路由：LangGraph 条件边实现。
 
 结构：classify 节点 -&gt; 条件边按 (置信度, 意图) 分流到
@@ -435,12 +454,33 @@ if __name__ == &quot;__main__&quot;:
 <li>通道类别不稳定的产品早期不要上路由，先在一个通道里积累流量认知。</li>
 </ul>
 <h3 id="273-结论">2.7.3 结论</h3>
-<p>路由是智能体系统从"单一管道"走向"分级服务"的分水岭：它用一次廉价的判断，换回口径、成本与风险三个维度的解耦。好的路由器往往是无名的——它让简单请求安静地走便宜通道、让危险请求在入口就被摘走，系统整体因此显得又快又稳。维护这份安静的，是置信度兜底的纪律与对路由分布持续的注视。</p></div>
+<p>路由是智能体系统从"单一管道"走向"分级服务"的分水岭：它用一次廉价的判断，换回口径、成本与风险三个维度的解耦。好的路由器往往是无名的——它让简单请求安静地走便宜通道、让危险请求在入口就被摘走，系统整体因此显得又快又稳。维护这份安静的，是置信度兜底的纪律与对路由分布持续的注视。</p>
+<h2 id="28-延伸阅读与参考链接">2.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>FrugalGPT: How to Use Large Language Models While Lowering Cost and Improving Performance，Chen, Zaharia, Zou，斯坦福大学，2023：<a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></li>
+<li>RouteLLM: Learning to Route LLMs with Preference Data，Ong et al.，LMSYS，2024，ICLR 2025：<a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></li>
+<li>SNIPS: 意图理解与填充基准数据集，Coucke et al.，Snips，2018，IS 2018：<a href="https://arxiv.org/abs/1805.10190">arXiv:1805.10190</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li>LangChain 官方文档（路由链与按输入动态选择提示/模型）：<a href="https://docs.langchain.com">https://docs.langchain.com</a></li>
+<li>LangGraph 官方文档（conditional edges 是路由模式的正统表达）：<a href="https://langchain-ai.github.io/langgraph/">https://langchain-ai.github.io/langgraph/</a></li>
+<li>Semantic Router 开源项目（向量相似度实现零训练意图路由）：<a href="https://github.com/aurelio-labs/semantic-router">https://github.com/aurelio-labs/semantic-router</a></li>
+<li>OpenAI GPT-5 System Card（实时路由器的设计与训练信号）：<a href="https://openai.com/index/gpt-5-system-card/">https://openai.com/index/gpt-5-system-card/</a>；论文版 <a href="https://arxiv.org/abs/2601.03267">arXiv:2601.03267</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>LMSYS RouteLLM 官方博客（基准数据与开源框架发布）：<a href="https://www.lmsys.org/blog/2024-07-01-routellm/">https://www.lmsys.org/blog/2024-07-01-routellm/</a></li>
+<li>Intercom Fin AI Agent 说明（模型层含"何时升级人工"专用模型与角色分流）：<a href="https://www.intercom.com/help/en/articles/7120684-fin-ai-agent-explained">https://www.intercom.com/help/en/articles/7120684-fin-ai-agent-explained</a></li>
+<li>Intercom Fin 计费与路由结果定义（routing outcomes / qualification 路由）：<a href="https://www.intercom.com/help/en/articles/8205718-fin-ai-agent-outcomes">https://www.intercom.com/help/en/articles/8205718-fin-ai-agent-outcomes</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch01-prompt-chaining.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第1章 提示链</span></a><a class="pager" href="../chapters/ch03-parallelization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第3章 并行化</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#21-模式概述">2.1 模式概述</a></li><li class="toc-l3"><a href="#211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#212-核心机制它如何工作">2.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#22-起源与历史最早是谁提出来的">2.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#23-发挥的作用为什么重要">2.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#24-实际应用与案例">2.4 实际应用与案例</a></li><li class="toc-l2"><a href="#25-深度讲解">2.5 深度讲解</a></li><li class="toc-l2"><a href="#26-工程落地实践代码示例">2.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#261-框架无关实现完整可运行">2.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#262-框架集成实现langgraph-条件边">2.6.2 框架集成实现（LangGraph 条件边）</a></li><li class="toc-l3"><a href="#263-生产化改造清单">2.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#27-概览-核心要点-结论">2.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#271-本章小结">2.7.1 本章小结</a></li><li class="toc-l3"><a href="#272-核心要点">2.7.2 核心要点</a></li><li class="toc-l3"><a href="#273-结论">2.7.3 结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#21-模式概述">2.1 模式概述</a></li><li class="toc-l3"><a href="#211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#212-核心机制它如何工作">2.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#22-起源与历史最早是谁提出来的">2.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#23-发挥的作用为什么重要">2.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#24-实际应用与案例">2.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#25-深度讲解">2.5 深度讲解</a></li><li class="toc-l2"><a href="#26-工程落地实践代码示例">2.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#261-框架无关实现完整可运行">2.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#262-框架集成实现langgraph-条件边">2.6.2 框架集成实现（LangGraph 条件边）</a></li><li class="toc-l3"><a href="#263-生产化改造清单">2.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#27-概览-核心要点-结论">2.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#271-本章小结">2.7.1 本章小结</a></li><li class="toc-l3"><a href="#272-核心要点">2.7.2 核心要点</a></li><li class="toc-l3"><a href="#273-结论">2.7.3 结论</a></li><li class="toc-l2"><a href="#28-延伸阅读与参考链接">2.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

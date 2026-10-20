@@ -49,4 +49,15 @@
 
   var btn = document.getElementById("menu-btn"), sb = document.getElementById("sidebar");
   btn && sb && btn.addEventListener("click", function () { sb.classList.toggle("open"); });
+
+  /* Mermaid 图渲染（本地内置，无外网依赖） */
+  if (window.mermaid && document.querySelector(".mermaid")) {
+    try {
+      window.mermaid.initialize({
+        startOnLoad: false, securityLevel: "loose", theme: "default",
+        flowchart: { useMaxWidth: true, htmlLabels: true },
+      });
+      window.mermaid.run({ querySelector: ".mermaid" });
+    } catch (e) { console.error("mermaid render failed", e); }
+  }
 })();

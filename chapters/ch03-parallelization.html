@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,12 +31,25 @@
 <p><strong>一句话定义</strong>：把相互独立的子任务同时交给多个模型调用执行，再把结果归并为一份输出——切分求快，投票求准，聚合求全。
 <strong>解决什么问题</strong>：串行链的延迟叠加与单次采样的随机失误 ｜ <strong>适用场景</strong>：多维独立评审、批量独立任务、推理题多采样投票、多模型生成融合 ｜ <strong>核心机制</strong>：任务切分 + 并发执行 + join 归并（拼接/投票/聚合器三种语义）｜ <strong>代价</strong>：token 成本成倍放大，归并逻辑自身成为新的复杂度与故障点。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　并行化把独立的子任务同时发出再归并：对付延迟靠**切分**（维度/数据块各走一路），对付随机失误靠**投票**（同题多次采样取多数派），求全面靠**聚合器**融合多路意见。三步落地：验证子任务真独立 → 并发执行并隔离单路失败 → 在 join 点按拼接/投票/聚合器归并并显式实现 quorum。**有顺序依赖、单次已够可靠、或所有采样同源同偏**时别用——多数一致不等于正确。</div>
+
 <h2 id="31-模式概述">3.1 模式概述</h2>
 <h3 id="311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</h3>
 <p>串行的提示链解决了任务过载问题，却带来两样新的东西：累积的延迟，和累积的随机性。延迟好理解——三步链就是三次模型调用的耗时之和，用户等得着急。随机性则更隐蔽：大模型的输出是概率采样，同一个问题问两遍可能得到不同答案，任何一次单独调用都可能踩中一次"随机失误"——漏看一个约束、算错一步推理。对单次调用而言这是小概率，对一个每天跑百万次的系统而言是必然事件。</p>
 <p>并行化针对这两点给出了对称的解法。对付延迟：如果子任务之间互相独立，就没有理由排队——三路评审同时发出，总耗时从三倍压缩到一倍加一点汇合开销。对付随机性：如果失误是随机的，就让多次独立采样互相暴露——同一问题问五遍，三次说 A 两次说 B，多数派比任何单次采样都更可信。这两种用法（切分与投票）加一个收尾环节（聚合器），构成了并行化的全部骨架。</p>
 <h3 id="312-核心机制它如何工作">3.1.2 核心机制：它如何工作</h3>
 <p>并行化的执行由三个阶段构成。<strong>切分阶段</strong>决定怎么把工作拆开：切分可以按内容维度（一份技术方案拆成技术、安全、成本三路评审）、按数据块（长文档切成章节分别翻译）、或按采样次数（同一个问题独立采样 N 次）。切分的铁律是独立性：每一路在执行时不能依赖其他路的中间结果。<strong>执行阶段</strong>用线程池、异步协程或框架的并行原语把 N 个调用同时发出，并对每一路设置超时与失败隔离——一路崩了不影响其他路。<strong>归并阶段（join）</strong>是关键：N 份输出按三种语义之一合成一份——结果天然独立时按序拼接（分块翻译）；结果互为替代品时投票（多采样推理）；结果互为素材时交给一个聚合器模型融合裁决（多维评审意见）。归并阶段还必须回答一个工程问题：部分路失败时，整体算成功还是失败——这由 quorum（法定多数）语义决定。</p>
+<div class="mermaid">flowchart TD
+    IN["输入任务"] --> SP["切分：按维度 / 数据块 / 采样次数"]
+    SP --> W1["分支 1"]
+    SP --> W2["分支 2"]
+    SP --> W3["分支 N"]
+    W1 --> J["join 归并：拼接 / 投票 / 聚合器"]
+    W2 --> J
+    W3 --> J
+    J -->|"成功路数达到 quorum"| OUT["最终输出"]
+    J -->|"成功路数不足"| FB["整体失败或降级"]</div>
+<div class="fig-caption">图 3-1：并行化的三阶段结构——切分前验证"真独立"，执行时单路失败只影响自己，join 点显式实现 quorum 语义：缺席的路不允许被静默当作已评审。</div>
 <h3 id="313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</h3>
 <p>并行化与提示链（第 1 章）互为补充：链是纵向的顺序骨架，并行化是链上某个节点的横向展开——"带并行分支的链"就是两者的复合。投票与反思（第 4 章）是提升输出质量的两种路径：反思让模型自查一次，投票让多次独立生成互相印证，实践常在投票之后再接一轮反思做最终裁决。多智能体协作（第 7 章）可以看作并行化的组织形态升级：从"一把任务撒给 N 个无差别的调用"升级为"分工、角色与协调"。聚合器与评估监控（第 19 章）共享一套思想：如何为多个输出建立可比的评价尺度。</p>
 <h2 id="32-起源与历史最早是谁提出来的">3.2 起源与历史：最早是谁提出来的</h2>
@@ -61,25 +75,25 @@
 <td>2022-03</td>
 <td>Self-Consistency：同题多次采样 + 多数投票提升推理准确率</td>
 <td>Wang 等，Google Research</td>
-<td>arXiv:2203.11171，ICLR 2023</td>
+<td><a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a>，ICLR 2023</td>
 </tr>
 <tr>
 <td>2023-06</td>
 <td>LLM-Blender：多模型候选配对排序后融合</td>
 <td>Jiang 等</td>
-<td>arXiv:2306.02561，NeurIPS 2023</td>
+<td><a href="https://arxiv.org/abs/2306.02561">arXiv:2306.02561</a>，NeurIPS 2023</td>
 </tr>
 <tr>
 <td>2023-06</td>
 <td>OpenAI 支持并行函数调用，单轮可同时发起多个工具调用</td>
 <td>OpenAI</td>
-<td>官方 API 公告</td>
+<td><a href="https://platform.openai.com/docs/guides/function-calling">官方 API 指南</a></td>
 </tr>
 <tr>
 <td>2024-12</td>
 <td>《Building Effective Agents》将并行化分为切分（sectioning）与投票（voting）</td>
 <td>Anthropic</td>
-<td>官方工程博客</td>
+<td><a href="https://www.anthropic.com/engineering/building-effective-agents">官方工程博客</a></td>
 </tr>
 </tbody>
 </table>
@@ -96,6 +110,9 @@
 <li><strong>多模型生成融合</strong>：三个模型各写一版营销文案，聚合器取各版之长合成终稿。关键设计点：聚合器提示要显式说明"意见冲突时以哪个为准"（如以合规版为准），否则融合结果随机偏袒。</li>
 <li><strong>批量数据标注提速</strong>：上万条数据按批并行标注，校验规则先于模型跑一遍过滤掉可机械判断的样本。关键设计点：并发数要贴着供应商限流配额调，盲开高并发只会换来批量超时。</li>
 </ul>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Anthropic 多智能体研究系统（Claude Research 功能）</strong>。2025 年 6 月 Anthropic 公开了支撑 Claude Research 功能的编排者-工人系统：主智能体（Claude Opus 4）分析查询、制定策略，把子任务派给多个专业化子智能体（Claude Sonnet 4）——各自带独立上下文窗口<strong>并发</strong>检索，只把轻量引用交回主智能体，最后归并发现。官方给出的数字：该编排在其内部研究评估上比单智能体 Claude Opus 4 高出 <strong>90.2%</strong>；同时如实标注代价——智能体约消耗普通聊天 4 倍的 token，多智能体系统约 15 倍。这是"切分 + 并发 + 聚合归并"迄今最有分量的生产级实证。（来源：Anthropic 工程博客，2025-06-13，<a href="https://www.anthropic.com/engineering/multi-agent-research-system">https://www.anthropic.com/engineering/multi-agent-research-system</a>）</p>
+<p><strong>Perplexity Pro Search（多路检索与汇合过滤）</strong>。Pro Search 面对复杂问题先做显式规划，再为每一步生成一批检索查询一并执行：官方帮助中心描述其"在全网执行多次搜索"，从文章、学术论文、论坛、视频等多类来源收集信息；返回的文档被分组、过滤出最相关者，再交给大模型综合成带引用的最终答案。多路查询扇出 + 汇合处过滤归并，正是本章"切分 + join"在搜索产品里的落地形态，其逐步展示中间进度的交互也印证了"用户愿意为可见的过程等待"。（来源：LangChain 官方案例研究 <a href="https://www.langchain.com/breakoutagents/perplexity">https://www.langchain.com/breakoutagents/perplexity</a>；Perplexity 官方帮助中心 <a href="https://www.perplexity.ai/help-center/en/articles/10352903-what-is-pro-search">https://www.perplexity.ai/help-center/en/articles/10352903-what-is-pro-search</a>）</p>
 <h2 id="35-深度讲解">3.5 深度讲解</h2>
 <p><strong>机制细节：join 的三种归并语义。</strong> 并行化真正的设计难点不在"并发发请求"，而在汇合点上。第一种是<strong>拼接归并</strong>：各路结果天然独立、互不冲突（分块翻译、批量标注），归并只是保序拼接，唯一要小心的是跨块的上下文断裂——第 5 块把"上一章"翻丢了，因为切分时上下文被切断，对策是切分时留重叠区或携带边界摘要。第二种是<strong>投票归并</strong>：各路结果互为替代品，用计票消解分歧。投票的技术核心是答案归一化——必须把语义相同的输出映射到同一票面再计票，否则"多数"是表述方式的多数而非答案的多数。平局要预先定义处理规则：触发升级（重采样一轮、或送强模型仲裁）比随机挑一个好，因为平局本身就是高不确定性的证据。第三种是<strong>聚合器归并</strong>：各路结果互为素材（三份不同角度的评审意见），由一个聚合 LLM 融合裁决。聚合器是 LLM-Blender 式的角色，它带来新的风险：聚合器本身会出错、有偏好（偏爱更长的、更靠后的输入），而且成为整条路径的单点——它的提示必须显式回答"意见冲突听谁的""某路缺席怎么办"。</p>
 <p><strong>机制细节：切分、投票与编排者-工人三变体。</strong> Anthropic 的两分法值得扩展成三类。<strong>切分（sectioning）</strong>的核心纪律是验证"真独立"：子任务间若共享隐式上下文，切分后互相引用就会丢失——把"第三章结论"的评审和"第三章论证"的评审拆给两路，后者拿不到前者的结论，评审就在互相矛盾的假设上进行。判断真独立的方法很机械：把每一路的输入单独打印出来，问"这路拿到的东西够它做完自己的事吗"，缺什么就把什么补进切分逻辑。<strong>投票（voting）</strong>的多样性必须是真的：同一温度、同一提示采五次，多样性来自采样噪声，便宜但浅；混合不同提示框架（prompt ensemble）或不同模型，多样性来自系统性视角差异，纠错力更强、成本更高。投票还有一个被反复验证的局限：如果所有采样共享同一个系统性偏差（同一个模型、同一份有偏见的提示），多数投票不会纠错，只会放大自信——多数派一致不等于正确，只等于"这个模型稳定地这么想"。<strong>编排者-工人（orchestrator-workers）</strong>是切分的动态版：切分方案本身由一个编排 LLM 在运行时生成，工人并发执行后交聚合器归并。它灵活，但把静态切分里"开发期就能验证的独立性"推迟到了运行时，失效模式也随之变成动态的——编排者切出了有依赖的子任务，系统就在暗处出错。</p>
@@ -290,7 +307,7 @@ if __name__ == &quot;__main__&quot;:
         sys.exit(1)
 </code></pre>
 <h3 id="362-框架集成实现langchain-lcel">3.6.2 框架集成实现（LangChain LCEL）</h3>
-<p>LCEL 里用 <code>RunnableParallel</code> 表达扇出，管道下游自然汇合。以下基于 langchain-core 0.3.x 与 langchain-openai 0.2.x 编写（API 若有变动，以所用版本官方文档为准）。注意：<code>RunnableParallel</code> 的默认语义是"任一分支失败则整体失败"，quorum 语义需要自定义归并节点（如框架无关版所示）。</p>
+<p><a href="https://docs.langchain.com">LangChain</a> LCEL 里用 <code>RunnableParallel</code> 表达扇出，管道下游自然汇合。以下基于 langchain-core 0.3.x 与 langchain-openai 0.2.x 编写（API 若有变动，以所用版本官方文档为准）。注意：<code>RunnableParallel</code> 的默认语义是"任一分支失败则整体失败"，quorum 语义需要自定义归并节点（如框架无关版所示）。</p>
 <pre><code class="language-python">&quot;&quot;&quot;第3章 并行化：LangChain LCEL 实现——三路评审扇出 + 聚合归并。
 
 依赖：pip install &quot;langchain-core&gt;=0.3&quot; &quot;langchain-openai&gt;=0.2&quot;
@@ -394,12 +411,33 @@ if __name__ == &quot;__main__&quot;:
 <li>成本与延迟的收益都要实测：投票 k 倍 token，延迟上界是最慢一路加限流排队。</li>
 </ul>
 <h3 id="373-结论">3.7.3 结论</h3>
-<p>并行化是智能体工作流里最"像传统分布式系统"的一章：它不涉及模型的智能，只涉及把智能组织起来的方式。正因如此，它的成败几乎完全取决于工程判断——切分边界是否真实独立、汇合语义是否与业务对齐、失败路径是否定义清楚。把这三件事想透，五路并发的评审就比串行的单次生成更快也更可信；想不透，并行只会更快地产出一致的错误。</p></div>
+<p>并行化是智能体工作流里最"像传统分布式系统"的一章：它不涉及模型的智能，只涉及把智能组织起来的方式。正因如此，它的成败几乎完全取决于工程判断——切分边界是否真实独立、汇合语义是否与业务对齐、失败路径是否定义清楚。把这三件事想透，五路并发的评审就比串行的单次生成更快也更可信；想不透，并行只会更快地产出一致的错误。</p>
+<h2 id="38-延伸阅读与参考链接">3.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>Self-Consistency Improves Chain of Thought Reasoning in Language Models，Wang et al.，Google Research，2022，ICLR 2023（投票式并行的学术原型）：<a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a></li>
+<li>LLM-Blender: Ensembling Large Language Models with Pairwise Ranking and Generative Fusion，Jiang et al.，2023，NeurIPS 2023（聚合器归并的学术样板）：<a href="https://arxiv.org/abs/2306.02561">arXiv:2306.02561</a></li>
+<li>More Agents Is All You Need（采样-投票规模与正确率关系的大规模实证），Li et al.，2024，TMLR：<a href="https://arxiv.org/abs/2402.05120">arXiv:2402.05120</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li>LangChain 官方文档（RunnableParallel 扇出与下游汇合，注意其 fail-fast 默认语义）：<a href="https://docs.langchain.com">https://docs.langchain.com</a></li>
+<li>OpenAI 并行函数调用指南（模型侧并发编排工具调用）：<a href="https://platform.openai.com/docs/guides/function-calling">https://platform.openai.com/docs/guides/function-calling</a></li>
+<li>Google ADK 官方文档（多智能体并行编排的框架参考）：<a href="https://google.github.io/adk-docs/">https://google.github.io/adk-docs/</a></li>
+<li>Anthropic《Building Effective Agents》（切分 sectioning 与投票 voting 的官方二分法）：<a href="https://www.anthropic.com/engineering/building-effective-agents">https://www.anthropic.com/engineering/building-effective-agents</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>Anthropic《How we built our multi-agent research system》（并行子智能体生产系统，官方数据 90.2% 提升与 15 倍 token 代价）：<a href="https://www.anthropic.com/engineering/multi-agent-research-system">https://www.anthropic.com/engineering/multi-agent-research-system</a></li>
+<li>LangChain 案例研究：Perplexity Pro Search 的认知架构（逐步规划、每步多查询执行与文档分组过滤）：<a href="https://www.langchain.com/breakoutagents/perplexity">https://www.langchain.com/breakoutagents/perplexity</a></li>
+<li>Perplexity Pro Search 官方帮助中心（多次全网检索、数十来源综合与引用）：<a href="https://www.perplexity.ai/help-center/en/articles/10352903-what-is-pro-search">https://www.perplexity.ai/help-center/en/articles/10352903-what-is-pro-search</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch02-routing.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第2章 路由</span></a><a class="pager" href="../chapters/ch04-reflection.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第4章 反思</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#31-模式概述">3.1 模式概述</a></li><li class="toc-l3"><a href="#311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#312-核心机制它如何工作">3.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#32-起源与历史最早是谁提出来的">3.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#33-发挥的作用为什么重要">3.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#34-实际应用与案例">3.4 实际应用与案例</a></li><li class="toc-l2"><a href="#35-深度讲解">3.5 深度讲解</a></li><li class="toc-l2"><a href="#36-工程落地实践代码示例">3.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#361-框架无关实现完整可运行">3.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#362-框架集成实现langchain-lcel">3.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#363-生产化改造清单">3.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#37-概览-核心要点-结论">3.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#371-本章小结">3.7.1 本章小结</a></li><li class="toc-l3"><a href="#372-核心要点">3.7.2 核心要点</a></li><li class="toc-l3"><a href="#373-结论">3.7.3 结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#31-模式概述">3.1 模式概述</a></li><li class="toc-l3"><a href="#311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#312-核心机制它如何工作">3.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#32-起源与历史最早是谁提出来的">3.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#33-发挥的作用为什么重要">3.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#34-实际应用与案例">3.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#35-深度讲解">3.5 深度讲解</a></li><li class="toc-l2"><a href="#36-工程落地实践代码示例">3.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#361-框架无关实现完整可运行">3.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#362-框架集成实现langchain-lcel">3.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#363-生产化改造清单">3.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#37-概览-核心要点-结论">3.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#371-本章小结">3.7.1 本章小结</a></li><li class="toc-l3"><a href="#372-核心要点">3.7.2 核心要点</a></li><li class="toc-l3"><a href="#373-结论">3.7.3 结论</a></li><li class="toc-l2"><a href="#38-延伸阅读与参考链接">3.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

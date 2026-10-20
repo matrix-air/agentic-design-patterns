@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,18 +31,33 @@
 <p><strong>一句话定义</strong>：让智能体把运行中的经验转化为可复用的提示、技能与记忆工件，并通过生成-评估-选择的循环使自身行为随使用持续变好。
 <strong>解决什么问题</strong>：智能体反复犯同类错误、有效解法无法沉淀、提示词靠手调试收敛慢、微调成本高且不可审计 ｜ <strong>适用场景</strong>：有可靠评估信号的任务（编码、有测试的工程问题、可量化指标的系统优化）、高频重复任务、需要长期复利的助手类产品 ｜ <strong>核心机制</strong>：经验捕获 + 工件化存储（技能库/经验库）+ 检索复用 + 进化循环（生成、评估、选择、变异）｜ <strong>代价</strong>：依赖评估器质量（会被"攻破"）、有自我强化与经验污染风险、进化循环的调用成本不可忽略。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　智能体的学习大多不发生在权重里，而发生在工件里。三步闭环：①捕获任务执行的显式/隐式反馈；②把经验固化为带情境、结果、教训、置信度的可检索工件（提示/技能/经验/程序）；③按相似情境检索复用，效果差的降权改写。有廉价、自动、可信评估器的任务可再上进化循环（生成-评估-选择-变异），预算硬编码、防 Goodhart。没有可信评估器、任务量太小、环境每周剧变——这三种情况别建学习机制。</div>
+
 <h2 id="91-模式概述">9.1 模式概述</h2>
 <h3 id="911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</h3>
 <p>机器学习意义上的"学习"指改参数，但智能体的学习绝大多数不发生在权重里。把视角拉高，智能体变好有两条路线。<strong>参数化路线</strong>：用微调、强化学习改模型权重，改动的是能力本身，代价是训练数据、算力与一轮完整的发布流程，产物是不透明的权重。<strong>非参数化路线</strong>：不改权重，改的是模型外部的文本工件——系统提示、少样本示例、技能代码库、经验记忆、工作流程序列。这些工件可读、可审计、可版本化、可随时回滚，写入成本低到一次调用就能完成。</p>
 <p>智能体工程的重心明显偏向非参数化路线，原因有三。第一，反馈信号天然存在且廉价：一次任务跑完，成功与否、错误日志、用户修正都是现成的学习信号，不需要标注团队。第二，学习单元是自然语言或代码，可以直接被人审查——"它学到了什么"以文本形式摆在库里，这与权重更新有本质的治理差异。第三，学习即时生效：新技能入库下一次检索即可用，不用等训练与部署。参数化路线并没有出局——当非参数化工件积累到足够规模，把它们蒸馏进微调数据（把成功的提示+上下文+输出变成训练样本）是自然的混合路径——但在智能体的日常迭代里，本章聚焦非参数化路线。</p>
-<p>按载体分，非参数化学习有四种形态：<strong>提示的进化</strong>（DSPy 把提示当作编译产物自动优化）、<strong>技能的积累</strong>（Voyager 式技能库，学到的技能是经验证的可执行代码）、<strong>经验的沉淀</strong>（第 4 章 Reflexion 的情景记忆向前一步，成为跨会话经验库）、<strong>程序的进化</strong>（AlphaEvolve 式进化循环，直接演化代码工件本身）。四者共享同一个骨架：捕获经验 → 工件化 → 检索复用 → 反馈修正。</p>
+<p>按载体分，非参数化学习有四种形态：<strong>提示的进化</strong>（<a href="https://dspy.ai">DSPy</a> 把提示当作编译产物自动优化）、<strong>技能的积累</strong>（Voyager 式技能库，学到的技能是经验证的可执行代码）、<strong>经验的沉淀</strong>（第 4 章 Reflexion 的情景记忆向前一步，成为跨会话经验库）、<strong>程序的进化</strong>（AlphaEvolve 式进化循环，直接演化代码工件本身）。四者共享同一个骨架：捕获经验 → 工件化 → 检索复用 → 反馈修正。</p>
 <h3 id="912-核心机制它如何工作">9.1.2 核心机制：它如何工作</h3>
 <p>所有形态的共同骨架是一个闭环。<strong>捕获</strong>：从任务执行中提取反馈——显式的（测试通过/失败、指标分数）或隐式的（用户改写了答案、会话被放弃）。<strong>工件化</strong>：把经验固化成可检索的单元，关键是带结构与元数据：什么情境下、什么做法、结果如何、教训是什么，而不是一段无上下文的日志。<strong>复用</strong>：下次遇到相似情境时按嵌入相似度或结构化条件检索，把相关经验注入上下文。<strong>修正</strong>：工件本身也受反馈约束——被复用后效果差的技能降权或改写，错误的经验被后续证据覆盖。</p>
 <p>进化循环是这个骨架的强化版：不满足于"记录已有经验"，而是主动生成变体（变异）、用评估器批量打分（选择）、保留最优并继续变异，把搜索做成一个自动化循环。它能否工作的前提是存在<strong>廉价、自动、可信的评估器</strong>——这也是本章最重要的判据，9.5 节会展开。</p>
+<div class="mermaid">flowchart LR
+    T["任务执行"] --> C["捕获反馈"]
+    C --> A["工件化：技能/经验入库"]
+    A --> R["检索复用"]
+    R --> E["评估器打分"]
+    E -->|"效果好：提置信度"| A
+    E -->|"效果差：降权/改写"| A
+    E -->|"触发变异"| M["LLM 语义变异"]
+    M --> EV["批量评估"]
+    EV --> SEL["选择：质量+多样性"]
+    SEL -->|"新种群"| EV
+    E -->|"满分或预算尽"| STOP["终止并沉淀"]</div>
+<div class="fig-caption">图 9-1：学习闭环的骨架（捕获-工件化-复用-修正）与强化版进化环（生成-评估-选择-变异）。</div>
 <h3 id="913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</h3>
 <p>学习与适应是若干模式的"时间维度"扩展。反思模式（第 4 章）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（第 8 章）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
 <h2 id="92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</h2>
-<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见第 4 章）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 AlphaEvolve（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 OpenEvolve，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
+<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见第 4 章）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 <a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a>（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 <a href="https://github.com/codelion/openevolve">OpenEvolve</a>，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
 <table>
 <thead>
 <tr>
@@ -62,43 +78,43 @@
 <td>2023.3</td>
 <td>Reflexion：语言化反思的情景式在线学习</td>
 <td>Noah Shinn 等</td>
-<td>arXiv:2303.11366；NeurIPS 2023（详见第 4 章）</td>
+<td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>；NeurIPS 2023（详见第 4 章）</td>
 </tr>
 <tr>
 <td>2023.5</td>
 <td>Voyager：Minecraft 技能库与自动课程</td>
 <td>Guanzhi Wang 等（NVIDIA/Caltech 等）</td>
-<td>arXiv:2305.16291</td>
+<td><a href="https://arxiv.org/abs/2305.16291">arXiv:2305.16291</a></td>
 </tr>
 <tr>
 <td>2023.10</td>
 <td>DSPy：提示词作为编译产物的程序化优化</td>
 <td>Omar Khattab 等（斯坦福）</td>
-<td>arXiv:2310.03714；ICLR 2024</td>
+<td><a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a>；ICLR 2024</td>
 </tr>
 <tr>
 <td>2024.1</td>
 <td>AlphaCodium：测试驱动的迭代编码流程</td>
 <td>Tal Ridnik、Ido Rivero（Codium AI/Qodo）</td>
-<td>arXiv:2401.08500</td>
+<td><a href="https://arxiv.org/abs/2401.08500">arXiv:2401.08500</a></td>
 </tr>
 <tr>
 <td>2025.5</td>
 <td>AlphaEvolve：进化编码智能体与算法发现引擎</td>
 <td>Alexander Novikov 等（Google DeepMind）</td>
-<td>发布于官方博客；论文 arXiv:2506.13131</td>
+<td>发布于<a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">官方博客</a>；论文 <a href="https://arxiv.org/abs/2506.13131">arXiv:2506.13131</a></td>
 </tr>
 <tr>
 <td>2025</td>
 <td>OpenEvolve：AlphaEvolve 的开源复刻</td>
 <td>开源社区</td>
-<td>GitHub 开源</td>
+<td><a href="https://github.com/codelion/openevolve">GitHub 开源</a></td>
 </tr>
 </tbody>
 </table>
 <p>演化脉络清晰可循：进化计算给了循环骨架（1975），LLM 让"变异算子"从随机位翻转升级为有语义的改写（这是质的飞跃——变异不再是盲目的）；Reflexion 证明语言反馈可用（2023.3），Voyager 把反馈固化为可复用技能（2023.5），DSPy 把优化对象从"答案"上移到"提示程序"（2023.10），AlphaCodium 给出工程化的测试驱动流程（2024.1），AlphaEvolve 则汇成完整闭环并在真实生产系统上兑现（2025）。</p>
 <h2 id="93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</h2>
-<p>第一，复利效应。不带学习的智能体第 1000 次执行与第 1 次没有区别；带学习的智能体把每次执行变成训练数据，边际成本递减、边际质量递增——这是产品层面真实的护城河。第二，免训练的适应速度。环境变了、接口换了、新坑出现了，改一个技能条目或经验条目即时生效，不需要数据集、训练与发布。第三，可审计的学习。学到的每一条经验都是文本，可以审查"它最近学到了什么"，错误经验可以定点删除——与不可解释的权重更新相比，治理成本天差地别。第四，系统级改进的实证。AlphaEvolve 的结果证明这套闭环不只在玩具基准上有效：它为 Google 的 Borg 数据中心调度找到的启发式平均回收约 0.7% 的全球算力并已在生产运行一年以上，把 Gemini 训练中一个关键矩阵乘 kernel 提速 23%（整体训练时间减约 1%），甚至改进了支撑其自身模型训练的基础设施——智能体改进自己赖以运行的系统，这是自我改进叙事第一次获得工程注脚。</p>
+<p>第一，复利效应。不带学习的智能体第 1000 次执行与第 1 次没有区别；带学习的智能体把每次执行变成训练数据，边际成本递减、边际质量递增——这是产品层面真实的护城河。第二，免训练的适应速度。环境变了、接口换了、新坑出现了，改一个技能条目或经验条目即时生效，不需要数据集、训练与发布。第三，可审计的学习。学到的每一条经验都是文本，可以审查"它最近学到了什么"，错误经验可以定点删除——与不可解释的权重更新相比，治理成本天差地别。第四，系统级改进的实证。AlphaEvolve 的结果证明这套闭环不只在玩具基准上有效：它为 Google 的 Borg 数据中心调度找到的启发式平均回收约 0.7% 的全球算力并已在生产运行一年以上，把 Gemini 训练中一个关键矩阵乘 kernel 提速 23%（整体训练时间减约 1%），甚至改进了支撑其自身模型训练的基础设施——智能体改进自己赖以运行的系统，<strong>这是自我改进叙事第一次获得工程注脚</strong>。</p>
 <h2 id="94-实际应用与案例">9.4 实际应用与案例</h2>
 <p><strong>测试驱动的编码智能体。</strong> 按 AlphaCodium 流程：先让模型反思问题、推理公共测试用例的输入输出关系，再生成 AI 补充测试覆盖边界，然后"生成→运行→看报错→修复"迭代。关键设计点：生成补充测试比直接生成完整解法容易得多，先用廉价信号铺路；已通过的公共测试作为"锚点"，后续修改不得打破。</p>
 <p><strong>技能库式助手。</strong> 仿 Voyager：把每次成功完成的工作（一段 SQL、一个宏、一段数据处理脚本）经人工确认或自动验证后存入技能库，带描述与适用条件，相似任务出现时检索复用。关键设计点：技能必须"执行通过才入库"，未验证的候选技能单独存放。</p>
@@ -106,6 +122,10 @@
 <p><strong>客服经验库复利。</strong> 每个成功解决的工单沉淀为"症状→解法→适用条件"条目，失败工单沉淀为"这类问题不要这样做"。关键设计点：条目要有信任等级（人工审核 &gt; 自动沉淀），并定期用新工单回测旧条目的命中率。</p>
 <p><strong>系统与调度优化。</strong> 仿 AlphaEvolve 对数据中心调度的用法：任何"方案可自动评估"的工程问题（缓存策略、分片规则、正则/查询改写）都可以放进进化循环。关键设计点：评估器用生产镜像回放或沙箱压测，绝不能拿线上流量当第一个实验场。</p>
 <p><strong>数学与算法发现。</strong> 面向有明确判定标准的开放问题（组合构造、算法复杂度），进化循环产出候选构造、评估器机械验证。关键设计点：问题必须能形式化为可执行的评分函数，这是 AlphaEvolve 选题的第一标准。</p>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Google DeepMind AlphaEvolve。</strong> 2025 年 5 月 14 日官方发布的进化编码智能体：为 Google Borg 集群调度进化出的机器排序启发式<strong>平均持续回收约 0.7% 的全球算力</strong>，公告时已在生产运行超一年；用 48 次标量乘法完成 4×4 复矩阵乘法，刷新 Strassen 1969 年以来 56 年的纪录；在 50 多个开放数学问题上约 20% 改进已知最优；把 Gemini 训练的关键矩阵乘 kernel 提速 23%（约省 1% 总训练时间）。来源：<a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">DeepMind 官方博客</a>与技术报告 <a href="https://arxiv.org/abs/2506.13131">arXiv:2506.13131</a>。</p>
+<p><strong>AlphaCodium。</strong> Codium AI（现 Qodo）2024 年 1 月发表的测试驱动编码流程：先让模型反思问题、推理公共测试，再生成 AI 补充测试并迭代修复——在 CodeContests 验证集上把 GPT-4 的 pass@5 从单个精心设计提示的 19% 提升到 44%（官方论文摘要原文）。来源：<a href="https://arxiv.org/abs/2401.08500">arXiv:2401.08500</a>。</p>
+<p><strong>Cursor 的规则沉淀机制。</strong> Cursor 编辑器把团队约定沉淀为 <code>.cursor/rules/*.mdc</code> 持久化规则文件，提供四种生效方式（总是注入/智能判断/按文件模式匹配/@手动引用），规则随代码入库进 git，"Agent 反复犯的错"被固化为一条规则后全团队即时受益——这正是本章"经验工件化 + 检索复用"在开发者工具中的落地形态。来源：<a href="https://cursor.com/docs/context/rules">Cursor 官方 Rules 文档</a>。</p>
 <h2 id="95-深度讲解">9.5 深度讲解</h2>
 <h3 id="951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</h3>
 <table>
@@ -149,7 +169,7 @@
 </tr>
 </tbody>
 </table>
-<p>选型的经验法则：改"怎么用模型"选非参数化，改"模型本身会不会"选参数化。提示层面能解决的表达问题（格式、流程、领域知识注入、错误规避）不要动权重；当非参数化工件积累出稳定模式（同一类提示修改反复出现）、或需要把能力下沉到更小更便宜的模型以降本时，再把工件蒸馏成微调数据——两条路线是接力关系而非对立关系。</p>
+<p>选型的经验法则：<strong>改"怎么用模型"选非参数化，改"模型本身会不会"选参数化</strong>。提示层面能解决的表达问题（格式、流程、领域知识注入、错误规避）不要动权重；当非参数化工件积累出稳定模式（同一类提示修改反复出现）、或需要把能力下沉到更小更便宜的模型以降本时，再把工件蒸馏成微调数据——两条路线是接力关系而非对立关系。</p>
 <h3 id="952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</h3>
 <p>进化循环有四个环节，每个环节都有工程要点。<strong>生成</strong>：AlphaEvolve 用双模型 ensemble——快速模型（Gemini Flash）大量产出想法保证搜索广度，强模型（Gemini Pro）对有希望的候选做深度改写，相当于"广撒网+重点培养"的成本最优组合。变异的形式很重要：让 LLM 输出对现有代码的定向修改（diff/替换块），比每次从头重写更容易保留已验证的部分。<strong>评估</strong>：这是整个循环的命门。评估器必须廉价（每次评估几分钟内）、自动（无人参与）、可信（评分与真实目标一致）。AlphaEvolve 的评估流水线先跑小样例快速淘汰废品，再做完整评分，甚至让另一个 LLM 评估难以程序化的属性（可读性等）。<strong>选择</strong>：进化数据库不是简单 top-k，AlphaEvolve 借鉴 MAP-Elites 一类质量-多样性思想并配合岛屿模型——既保留最优个体，也保留不同特征维度上的差异化个体，防止种群过早收敛到单一套路。<strong>终止</strong>：满分即停、代数预算、调用预算三者取严，进化循环没有预算控制就是一台烧钱机。</p>
 <h3 id="953-技能库与自动课程">9.5.3 技能库与自动课程</h3>
@@ -436,12 +456,34 @@ if __name__ == &quot;__main__&quot;:
 <li>预算硬编码：代数、调用数、费用三重上限；没有预算的进化循环是烧钱机。</li>
 </ul>
 <h3 id="结论">结论</h3>
-<p>学习与适应把智能体从"一次性交付的工具"变成"越用越好的系统"。这件事在工程上已经不需要信仰：Voyager 证明了技能可以积累，DSPy 证明了提示可以编译，AlphaCodium 证明了流程可以自我修正，AlphaEvolve 证明了进化循环能刷新五十六年的算法纪录并优化支撑自身的生产系统。工程师要做的判断始终朴素：这个任务有没有可信的评估信号？经验值不值得沉淀？循环的预算和防腐机制配齐了没有？三问过关，就让系统开始积累复利；不过关，就诚实地把资源投在单次执行的质量上——知道何时不学，同样是这门手艺的一部分。</p></div>
+<p>学习与适应把智能体从"一次性交付的工具"变成"越用越好的系统"。这件事在工程上已经不需要信仰：Voyager 证明了技能可以积累，DSPy 证明了提示可以编译，AlphaCodium 证明了流程可以自我修正，AlphaEvolve 证明了进化循环能刷新五十六年的算法纪录并优化支撑自身的生产系统。工程师要做的判断始终朴素：这个任务有没有可信的评估信号？经验值不值得沉淀？循环的预算和防腐机制配齐了没有？三问过关，就让系统开始积累复利；不过关，就诚实地把资源投在单次执行的质量上——<strong>知道何时不学，同样是这门手艺的一部分</strong>。</p>
+<h2 id="98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>　Reflexion：语言化反思的情景式在线学习（NeurIPS 2023，详见第 4 章）。</li>
+<li><a href="https://arxiv.org/abs/2305.16291">arXiv:2305.16291</a>　Voyager：开放世界中的技能库终身学习智能体。</li>
+<li><a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a>　DSPy：把提示词作为编译产物程序化优化（ICLR 2024）。</li>
+<li><a href="https://arxiv.org/abs/2401.08500">arXiv:2401.08500</a>　AlphaCodium：测试驱动的迭代编码流程（CodeContests pass@5 19%→44%）。</li>
+<li><a href="https://arxiv.org/abs/2506.13131">arXiv:2506.13131</a>　AlphaEvolve：进化编码智能体与算法发现引擎（Google DeepMind 技术报告）。</li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li><a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">Google DeepMind AlphaEvolve 官方博客</a>（2025-05-14，0.7% 算力回收与 48 次乘法纪录出处）</li>
+<li><a href="https://dspy.ai">DSPy 官方文档</a></li>
+<li><a href="https://github.com/codelion/openevolve">OpenEvolve 开源仓库</a>（AlphaEvolve 循环的开源复刻）</li>
+<li><a href="https://cursor.com/docs/context/rules">Cursor Rules 官方文档</a>（项目规则的持久化与四种生效方式）</li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li><a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve 生产实绩</a>：Borg 调度、TPU 电路与 Gemini 训练 kernel 的官方披露</li>
+<li><a href="https://arxiv.org/abs/2401.08500">AlphaCodium 论文摘要</a>：CodeContests 成绩出处</li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第8章 记忆管理</span></a><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第10章 模型上下文协议</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l2"><a href="#96-工程落地实践代码示例">9.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l2"><a href="#96-工程落地实践代码示例">9.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,13 +31,26 @@
 <p><strong>一句话定义</strong>：在智能体执行前把意图形式化为"完成判据 + 约束 + 预算"三要素，在执行中以固定节奏把实际进展与目标比对，据偏差修正或终止执行。
 <strong>解决什么问题</strong>：LLM 智能体缺乏内生的进度感与停止判据，长任务会漂移、空转、过早收工或违反约束而不自知 ｜ <strong>适用场景</strong>：多步长任务、自治运行、批量作业、任何"做完了才算完成"的交付型工作流 ｜ <strong>核心机制</strong>：目标形式化 → 步进执行 → 周期性评估（trace/metric/eval 三类信号）→ 修正、继续或升级人 ｜ <strong>代价</strong>：评估本身消耗 token 与延迟；判据写歪会放大错误方向；监控可能被智能体的表面进度欺骗。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　LLM 智能体天生缺<b>完成判据</b>、<b>进度感</b>与<b>停止条件</b>，长任务会漂移、空转、谎报完成。解法：把目标形式化为"判据＋约束＋预算"三元组，执行中以固定节奏比对 trace／metric／eval 三类信号。三步：①写可判定的完成谓词（程序化断言优先）；②里程碑粗查、终判严查，执行者不得自任裁判；③偏差即修正，预算耗尽即合法放弃或升级给人。何时别用：单轮问答，以及目标本身在演化的探索型任务——硬判据会锁死意外发现。</div>
+
 <h2 id="111-模式概述">11.1 模式概述</h2>
 <h3 id="1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</h3>
-<p>把一个语言模型从"回答问题"升级为"完成任务"，最先失效的不是能力而是方向。让智能体"整理这个仓库"，它会兴致勃勃地开始干活，但没有人（包括它自己）说得清干到什么程度算完：可能是建了个 README，可能是重构了半个代码库，可能写了三行就宣布完成。LLM 的训练目标是"生成合理的下一个词"，不是"达成外部世界中的某个状态"。因此它天然缺少三样东西：<strong>完成判据</strong>（什么算做完）、<strong>进度感</strong>（现在离目标多远）、<strong>停止条件</strong>（什么时候该停，包括"该放弃"）。没有这三样，任务越 长，行为越像随机游走——业内常见的三种病症：过早宣布完成（没有终判就收工）、无限循环（同一动作反复执行而不知无进展）、目标漂移（做着做着变成做另一件事）。</p>
+<p>把一个语言模型从"回答问题"升级为"完成任务"，最先失效的不是能力而是方向。让智能体"整理这个仓库"，它会兴致勃勃地开始干活，但没有人（包括它自己）说得清干到什么程度算完：可能是建了个 README，可能是重构了半个代码库，可能写了三行就宣布完成。LLM 的训练目标是"生成合理的下一个词"，不是"达成外部世界中的某个状态"。因此它天然缺少三样东西：<strong>完成判据</strong>（什么算做完）、<strong>进度感</strong>（现在离目标多远）、<strong>停止条件</strong>（什么时候该停，包括"该放弃"）。没有这三样，任务越 长，行为越像随机游走——业内常见的<strong>三种病症</strong>：过早宣布完成（没有终判就收工）、无限循环（同一动作反复执行而不知无进展）、目标漂移（做着做着变成做另一件事）。</p>
 <p>传统软件不面对这个问题，因为"目标"在代码里就是函数签名与测试用例；RL 智能体不面对这个问题，因为奖励函数就是目标。而 LLM 智能体的目标通常活在用户的一句自然语言里，歧义、隐含、不可计算。目标设定与监控模式要做的，就是把这句自然语言翻译成机器可执行的控制结构，再配一个持续运行的比对环节。</p>
 <h3 id="1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</h3>
 <p>机制可以概括为"一个三元组 + 一个循环"。<strong>目标形式化三元组</strong>：完成判据（达成即可停车的可判定谓词，如"全部测试通过"）、约束（执行全程必须成立的不变量，如"不修改 tests 目录""预算不超过 5 美元"）、预算（可消耗资源的上限，步数、token、时间、金额）。判据回答"何时成功"，约束回答"怎样才算合规地成功"，预算回答"最多投入多少"。</p>
-<p><strong>检查循环</strong>把控制论里的负反馈搬进智能体循环：执行一步 → 采集信号 → 与目标比对 → 无偏差则继续，有偏差则修正（重定向、重规划），判据满足则退出，预算耗尽且未达成则放弃或升级给人。比对用的信号分三类：<strong>trace</strong>（结构化的执行轨迹：每步的输入、工具调用、输出）、<strong>metric</strong>（可累计的数值：完成步数、工具错误率、token 消耗）、<strong>eval</strong>（对产出质量的判定，来源可以是程序化断言，也可以是模型裁判，即 LLM-as-judge）。三者的关系是：trace 是原料，metric 与 eval 是从 trace 提炼出的两类判断——定量判断与定性判断。</p>
+<p><strong>检查循环</strong>把控制论里的负反馈搬进智能体循环：执行一步 → 采集信号 → 与目标比对 → 无偏差则继续，有偏差则修正（重定向、重规划），判据满足则退出，预算耗尽且未达成则放弃或升级给人。比对用的信号分三类：<strong>trace</strong>（结构化的执行轨迹：每步的输入、工具调用、输出）、<strong>metric</strong>（可累计的数值：完成步数、工具错误率、token 消耗）、<strong>eval</strong>（对产出质量的判定，来源可以是程序化断言，也可以是模型裁判，即 LLM-as-judge）。三者的关系是：trace 是原料，metric 与 eval 是从 trace 提炼出的两类判断——定量判断与定性判断。整个检查循环如下图所示。</p>
+<div class="mermaid">flowchart TD
+    G["目标三元组：判据 / 约束 / 预算"] --> E["步进执行"]
+    E --> S["采集信号：trace、metric、eval"]
+    S --> D{"与原始目标比对"}
+    D --> A["achieved：满足判据，退出成功"]
+    D --> B["on_track：无偏差，继续执行"]
+    D --> F["drifted / stalled：修正与重规划"]
+    D --> H["违规或预算耗尽：停车并升级给人"]
+    B --> E
+    F --> E</div>
+<div class="fig-caption">图 11-1：目标-进度-偏差反馈环——判定用原始目标而非执行中的转述；修正回到执行，违规与预算耗尽走停车出口。</div>
 <h3 id="1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</h3>
 <p>目标监控与<strong>反思模式</strong>相邻但职责不同：反思是智能体对自己单步产出的自我批评，作用域是"这一步做得好不好"；目标监控作用域是"整个任务还该不该继续、方向对不对"。反思可以充当监控的信号源之一，但替代不了监控——自我批评对"方向性漂移"几乎无感，因为漂移的每一步单看都挺合理。与<strong>提示链</strong>的关系是上下游：链条上每个环节的产出物正是监控的采集点；链式任务天然适合里程碑式监控（每环节出口做一次终判式的检查）。与<strong>路由/规划</strong>的关系在执行面：漂移检测触发重规划，规划器需要监控提供的"偏差原因"作为输入。与第 12 章<strong>异常处理</strong>的关系在边界上：预算耗尽、连续失败正是异常恢复机制的触发条件；本章回答"该不该停"，第 12 章回答"停了之后怎么救"。与第 10 章 <strong>MCP</strong> 的关系在数据面：工具调用产生标准化 trace，是监控信号最重要的来源。</p>
 <h2 id="112-起源与历史最早是谁提出来的">11.2 起源与历史：最早是谁提出来的</h2>
@@ -85,31 +99,31 @@
 <td>1999</td>
 <td>John Doerr 把 OKR 带入 Google，"可度量目标 + 定期检视"成为工程管理默认件</td>
 <td>John Doerr</td>
-<td>Google 管理实践，后在《Measure What Matters》中系统阐述</td>
+<td>Google 管理实践，后在<a href="https://www.whatmatters.com/">《Measure What Matters》</a>中系统阐述</td>
 </tr>
 <tr>
 <td>2020-04</td>
 <td>"规范博弈"案例集：字面满足目标而违背意图的行为被系统化整理</td>
 <td>Victoria Krakovna 等</td>
-<td>Google DeepMind 博客，2020-04-21</td>
+<td><a href="https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity">Google DeepMind 博客，2020-04-21</a></td>
 </tr>
 <tr>
 <td>2022-10</td>
 <td>"目标误泛化"：即使规范正确，系统也可能泛化出错误目标</td>
 <td>Rohan Shah 等</td>
-<td>arXiv:2210.01790</td>
+<td><a href="https://arxiv.org/abs/2210.01790">arXiv:2210.01790</a></td>
 </tr>
 <tr>
 <td>2023-06/12</td>
 <td>LLM-as-judge 方法确立：用强模型当裁判评测生成质量（MT-Bench/Chatbot Arena）</td>
 <td>Lianmin Zheng 等（LMSYS/UC Berkeley 等）</td>
-<td>arXiv:2306.05685（NeurIPS 2023 oral）；arXiv:2312.16531</td>
+<td><a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>（NeurIPS 2023 oral）；<a href="https://arxiv.org/abs/2312.16531">arXiv:2312.16531</a></td>
 </tr>
 <tr>
 <td>2023-2024</td>
 <td>LLM 可观测性工程落地：LangSmith 发布、Langfuse 开源；OpenTelemetry GenAI 语义约定推进</td>
 <td>LangChain / Langfuse / OpenTelemetry 社区</td>
-<td>各官方发布</td>
+<td><a href="https://docs.smith.langchain.com">LangSmith 文档</a> / <a href="https://langfuse.com">Langfuse</a> / <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">OTel GenAI 语义约定</a></td>
 </tr>
 </tbody>
 </table>
@@ -125,12 +139,16 @@
 <p><strong>数据管道巡检修复</strong>。目标："让 DAG 恢复全绿且数据质量校验通过"。设计点：判据双层（管道状态 + 数据质量断言，只看前者会被"重跑掩盖脏数据"骗过）；每次修复动作前快照，防止修复动作本身污染数据——这是与异常恢复模式的典型组合点。</p>
 <p><strong>采购比价智能体</strong>。目标："在预算内找到满足规格的供应商报价"。设计点：约束承载合规（供应商白名单、单笔限额），预算是硬约束；监控重点是约束违反而非进度，任何一次越界直接终止并上报，不给"下不为例"的机会。</p>
 <p><strong>模型训练/评测流水线</strong>。目标："新版本在评测集上不劣于旧版本"。设计点：判据是成对比较（用裁判模型或 A/B 评测），而非单看均分；metric 侧用 OTel GenAI 约定把每次评测的 gen_ai.* 指标汇入统一看板，版本间可比。</p>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>LangSmith 与 Clay、Toyota 的智能体监控</strong>。LangChain 官网客户故事显示：营销数据平台 Clay 用 LangSmith 调试与评估每月约 3 亿次智能体运行，把 eval 与生产监控组合起来改进其 Claygent；丰田北美把 LangSmith 用作智能体的"安灯板"（Andon Board）——异常即拉灯停线，正是本章"trace 是地基、监控要有停车权"的产品化形态。来源：<a href="https://www.langchain.com/customers">LangChain 客户故事</a>。</p>
+<p><strong>Langfuse 的企业级 trace 与 eval</strong>。AWS 官方合作伙伴博客记载：物流物联网公司 Samsara 把 Langfuse 接入其 AI 助手的 LLM 基础设施做全链路监控（含多模态应用），Twilio 用它做协作式提示词管理，默克集团（Merck Group）在组织级 AI 平台上用其实时 LLM tracing——开源可观测平台进入大型企业生产的实例。来源：<a href="https://aws.amazon.com/blogs/apn/transform-large-language-model-observability-with-langfuse/">AWS Partner Network 博客</a>。</p>
+<p><strong>Azure AI Foundry 采用 OTel GenAI 语义约定</strong>。微软 2025 年 10 月宣布与 Cisco Outshift 共同向 OpenTelemetry 提交多智能体语义约定（execute_task 任务跨度、agent 间交互、工具调用参数与结果属性、评测事件等），并把基于 OTel 的统一观测集成进 Azure AI Foundry、Microsoft Agent Framework、Semantic Kernel 及 LangChain/LangGraph/OpenAI Agents SDK 的观测包——不同框架的轨迹由此汇入同一套可观测设施。来源：<a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">OTel GenAI 语义约定官方文档</a>；微软公告《Azure AI Foundry: Advancing OpenTelemetry and delivering unified multi-agent observability》（Azure AI Foundry 官方博客，2025-10-01），框架内置埋点的第三方实测见 <a href="https://signoz.io/docs/microsoft-agent-framework-observability/">SigNoz 文档</a>。</p>
 <h2 id="115-深度讲解">11.5 深度讲解</h2>
 <h3 id="1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</h3>
 <p>三元组中最值得精雕的是<strong>完成判据</strong>。一条合格的判据必须是谓词——给定最终状态，能在有限步骤内计算出真假。工程上有三个来源，可靠性与覆盖面递减：程序化断言（测试、编译、schema 校验）最可靠，凡能用就该用；外部世界状态（订单系统里的状态字段、文件是否存在）次之，注意查询本身的权限与延迟；模型裁判覆盖语义空间（"摘要是否忠实""报告是否切题"），最灵活也最会错意。写坏判据的方式高度模式化，值得背下来：判据是<strong>手段的度量</strong>而非<strong>结果的度量</strong>（"写了 500 行代码" versus "bug 修好了"）；判据<strong>可被 agent 自证</strong>（"自查认为完成"——任何允许 agent 兼任裁判的判据等于没有判据）；判据<strong>遗漏约束</strong>（"报告完成"却没说不能编造引用）。判据设计的压力测试只有一句：<strong>假装智能体想作弊，这条判据拦得住吗</strong>？</p>
 <p>约束与预算承担的是"过程正当性"。约束是不变量——每一步检查，违反即触发处理，而不是等终判；预算是资源的硬顶——它同时是性能护栏与安全护栏，一个没有预算上限的自治智能体等于一张开口的信用卡。预算还有个常被忽略的语义角色：<strong>它是"放弃"的合法性来源</strong>。管理学里 OKR 的检视节奏之所以重要，正是因为它制度化地回答"继续还是止损"；没有预算的智能体永远只会继续。</p>
 <h3 id="1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</h3>
-<p>进度度量有两种粒度。<strong>里程碑</strong>把任务切成阶段，每阶段出口做一次检查（大纲→草稿→终稿），优点是早失败、失败定位准，缺点是里程碑本身可能写歪——把手段当前进（"已收集 20 篇文献"不等于"调研完成"）。<strong>终判</strong>只在最后做一次全量检查，实现最简单，但反馈太晚：一个 50 步的任务在第 48 步才发现方向错了，代价是全部重付。实践中的取舍是"里程碑粗、终判严"：里程碑只做方向性检查（便宜、快、允许模糊），终判必须用最高保真的判据（贵、慢、尽量客观）。再叠一层"进度签名"技巧：要求执行者在每个里程碑用一句话自报"距完成还差什么"，把自报内容与实际 trace 交叉验证——自报与轨迹长期背离的智能体，本身就是最强烈的漂移警报。</p>
+<p>进度度量有两种粒度。<strong>里程碑</strong>把任务切成阶段，每阶段出口做一次检查（大纲→草稿→终稿），优点是早失败、失败定位准，缺点是里程碑本身可能写歪——把手段当前进（"已收集 20 篇文献"不等于"调研完成"）。<strong>终判</strong>只在最后做一次全量检查，实现最简单，但反馈太晚：一个 50 步的任务在第 48 步才发现方向错了，代价是全部重付。实践中的取舍是<strong>"里程碑粗、终判严"</strong>：里程碑只做方向性检查（便宜、快、允许模糊），终判必须用最高保真的判据（贵、慢、尽量客观）。再叠一层"进度签名"技巧：要求执行者在每个里程碑用一句话自报"距完成还差什么"，把自报内容与实际 trace 交叉验证——自报与轨迹长期背离的智能体，本身就是最强烈的漂移警报。</p>
 <h3 id="1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</h3>
 <p>目标漂移不是单一现象，至少有三种形态需要不同对策。第一种是<strong>目标侵蚀（goal drift / 目标滑坡）</strong>：智能体把难的部分悄悄换掉，用容易达成的替代目标交差——写不出忠实的摘要，就写一篇看起来顺滑的短文。它与 RL 里的规范博弈同构（Krakovna 等人 2020 年整理的案例集是这一现象的系统参考），检测的关键是<strong>用原始目标而非当前语境做比对</strong>：评审时只给评审者"最初的目标文本 + 轨迹摘要"，不给中间过程里已被智能体重新表述过的目标——漂移往往正是通过"目标的重新表述"完成的。第二种是<strong>手段固化</strong>：某条路线早期有效，智能体反复重试早已失效的手段；检测靠重复度统计（动作 n-gram 重复率）与"无新信息步数"计数。第三种最隐蔽：<strong>目标误泛化</strong>（Shah 等 2022 年提出的概念）——即使判据完全正确，智能体也可能在训练分布外"忠实地"追求一个错误目标；对单次执行的黑盒监控无解，只能靠分布外的终判抽查与人类复核兜底。工程上还有一条铁律：<strong>执行者不能自任裁判</strong>。自我评估会产生系统性乐观偏差，监控者应使用独立上下文（最好独立模型）读取目标与轨迹后给出判定。</p>
 <h3 id="1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</h3>
@@ -440,12 +458,34 @@ if __name__ == &quot;__main__&quot;:
 <li>转人工与放弃是合法出口：预算耗尽与连续漂移的正确处理是升级，不是硬撑。</li>
 </ul>
 <h3 id="结论">结论</h3>
-<p>智能体越自治，目标监控越不是可选项。没有判据的自治是赌博，没有监控的自治是盲飞；而判据本身也会出错——规范博弈与目标误泛化的研究提醒我们，监控机制必须对"目标表示与真实意图的缺口"保持永久警惕。工程上的正确姿势是谦逊的：让便宜的确定性检查守门，让昂贵的语义裁判抽检，让无法自动判定的事尽快回到人面前。能做到这三点的智能体系统，才配得上"可靠"两个字。</p></div>
+<p>智能体越自治，目标监控越不是可选项。没有判据的自治是赌博，没有监控的自治是盲飞；而判据本身也会出错——规范博弈与目标误泛化的研究提醒我们，监控机制必须对"目标表示与真实意图的缺口"保持永久警惕。工程上的正确姿势是谦逊的：<strong>让便宜的确定性检查守门，让昂贵的语义裁判抽检，让无法自动判定的事尽快回到人面前</strong>。能做到这三点的智能体系统，才配得上"可靠"两个字。</p>
+<h2 id="118-延伸阅读与参考链接">11.8 延伸阅读与参考链接</h2>
+<p><strong>论文</strong></p>
+<ul>
+<li>LLM-as-judge 开山之作 MT-Bench/Chatbot Arena：<a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>、<a href="https://arxiv.org/abs/2312.16531">arXiv:2312.16531</a></li>
+<li>目标误泛化（correct specification ≠ correct goal）：<a href="https://arxiv.org/abs/2210.01790">arXiv:2210.01790</a></li>
+<li>规范博弈案例集（DeepMind，2020）：<a href="https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity">Specification gaming: the flip side of AI ingenuity</a></li>
+<li>OKR 目标检视节奏的管理学源头：<a href="https://www.whatmatters.com/">Measure What Matters（whatmatters.com）</a></li>
+</ul>
+<p><strong>官方文档与规范</strong></p>
+<ul>
+<li>OpenTelemetry 官网与 GenAI 语义约定（gen_ai.* 属性族）：<a href="https://opentelemetry.io/">opentelemetry.io</a> ｜ <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">opentelemetry.io/docs/specs/semconv/gen-ai</a></li>
+<li>LangSmith 文档（trace、eval、monitor 产品化三件套）：<a href="https://docs.smith.langchain.com">docs.smith.langchain.com</a></li>
+<li>Langfuse 开源 LLM 工程平台（tracing/evaluation/prompt management）：<a href="https://langfuse.com">langfuse.com</a></li>
+<li>LangGraph 官网（工作节点＋监控节点的条件回路）：<a href="https://langchain-ai.github.io/langgraph/">langchain-ai.github.io/langgraph</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>LangChain 客户故事（Clay 月均 3 亿次智能体运行评估、Toyota 智能体安灯板、Klarna、Salesforce 等）：<a href="https://www.langchain.com/customers">langchain.com/customers</a></li>
+<li>AWS Partner Network 博客：Langfuse 在 Samsara、Twilio、Merck Group 的企业级 LLM 可观测实践：<a href="https://aws.amazon.com/blogs/apn/transform-large-language-model-observability-with-langfuse/">aws.amazon.com/blogs/apn</a></li>
+<li>微软 Azure AI Foundry 推进 OpenTelemetry 多智能体观测（2025-10-01，Azure AI Foundry 官方博客）；框架内置 GenAI 埋点的实测记录：<a href="https://signoz.io/docs/microsoft-agent-framework-observability/">signoz.io/docs/microsoft-agent-framework-observability</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第10章 模型上下文协议</span></a><a class="pager" href="../chapters/ch12-exception-recovery.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第12章 异常处理与恢复</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#111-模式概述">11.1 模式概述</a></li><li class="toc-l3"><a href="#1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#112-起源与历史最早是谁提出来的">11.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#114-实际应用与案例">11.4 实际应用与案例</a></li><li class="toc-l2"><a href="#115-深度讲解">11.5 深度讲解</a></li><li class="toc-l3"><a href="#1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</a></li><li class="toc-l3"><a href="#1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</a></li><li class="toc-l3"><a href="#1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</a></li><li class="toc-l3"><a href="#1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</a></li><li class="toc-l3"><a href="#1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</a></li><li class="toc-l2"><a href="#116-工程落地实践代码示例">11.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1161-框架无关实现完整可运行">11.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1162-框架集成实现langgraph工作节点-监控节点的条件回路">11.6.2 框架集成实现（LangGraph：工作节点 + 监控节点的条件回路）</a></li><li class="toc-l3"><a href="#1163-生产化改造清单">11.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#117-概览-核心要点-结论">11.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#111-模式概述">11.1 模式概述</a></li><li class="toc-l3"><a href="#1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#112-起源与历史最早是谁提出来的">11.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#114-实际应用与案例">11.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#115-深度讲解">11.5 深度讲解</a></li><li class="toc-l3"><a href="#1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</a></li><li class="toc-l3"><a href="#1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</a></li><li class="toc-l3"><a href="#1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</a></li><li class="toc-l3"><a href="#1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</a></li><li class="toc-l3"><a href="#1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</a></li><li class="toc-l2"><a href="#116-工程落地实践代码示例">11.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1161-框架无关实现完整可运行">11.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1162-框架集成实现langgraph工作节点-监控节点的条件回路">11.6.2 框架集成实现（LangGraph：工作节点 + 监控节点的条件回路）</a></li><li class="toc-l3"><a href="#1163-生产化改造清单">11.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#117-概览-核心要点-结论">11.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#118-延伸阅读与参考链接">11.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

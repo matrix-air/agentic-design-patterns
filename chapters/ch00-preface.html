@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">开篇</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -26,6 +27,8 @@
       <p class="chapter-summary">什么是智能体、为什么需要设计模式，以及全书二十一种模式的地图与两种读法。</p>
     </div>
     <div class="chapter-body">
+<div class="quick-read"><b>全书速览</b>　智能体 = 大语言模型 + 循环 + 工具 + 状态。全书讲透 **21 种设计模式**，分四部分：核心模式（1-7 章）、认知机制（8-11 章）、容错与扩展（12-14 章）、高级架构（15-21 章）。每章固定做六件事：模式概述、起源与历史、发挥的作用、实际应用、深度讲解、工程落地代码。两条读法：按序读打地基（第 1-7 章必读），按查读当手册翻，遇到组合需求按地图对章取用。</div>
+
 <h2 id="从语言模型到智能体">从语言模型到智能体</h2>
 <p>大语言模型本身只会做一件事：给定一段文本，接着写下一段文本。它没有目标，不会行动，记不住上一轮做过什么。所谓智能体（Agent），就是给这个"会思考的大脑"装上骨骼与手脚：让模型在一个循环里运转——接收目标、观察环境、调用工具、检查结果、决定下一步——直到任务完成或触发停止条件。一句话概括：<strong>智能体 = 大语言模型 + 循环 + 工具 + 状态</strong>。</p>
 <p>实践中还有一个介于"普通程序"与"完全自主智能体"之间的层次：工作流（Workflow）。工作流由开发者预先写定控制流，模型只负责其中的语义环节——理解、生成、判断；智能体则由模型自己决定控制流。Anthropic 在 2024 年 12 月的工程文章《Building Effective Agents》里给出的正是这个区分，本书沿用这一框架：前半本大量篇幅在讲"怎么把工作流写对"，后半本才进入"怎么把自主性放对地方"。先把工作流写对，再谈自主，是几乎所有生产系统能真正落地的路径。</p>
@@ -173,6 +176,40 @@
 </tr>
 </tbody>
 </table>
+<div class="mermaid">flowchart LR
+    subgraph P1["第一部分 · 核心模式（1-7 章）"]
+        c1["提示链"]
+        c2["路由"]
+        c3["并行化"]
+        c4["反思"]
+        c5["工具使用"]
+        c6["规划"]
+        c7["多智能体"]
+    end
+    subgraph P2["第二部分 · 认知机制（8-11 章）"]
+        c8["记忆管理"]
+        c9["学习与适应"]
+        c10["模型上下文协议 MCP"]
+        c11["目标设定与监控"]
+    end
+    subgraph P3["第三部分 · 容错与扩展（12-14 章）"]
+        c12["异常处理与恢复"]
+        c13["人在回路"]
+        c14["知识检索 RAG"]
+    end
+    subgraph P4["第四部分 · 高级架构（15-21 章）"]
+        c15["智能体间通信 A2A"]
+        c16["资源感知优化"]
+        c17["推理技术"]
+        c18["守护栏与安全"]
+        c19["评估与监控"]
+        c20["优先级排序"]
+        c21["探索与发现"]
+    end
+    c1 --> c2 --> c3 --> c4 --> c5 --> c6 --> c7
+    c7 --> c15
+    c14 --> c18</div>
+<div class="fig-caption">图 0-1：全书二十一种模式全景——四个 subgraph 对应四部分，实线标出主干阅读顺序（核心模式依次递进，多智能体通向高级架构，RAG 为守护栏的前置知识）。</div>
 <h2 id="如何使用本书">如何使用本书</h2>
 <p>本书支持两种读法。<strong>按序读</strong>：第 1 至 7 章是地基，建议所有读者先过一遍——这七个模式覆盖了搭任何一个智能体系统的主干决策；第 8 至 14 章解决"系统要长期跑、要扛住失败"的问题；第 15 至 21 章面向多智能体与大规模场景。每章自包含，代码可独立运行，因此也支持<strong>按查读</strong>：遇到具体问题时，按上面地图的"核心问题"一列直接翻到对应章节。</p>
 <p>如果你带着一个明确的建设目标而来，可以走这三条典型组合路线：</p>
@@ -183,12 +220,33 @@
 </ul>
 <h2 id="代码约定">代码约定</h2>
 <p>全书代码统一使用 Python 3.10+，通过 OpenAI 兼容接口接入模型，只读环境变量（<code>AGENT_LLM_BASE_URL</code>、<code>AGENT_LLM_API_KEY</code>、<code>AGENT_LLM_MODEL</code>），不硬编码任何密钥——换任何一家兼容服务只需改三个环境变量。每章给出两份实现：框架无关版（只用官方 SDK，完整可运行）与框架集成版（LangChain / LangGraph 等，标注测试版本）。示例刻意保留错误路径与停止条件，因为生产代码的难点从来不在 happy path。</p>
-<p>模式是工具，不是目的。读完后请回到你自己的问题上：先用最笨的提示链试一次，让失败暴露出来，再决定要引入哪种更重的结构——这比任何预先的架构设计都更接近智能体工程的真相。</p></div>
+<p>模式是工具，不是目的。读完后请回到你自己的问题上：先用最笨的提示链试一次，让失败暴露出来，再决定要引入哪种更重的结构——这比任何预先的架构设计都更接近智能体工程的真相。</p>
+<h2 id="延伸阅读与参考链接">延伸阅读与参考链接</h2>
+<p><strong>原书与电子版</strong></p>
+<ul>
+<li>原书正式出版页：Antonio Gulli, <em>Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems</em>, Springer 2025：<a href="https://link.springer.com/book/10.1007/978-3-032-01402-3">https://link.springer.com/book/10.1007/978-3-032-01402-3</a></li>
+<li>全书开源电子版公开仓库（含全书 PDF 与配套代码 Notebook）：<a href="https://github.com/evoiz/Agentic-Design-Patterns">https://github.com/evoiz/Agentic-Design-Patterns</a></li>
+<li>社区中文译本（开源，含章节导航与 PDF 下载）：<a href="https://github.com/xindoo/agentic-design-patterns">https://github.com/xindoo/agentic-design-patterns</a></li>
+</ul>
+<p><strong>协议与规范</strong></p>
+<ul>
+<li>Model Context Protocol（MCP）官方网站：<a href="https://modelcontextprotocol.io">https://modelcontextprotocol.io</a></li>
+<li>A2A 协议社区门户：<a href="https://a2aprotocol.ai">https://a2aprotocol.ai</a>；A2A 官方项目仓库：<a href="https://github.com/a2aproject/A2A">https://github.com/a2aproject/A2A</a></li>
+</ul>
+<p><strong>工程参考</strong></p>
+<ul>
+<li>Anthropic 工程博客《Building Effective Agents》（工作流与智能体之分、五种基础工作流）：<a href="https://www.anthropic.com/engineering/building-effective-agents">https://www.anthropic.com/engineering/building-effective-agents</a></li>
+<li>Anthropic《How we built our multi-agent research system》：<a href="https://www.anthropic.com/engineering/multi-agent-research-system">https://www.anthropic.com/engineering/multi-agent-research-system</a></li>
+<li>LangChain 官方文档：<a href="https://docs.langchain.com">https://docs.langchain.com</a>；LangGraph 官方文档：<a href="https://langchain-ai.github.io/langgraph/">https://langchain-ai.github.io/langgraph/</a></li>
+<li>CrewAI 官方文档：<a href="https://docs.crewai.com">https://docs.crewai.com</a>；Google ADK 官方文档：<a href="https://google.github.io/adk-docs/">https://google.github.io/adk-docs/</a></li>
+<li>LMSYS RouteLLM（强弱模型路由的开源框架）：<a href="https://github.com/lm-sys/RouteLLM">https://github.com/lm-sys/RouteLLM</a></li>
+</ul></div>
     <div class="pagers"><span></span><a class="pager" href="../chapters/ch01-prompt-chaining.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第1章 提示链</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#从语言模型到智能体">从语言模型到智能体</a></li><li class="toc-l2"><a href="#为什么需要设计模式">为什么需要设计模式</a></li><li class="toc-l2"><a href="#本书与原书的关系">本书与原书的关系</a></li><li class="toc-l2"><a href="#全书二十一章地图">全书二十一章地图</a></li><li class="toc-l2"><a href="#如何使用本书">如何使用本书</a></li><li class="toc-l2"><a href="#代码约定">代码约定</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#从语言模型到智能体">从语言模型到智能体</a></li><li class="toc-l2"><a href="#为什么需要设计模式">为什么需要设计模式</a></li><li class="toc-l2"><a href="#本书与原书的关系">本书与原书的关系</a></li><li class="toc-l2"><a href="#全书二十一章地图">全书二十一章地图</a></li><li class="toc-l2"><a href="#如何使用本书">如何使用本书</a></li><li class="toc-l2"><a href="#代码约定">代码约定</a></li><li class="toc-l2"><a href="#延伸阅读与参考链接">延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>

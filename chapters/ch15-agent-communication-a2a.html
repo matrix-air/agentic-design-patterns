@@ -12,6 +12,7 @@
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
@@ -30,13 +31,33 @@
 <p><strong>一句话定义</strong>：A2A 用开放协议让分属不同框架、不同组织的智能体互相发现、委托任务并交换产物——每个 agent 发布一张能力名片，任务以带生命周期的状态机流转，双方不暴露内部实现。
 <strong>解决什么问题</strong>：跨团队/跨框架的 agent 互调没有统一协议，点对点集成爆炸 ｜ <strong>适用场景</strong>：跨组织协作、多供应商 agent 生态、企业内跨部门 agent 互操作 ｜ <strong>核心机制</strong>：Agent Card 能力发现 + Task 状态机 + Message/Part/Artifact 信封 + 流式与推送通知 ｜ <strong>代价</strong>：多一跳网络与序列化、信任与认证配置成本、业务 schema 仍需双方另行约定。</p>
 </blockquote>
+<div class="quick-read"><b>本章速读</b>　<strong>A2A</strong> 用开放协议连接分属不同团队与框架的智能体：每个 agent 在约定路径发布一张 <strong>Agent Card</strong> 自述能力，调用方凭名片发现与匹配；任务（Task）以标准<strong>状态机</strong>流转（submitted→working→input-required/completed/failed/canceled），消息用统一信封（Message/Part/Artifact）封装，传输复用 Web 安全体系。它管"组织边界"：对方的部署、发布、权限都不归你管时才用；同进程同框架用框架内编排，纯工具调用用 MCP。业务 schema 协议不管，需双方另行约定。</div>
+
 <h2 id="151-模式概述">15.1 模式概述</h2>
 <h3 id="1511-问题背景为什么需要这个模式">15.1.1 问题背景：为什么需要这个模式</h3>
-<p>第 7 章的多智能体协作用于一个前提：所有 agent 在同一个进程、同一个框架里，协调器和专家共享语言与运行时。这个前提一跨出组织边界就碎了。你的客服 agent 想把售后工单委托给供应商的售后 agent——对方是用另一个框架写的、跑在别人机房里、由别人维护的自治系统。硬接会遇到三层问题。<strong>发现</strong>：对方是谁、能干什么、接口在哪？总不能每接一家就打电话问一遍。<strong>协作语义</strong>：对方不是函数——它可能要跑十分钟，可能中途要向你追加问题（甚至要问你的用户），可能失败，可能被取消。函数调用的 request/response 语义表达不了这些，你需要任务（Task）而非调用（Call）。<strong>封装</strong>：对方凭什么把内部工具、提示词、会话状态暴露给你？合理的边界是"只接任务、只交产物"，内政不容过问。协议要回答的正是这三层：怎么发现、怎么委托、怎么在不暴露实现的前提下协作。A2A（Agent2Agent）给出的答案结构：每张 agent 发布一张 Agent Card 自述能力，任务以标准状态机流转，消息用统一的信封封装，传输复用成熟的 Web 安全体系。</p>
+<p>第 7 章的多智能体协作用于一个前提：所有 agent 在同一个进程、同一个框架里，协调器和专家共享语言与运行时。这个前提一跨出组织边界就碎了。你的客服 agent 想把售后工单委托给供应商的售后 agent——对方是用另一个框架写的、跑在别人机房里、由别人维护的自治系统。硬接会遇到三层问题。<strong>发现</strong>：对方是谁、能干什么、接口在哪？总不能每接一家就打电话问一遍。<strong>协作语义</strong>：对方不是函数——它可能要跑十分钟，可能中途要向你追加问题（甚至要问你的用户），可能失败，可能被取消。函数调用的 request/response 语义表达不了这些，你需要任务（Task）而非调用（Call）。<strong>封装</strong>：对方凭什么把内部工具、提示词、会话状态暴露给你？合理的边界是"只接任务、只交产物"，内政不容过问。协议要回答的正是这三层：怎么发现、怎么委托、怎么在不暴露实现的前提下协作。<a href="https://a2a-protocol.org">A2A（Agent2Agent）</a>给出的答案结构：每张 agent 发布一张 Agent Card 自述能力，任务以标准状态机流转，消息用统一的信封封装，传输复用成熟的 Web 安全体系。</p>
 <h3 id="1512-核心机制它如何工作">15.1.2 核心机制：它如何工作</h3>
-<p>A2A 的对象模型有四个核心构件。<strong>Agent Card</strong>：每个 agent 在约定的 well-known 地址（v0.2.x 为 <code>/.well-known/agent.json</code>，v0.3.0 起依 IANA 反馈更名为 <code>/.well-known/agent-card.json</code>）发布一张 JSON 名片，声明身份、描述、端点、能力开关（是否支持流式、推送通知）、技能清单（skills，含 id、名称、描述）与安全方案。客户端拿名片做能力发现——像浏览器读 robots.txt 一样，约定路径、自述格式。<strong>Task</strong>：协作的基本单元，有完整生命周期——<code>submitted</code>（已受理）→ <code>working</code>（执行中）→ <code>input-required</code>（挂起等补充）/ <code>completed</code> / <code>failed</code> / <code>canceled</code>（v0.3 还定义了 <code>rejected</code> 与 <code>auth-required</code>），另有历史（history）与产物（artifacts）挂在任务上。<strong>Message 与 Part</strong>：双方交换的消息信封，role 区分 user/agent 侧，内容由 Part 组成——文本、结构化数据或文件，同一消息可混装。<strong>通知机制</strong>：短任务同步等响应；长任务可走 SSE 流式增量接收状态与产物，也可注册 webhook 让远端完成时主动推送。传输层面，规范以 JSON-RPC over HTTP 为主绑定，另有 gRPC 与 REST 风格的 HTTP+JSON 绑定；v1.0 起三者列为对等绑定。认证不发明新体系——OAuth2、API key、mTLS 直接复用 Web 世界的成熟方案。</p>
+<p>A2A 的对象模型有四个核心构件。<strong>Agent Card</strong>：每个 agent 在约定的 well-known 地址（v0.2.x 为 <code>/.well-known/agent.json</code>，v0.3.0 起依 IANA 反馈更名为 <code>/.well-known/agent-card.json</code>）发布一张 JSON 名片，声明身份、描述、端点、能力开关（是否支持流式、推送通知）、技能清单（skills，含 id、名称、描述）与安全方案。客户端拿名片做能力发现——<strong>像浏览器读 robots.txt 一样，约定路径、自述格式</strong>。<strong>Task</strong>：协作的基本单元，有完整生命周期——<code>submitted</code>（已受理）→ <code>working</code>（执行中）→ <code>input-required</code>（挂起等补充）/ <code>completed</code> / <code>failed</code> / <code>canceled</code>（v0.3 还定义了 <code>rejected</code> 与 <code>auth-required</code>），另有历史（history）与产物（artifacts）挂在任务上。<strong>Message 与 Part</strong>：双方交换的消息信封，role 区分 user/agent 侧，内容由 Part 组成——文本、结构化数据或文件，同一消息可混装。<strong>通知机制</strong>：短任务同步等响应；长任务可走 SSE 流式增量接收状态与产物，也可注册 webhook 让远端完成时主动推送。传输层面，规范以 JSON-RPC over HTTP 为主绑定，另有 gRPC 与 REST 风格的 HTTP+JSON 绑定；v1.0 起三者列为对等绑定。认证<strong>不发明新体系</strong>——OAuth2、API key、mTLS 直接复用 Web 世界的成熟方案。</p>
+<div class="mermaid">flowchart LR
+    subgraph CLIENT["客户端 agent（你的编排方）"]
+        A1["读名片发现能力"] --> A2["按技能挑 agent"]
+        A2 --> A3["message/send 委托任务"]
+        A3 --> A4["轮询/流式/推送 感知进度"]
+        A4 --> A5["聚合产物 artifacts"]
+    end
+    subgraph REMOTE["远端 agent（对方的自治服务）"]
+        B1["/.well-known/ 发布 Agent Card"] --> B2["受理任务 submitted"]
+        B2 --> B3["working 执行中"]
+        B3 --> B4{"缺信息？"}
+        B4 -->|"input-required"| B5["挂起等补充（可等人类）"]
+        B5 --> B3
+        B3 --> B6["completed/failed/canceled"]
+    end
+    A3 -.->|"JSON-RPC over HTTP"| B2
+    B4 -.->|"追问"| A4</div>
+<div class="fig-caption">图 15-1：两个 agent 经 A2A 协作的全流程——客户端凭 Agent Card 发现能力并发起任务，远端以状态机推进生命周期，input-required 挂起与产物回传是协议的一等公民。</div>
 <h3 id="1513-与相邻模式的关系与组合">15.1.3 与相邻模式的关系与组合</h3>
-<p>与 MCP（第 10 章）的关系是官方口径的互补而非竞争：MCP 连 agent 与工具/数据（纵向），A2A 连 agent 与 agent（横向）；一个 A2A agent 节点内部照常用 MCP 接自己的工具。与多智能体协作（第 7 章）的关系是边界扩展：框架内的协调拓扑解决"怎么分工"，A2A 解决"跨出框架与组织后怎么握手"——协调器委派给外部 agent 时，外部 agent 在协调器眼里就是一个拥有名片与状态机的对等体。与人在回路（第 13 章）的关系藏在 <code>input-required</code> 状态里：跨组织场景中"信息不足需要补充"被提升为协议一等状态，挂起的可能是对方的用户、你的用户或双方的人——第 13 章的闸门在协议层有了统一的挂起表达。与异常处理（第 12 章）的关系是失败的可观测：<code>failed</code>/<code>canceled</code> 是标准终态，任务可随时 <code>tasks/get</code> 查询现场，断线后可重新订阅——跨网络的异常处理从"各自发明"变成"共同剧本"。</p>
+<p>与 <a href="https://modelcontextprotocol.io">MCP</a>（第 10 章）的关系是官方口径的互补而非竞争：MCP 连 agent 与工具/数据（纵向），A2A 连 agent 与 agent（横向）；一个 A2A agent 节点内部照常用 MCP 接自己的工具。与多智能体协作（第 7 章）的关系是边界扩展：框架内的协调拓扑解决"怎么分工"，A2A 解决"跨出框架与组织后怎么握手"——协调器委派给外部 agent 时，外部 agent 在协调器眼里就是一个拥有名片与状态机的对等体。与人在回路（第 13 章）的关系藏在 <code>input-required</code> 状态里：跨组织场景中"信息不足需要补充"被提升为协议一等状态，挂起的可能是对方的用户、你的用户或双方的人——第 13 章的闸门在协议层有了统一的挂起表达。与异常处理（第 12 章）的关系是失败的可观测：<code>failed</code>/<code>canceled</code> 是标准终态，任务可随时 <code>tasks/get</code> 查询现场，断线后可重新订阅——跨网络的异常处理从"各自发明"变成"共同剧本"。</p>
 <h2 id="152-起源与历史最早是谁提出来的">15.2 起源与历史：最早是谁提出来的</h2>
 <p>agent 间通信语言的谱系比 LLM 早三十年。1993 年，UMBC 的 Tim Finin 等人发布 KQML（Knowledge Query and Manipulation Language），这是第一代 agent 通信语言：消息按"言语行为"（speech act）分类——ask、tell、achieve、broker 等原语表达的不只是内容，还有发送者对内容的意图（是询问、断言还是请求行动），这一设计哲学来自奥斯汀与塞尔的言语行为理论。2000 年，FIPA 组织批准 FIPA-ACL 标准，沿袭言语行为框架但给出更严格的形式语义（每类通信行为附带可行前置条件与理性后果），并与 FIPA 的 agent 管理与发现规范配套。此后十余年，multi-agent 系统研究热潮退去，通信语言停留在学术与少数工业部署中。转折发生在 2024 年 11 月 Anthropic 发布 MCP：工具侧的协议化让 agent 能力暴涨，agent 之间的连接需求随之显形——每个 agent 都成了"潜在的服务方"，缺的只是一张统一名片和一套任务剧本。2025 年 4 月 9 日，Google 在 Cloud Next 大会发布 A2A 协议，发布即有 50 余家合作伙伴背书（Atlassian、Box、Cohere、Intuit、LangChain、Microsoft、MongoDB、SAP、Salesforce 等）；同年 6 月 23 日，Google 将协议捐入 Linux Foundation，走向供应商中立治理，技术指导委员会由多家厂商共同组成；7 月 31 日发布 v0.3.0，包含 well-known 路径更名、Agent Card 签名等破坏性变更；同年 8 月，IBM 的 Agent Communication Protocol（ACP）宣布并入 A2A。2026 年，规范发布 v1.0 稳定版（当前 v1.0.1），Python/JS/Java/.NET 官方 SDK 齐备。</p>
 <table>
@@ -65,37 +86,37 @@
 <td>2024年11月</td>
 <td>MCP 发布：agent 与工具/数据连接的开放标准</td>
 <td>Anthropic</td>
-<td>官方公告（见第 10 章）</td>
+<td><a href="https://www.anthropic.com/news/model-context-protocol">官方公告</a>（见第 10 章）</td>
 </tr>
 <tr>
 <td>2025年4月</td>
 <td>A2A 协议发布，50+ 合作伙伴背书</td>
 <td>Google</td>
-<td>Cloud Next 大会</td>
+<td><a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">Cloud Next 大会</a></td>
 </tr>
 <tr>
 <td>2025年6月</td>
 <td>A2A 捐入 Linux Foundation，供应商中立治理</td>
 <td>Google / Linux Foundation</td>
-<td>Open Source Summit NA 宣布</td>
+<td><a href="https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents">Open Source Summit NA 宣布</a></td>
 </tr>
 <tr>
 <td>2025年7月</td>
 <td>v0.3.0：名片路径更名 agent-card.json、签名卡等</td>
 <td>A2A 项目</td>
-<td>官方 roadmap 与 release notes</td>
+<td><a href="https://github.com/a2aproject/A2A/releases">官方 release notes</a></td>
 </tr>
 <tr>
 <td>2026</td>
 <td>v1.0 稳定版发布（当前 v1.0.1），多语言官方 SDK</td>
 <td>A2A 项目（Linux Foundation）</td>
-<td>a2a-protocol.org/versions.json</td>
+<td><a href="https://a2a-protocol.org">a2a-protocol.org</a></td>
 </tr>
 </tbody>
 </table>
-<p>演化脉络有一个值得驻足的细节：KQML 与 FIPA-ACL 死在了"语义过重"上——消息的每个原语都要求双方对形式语义达成共识，工程成本高到没有生态。A2A 的做法几乎相反：协议只约定信封、状态与发现，语义（这条文本到底什么意思）完全交给端到端的 LLM 去理解——大模型把"相互理解的成本"降到了零，协议因此只需要做"传输与生命周期"这一件小事。三十年的螺旋：语义进协议失败，语义进模型成功。</p>
+<p>演化脉络有一个值得驻足的细节：KQML 与 FIPA-ACL 死在了"语义过重"上——消息的每个原语都要求双方对形式语义达成共识，工程成本高到没有生态。A2A 的做法几乎相反：协议只约定信封、状态与发现，语义（这条文本到底什么意思）完全交给端到端的 LLM 去理解——大模型把"相互理解的成本"降到了零，协议因此只需要做"传输与生命周期"这一件小事。三十年的螺旋：<strong>语义进协议失败，语义进模型成功</strong>。</p>
 <h2 id="153-发挥的作用为什么重要">15.3 发挥的作用：为什么重要</h2>
-<p>第一，把跨 agent 集成从 M×N 压到 M+N。没有协议时，每对接一个外部 agent 就要写一次定制集成；有了统一的名片格式与消息信封，客户端代码写一次就能调用任何兼容 agent——这与 MCP 对工具侧的压缩是同一个逻辑，只是发生在水平方向。第二，边界封装让协作不牺牲自治。被调用的 agent 不暴露提示词、工具与会话状态，只承诺名片上写的技能与状态机语义；内部换模型、换框架、重构实现，调用方无感——这是"服务化"在 agent 时代的重演，也是组织间协作的唯一可行边界。第三，长任务成为一等公民。<code>input-required</code>、异步流式、webhook 推送、断线重订阅，这些原语让"跑几小时的调研任务""要向用户追问的任务"有了标准的挂起与恢复姿势，而不必把长任务伪装成同步调用。第四，生态位扩张。对 agent 提供方，A2A 是把自有能力作为服务出售的标准接口；对使用方，组合外部 agent 像浏览网页一样——找到名片、看技能、发任务。协议中立化（Linux Foundation 治理）与云厂商原生支持（Google Cloud、AWS、Azure 均已接入）让这张网络有了跨厂商生长的土壤。</p>
+<p>第一，把跨 agent 集成从 <strong>M×N 压到 M+N</strong>。没有协议时，每对接一个外部 agent 就要写一次定制集成；有了统一的名片格式与消息信封，客户端代码写一次就能调用任何兼容 agent——这与 MCP 对工具侧的压缩是同一个逻辑，只是发生在水平方向。第二，边界封装让协作不牺牲自治。被调用的 agent 不暴露提示词、工具与会话状态，只承诺名片上写的技能与状态机语义；内部换模型、换框架、重构实现，调用方无感——这是"服务化"在 agent 时代的重演，<strong>也是组织间协作的唯一可行边界</strong>。第三，长任务成为一等公民。<code>input-required</code>、异步流式、webhook 推送、断线重订阅，这些原语让"跑几小时的调研任务""要向用户追问的任务"有了标准的挂起与恢复姿势，而不必把长任务伪装成同步调用。第四，生态位扩张。对 agent 提供方，A2A 是把自有能力作为服务出售的标准接口；对使用方，组合外部 agent 像浏览网页一样——找到名片、看技能、发任务。协议中立化（Linux Foundation 治理）与云厂商原生支持（Google Cloud、AWS、Azure 均已接入）让这张网络有了跨厂商生长的土壤。</p>
 <h2 id="154-实际应用与案例">15.4 实际应用与案例</h2>
 <p><strong>客服网络的跨组织工单流转。</strong> 品牌方客服 agent 识别出售后问题后，把工单按 A2A 委托给供应商售后 agent，任务状态与处理结论回流品牌方。关键设计点：品牌方只依赖供应商的 Agent Card 与状态机语义；<code>input-required</code> 时品牌 agent 向自己的用户追问再补充给远端。</p>
 <p><strong>企业内跨部门 agent 互查。</strong> HR agent 与财务 agent 分属不同团队、不同框架，经 A2A 互查"某员工今年还剩几天年假"。关键设计点：认证走企业 OAuth；权限在各自 agent 内部强制执行——财务 agent 只返回该调用方有权看到的数据。</p>
@@ -103,21 +124,25 @@
 <p><strong>编码 agent 的外部安全审查。</strong> 开发者侧编码 agent 把 diff 委托给安全公司的扫描 agent，异步等 webhook 通知取报告。关键设计点：报告以 Artifact 返回带结构化 Part；扫描 agent 内部用 MCP 接自己的漏洞库——纵向横向在同一任务里各就各位。</p>
 <p><strong>数据分析的外包可视化。</strong> 主分析 agent 完成数据处理后，把结果委托给可视化 agent 生成图表。关键设计点：产物用结构化 Part 传数据集引用而非内联大文本；双方对数据 schema 的共识在协议之外单独维护。</p>
 <p><strong>个人助理聚合多家服务。</strong> 个人助理 agent 凭用户授权发现并调用日程、邮件、账单等 SaaS 的官方 agent。关键设计点：每家服务的授权范围独立管理；调用留痕满足用户侧审计（见 15.5.5）。</p>
+<h3 id="真实世界实例">真实世界实例</h3>
+<p><strong>Google Cloud 发布 A2A：50 余家首发伙伴的行业共识。</strong> 2025 年 4 月 9 日，Google 在 Cloud Next 大会发布 Agent2Agent 协议，Atlassian、Box、Cohere、Intuit、LangChain、MongoDB、PayPal、Salesforce、SAP、ServiceNow、Workday 等 50 余家技术与服务商作为创始伙伴共同背书——协议要解决的正是"跨厂商、跨框架的 agent 无法互相委派任务"这一企业级痛点。见 <a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">Google Cloud 官方博客</a>。</p>
+<p><strong>捐入 Linux Foundation：从厂商协议到中立标准。</strong> 2025 年 6 月 23 日，Google 在 Open Source Summit NA 宣布把 A2A 规范、SDK 与开发者工具全部捐给 Linux Foundation，AWS、Cisco、Google、Microsoft、Salesforce、SAP、ServiceNow 共同担任创始成员——单一厂商的协议从此变成供应商中立的开放标准，这直接回答了"凭什么信任这张名片体系"的治理问题。见 <a href="https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents">Linux Foundation 官方公告</a>。</p>
+<p><strong>LangChain 生态接入：LangGraph agent 的一行暴露。</strong> LangChain 是 A2A 首发合作伙伴，其 LangGraph 编排的 agent 可经官方 <a href="https://github.com/a2aproject/a2a-samples">a2a-samples</a> 仓库中的 LangGraph 示例暴露为 A2A 服务端（名片 + 状态机），被任何框架的客户端发现与调用；Google ADK 也提供对称能力（<code>to_a2a</code> 导出、<code>RemoteA2aAgent</code> 消费外部名片，见 15.6.2）——"框架自由、协议握手"从口号变成了两行配置。见 <a href="https://langchain-ai.github.io/langgraph/">LangGraph 官方文档</a>。</p>
 <h2 id="155-深度讲解">15.5 深度讲解</h2>
 <h3 id="1551-为什么不能直接用-mcp-连-agent">15.5.1 为什么不能直接用 MCP 连 agent</h3>
-<p>最常见的架构问题是："MCP 已经连了工具，把对方 agent 包成一个 MCP tool 不就行了？"不行，根因是抽象层级的错配。MCP 的原语是 tools/resources/prompts，语义是"被动的资源与函数"：调用即执行、返回即完成。而 agent 是自治方，这个差异在四个方面撞墙。<strong>调用语义装不下生命周期</strong>：MCP tool call 是同步的请求-响应，没有 submitted→working→completed 的中间状态，无法表达"跑十分钟""中途挂起""被取消"；硬要模拟只能超时返回"还在跑"，然后自己发明轮询协议——等于在 MCP 之上重新发明半个 A2A。<strong>能力发现装不下多轮</strong>：工具描述是一段静态文本，够模型决定"调不调"；但 agent 协作常常需要追问与澄清（input-required），工具的输入 schema 表达不了"我可以追加问题给你"。<strong>没有产物概念</strong>：函数返回值即时即弃，长任务的核心资产是挂在任务上的 artifacts，可查询、可追溯。<strong>身份不对等</strong>：MCP server 是被调用方，按客户端的请求办事；agent 是对等体，可以拒绝（rejected）、要求授权（auth-required）、按自己的策略决定怎么做——把自治方压平成工具，既得不到它的判断力，也管不住它的自由度。类比：MCP 是 USB，插上就用，主从关系固定；A2A 是工单系统加邮件，双方各自独立、按剧本协作。正确的组合姿势是每个 A2A agent 内部用 MCP 接工具（纵向），对外用 A2A 接同行（横向）——官方分工"MCP 装备 agent，A2A 连接 agent"说的就是这个。</p>
+<p>最常见的架构问题是："MCP 已经连了工具，把对方 agent 包成一个 MCP tool 不就行了？"不行，根因是抽象层级的错配。MCP 的原语是 tools/resources/prompts，语义是"被动的资源与函数"：调用即执行、返回即完成。而 agent 是自治方，这个差异在四个方面撞墙。<strong>调用语义装不下生命周期</strong>：MCP tool call 是同步的请求-响应，没有 submitted→working→completed 的中间状态，无法表达"跑十分钟""中途挂起""被取消"；硬要模拟只能超时返回"还在跑"，然后自己发明轮询协议——等于在 MCP 之上重新发明半个 A2A。<strong>能力发现装不下多轮</strong>：工具描述是一段静态文本，够模型决定"调不调"；但 agent 协作常常需要追问与澄清（input-required），工具的输入 schema 表达不了"我可以追加问题给你"。<strong>没有产物概念</strong>：函数返回值即时即弃，长任务的核心资产是挂在任务上的 artifacts，可查询、可追溯。<strong>身份不对等</strong>：MCP server 是被调用方，按客户端的请求办事；agent 是对等体，可以拒绝（rejected）、要求授权（auth-required）、按自己的策略决定怎么做——把自治方压平成工具，<strong>既得不到它的判断力，也管不住它的自由度</strong>。类比：MCP 是 USB，插上就用，主从关系固定；A2A 是工单系统加邮件，双方各自独立、按剧本协作。正确的组合姿势是每个 A2A agent 内部用 MCP 接工具（纵向），对外用 A2A 接同行（横向）——官方分工"MCP 装备 agent，A2A 连接 agent"说的就是这个。</p>
 <h3 id="1552-能力发现agent-card-与中心注册表">15.5.2 能力发现：Agent Card 与中心注册表</h3>
-<p>A2A 的发现机制刻意走了 Web 的去中心化传统：约定路径（well-known URI）+ 自述文档，像 robots.txt 与 sitemap。好处是零基础设施——一个 agent 上线，把名片文件放到约定路径就完成了全部"注册"；坏处是"谁在找 agent"没有答案：名片解决"找到后知道你能干嘛"，不解决"我根本不知道你存在"。企业场景因此长出第二层：<strong>注册表（registry）</strong>——组织内维护一份可信 agent 目录（含内部与经过审批的外部 agent），客户端先查目录再取名片。两层分工明确：注册表管"有哪些、可不可信"，名片管"怎么调、能干嘛"。工程上还有三个细节值得注意。其一，名片是自述，"说自己会什么"与"做得好不好"之间没有协议背书——技能描述的质量直接影响被选中的概率，写法上与第 5 章的工具描述纪律相同（动词开头、写清适用与不适用场景）。其二，v0.3 起名片支持签名（JWS），客户端可验证名片未被篡改、确系署名方发布——公网场景应优先消费签名卡。其三，名片可按认证状态区分公开与完整版本：公开卡只露最小信息，认证后才返回完整技能清单。</p>
+<p>A2A 的发现机制刻意走了 Web 的去中心化传统：约定路径（well-known URI）+ 自述文档，像 robots.txt 与 sitemap。好处是零基础设施——一个 agent 上线，把名片文件放到约定路径就完成了全部"注册"；坏处是"谁在找 agent"没有答案：名片解决"找到后知道你能干嘛"，不解决"我根本不知道你存在"。企业场景因此长出第二层：<strong>注册表（registry）</strong>——组织内维护一份可信 agent 目录（含内部与经过审批的外部 agent），客户端先查目录再取名片。两层分工明确：<strong>注册表管"有哪些、可不可信"，名片管"怎么调、能干嘛"</strong>。工程上还有三个细节值得注意。其一，名片是自述，"说自己会什么"与"做得好不好"之间没有协议背书——技能描述的质量直接影响被选中的概率，写法上与第 5 章的工具描述纪律相同（动词开头、写清适用与不适用场景）。其二，v0.3 起名片支持签名（JWS），客户端可验证名片未被篡改、确系署名方发布——公网场景应优先消费签名卡。其三，名片可按认证状态区分公开与完整版本：公开卡只露最小信息，认证后才返回完整技能清单。</p>
 <h3 id="1553-任务状态机与长任务把等待做成协议原语">15.5.3 任务状态机与长任务：把"等待"做成协议原语</h3>
 <p>Task 状态机是 A2A 最有工程价值的部分，值得逐状态拆解。<code>submitted</code> 到 <code>working</code> 是受理确认；<code>working</code> 到 <code>input-required</code> 是最有设计意味的一跳——远端声明"我需要更多信息才能继续"，任务原地挂起，不占远端资源，等待可以是几秒也可以是几天（等人类上班）。客户端收到 <code>input-required</code> 后，把补充信息作为新消息发往同一 task，状态回到 <code>working</code> 续跑——第 13 章的人工闸门在跨组织场景里被协议化了：挂起的裁决者可能是远端 agent 的用户、客户端的用户或双方的人。终态三个：<code>completed</code>（有产物）、<code>failed</code>（有失败原因）、<code>canceled</code>（客户端取消或超时）。状态转移的合法性由服务端保证，客户端按状态驱动自己的逻辑（轮询到终态才聚合产物）。</p>
-<p>长任务的感知方式有三档，按任务时长与交互性选择。<strong>同步等待</strong>：几秒内完成的任务，<code>message/send</code> 直接等终态。<strong>SSE 流式</strong>（<code>message/stream</code>）：交互式任务与进度可见性需求，增量接收状态更新与产物片段，断线后可重订阅续读。<strong>Webhook 推送</strong>：小时级长任务，客户端注册回调地址后即可释放连接，远端状态变化时主动 POST 通知——这是"挂起不占资源"的最后一环。三档的选择标准是"谁扛等待成本"：短任务客户端扛，长任务网络扛不了就用推送。工程提醒：任务 ID 是跨组织的关联键，所有日志都应带上它；重试与超时策略挂在任务状态而非连接上——连接会断，任务不会。</p>
+<p>长任务的感知方式有三档，按任务时长与交互性选择。<strong>同步等待</strong>：几秒内完成的任务，<code>message/send</code> 直接等终态。<strong>SSE 流式</strong>（<code>message/stream</code>）：交互式任务与进度可见性需求，增量接收状态更新与产物片段，断线后可重订阅续读。<strong>Webhook 推送</strong>：小时级长任务，客户端注册回调地址后即可释放连接，远端状态变化时主动 POST 通知——这是"挂起不占资源"的最后一环。三档的选择标准是"谁扛等待成本"：短任务客户端扛，长任务网络扛不了就用推送。工程提醒：任务 ID 是跨组织的关联键，所有日志都应带上它；重试与超时策略挂在任务状态而非连接上——<strong>连接会断，任务不会</strong>。</p>
 <h3 id="1554-跨框架互操作协议之下的框架自由">15.5.4 跨框架互操作：协议之下的框架自由</h3>
-<p>A2A 承诺"跨框架互调"，机制上其实很朴素：客户端依赖的只有两样——名片 JSON schema 和消息信封格式。远端 agent 内部是 LangGraph、ADK、CrewAI 还是手写 Python，协议层完全不可见。第 15.6.1 节的模拟代码正说明了这一点：<code>ResearchExecutor.run()</code> 的位置可以塞进任何框架的执行器，A2AServer 的路由与状态机纹丝不动。真实的跨框架调用（例如 LangGraph 编排器调 ADK agent）因此只是一个装配问题：LangGraph 侧写一个调用远端名片的 A2A 客户端节点，ADK 侧用官方 <code>to_a2a</code> 工具把 agent 暴露成 A2A 服务端（ADK 也提供 <code>RemoteA2aAgent</code> 把外部名片包装成子 agent，见 15.6.2）。</p>
-<p>互操作的真实边界不在协议层，而在语义层：协议规定的 Part 只有文本/文件/结构化数据三种形态，<strong>业务 schema 协议不管</strong>。两个 agent 约定产物里 <code>data</code> 部分的字段含义，靠的是双方私下的接口约定（或行业共同体制定的 profile）。这是自由度也是坑：文本 Part 万能但脆弱（LLM 靠理解力兜底），结构化 Part 高效但要求版本化的 schema 治理。工程建议：对外技能的产物尽量文本优先（跨组织边界上，自然语言是唯一有兜底语义的格式），结构化 Part 留给已建立 schema 契约的伙伴之间，并在名片或文档里声明数据格式版本。</p>
+<p>A2A 承诺"跨框架互调"，机制上其实很朴素：客户端依赖的只有两样——名片 JSON schema 和消息信封格式。远端 agent 内部是 <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a>、<a href="https://google.github.io/adk-docs/">ADK</a>、CrewAI 还是手写 Python，协议层完全不可见。第 15.6.1 节的模拟代码正说明了这一点：<code>ResearchExecutor.run()</code> 的位置可以塞进任何框架的执行器，A2AServer 的路由与状态机纹丝不动。真实的跨框架调用（例如 LangGraph 编排器调 ADK agent）因此只是一个装配问题：LangGraph 侧写一个调用远端名片的 A2A 客户端节点，ADK 侧用官方 <code>to_a2a</code> 工具把 agent 暴露成 A2A 服务端（ADK 也提供 <code>RemoteA2aAgent</code> 把外部名片包装成子 agent，见 15.6.2）。</p>
+<p>互操作的真实边界不在协议层，而在语义层：协议规定的 Part 只有文本/文件/结构化数据三种形态，<strong>业务 schema 协议不管</strong>。两个 agent 约定产物里 <code>data</code> 部分的字段含义，靠的是双方私下的接口约定（或行业共同体制定的 profile）。这是自由度也是坑：文本 Part 万能但脆弱（LLM 靠理解力兜底），结构化 Part 高效但要求版本化的 schema 治理。工程建议：对外技能的产物尽量文本优先（<strong>跨组织边界上，自然语言是唯一有兜底语义的格式</strong>），结构化 Part 留给已建立 schema 契约的伙伴之间，并在名片或文档里声明数据格式版本。</p>
 <h3 id="1555-信任与认证边界">15.5.5 信任与认证边界</h3>
-<p>跨组织的 agent 调用引入了全新的信任问题面。认证方面，协议不发明新机制：企业内用服务账号与 mTLS，组织间用 OAuth2 客户端凭证或 API key，名片的安全方案字段声明"我接受哪些认证方式"，客户端按自己能提供的凭证选择端点。授权的关键原则是<strong>最小技能暴露</strong>：对外名片只列你愿意被外部调用的技能，内部技能不进公开卡。信任链上最容易被忽视的一环是<strong>输出即输入</strong>：远端 agent 返回的 artifact 与 history 对本地调用方而言是不可信输入——它是另一个组织的 LLM 产物，可能包含提示注入载荷。调用方把远端产物拼进自己的上下文之前，必须过与处理用户输入同级的防线（第 5 章的幻觉调用防线、内容过滤），绝不能因为"这是 agent 不是人"就放松。审计方面，跨组织调用的对账依赖三件套：task_id 关联全链、消息历史留存、认证身份与任务绑定——出问题时能回答"哪个身份、哪个任务、谁给的产物"。最后是恶意名片的风险：名片可以撒谎（夸大技能、隐藏限制），公网消费名片前应经注册表或人工审批，签名卡只解决"没被篡改"，不解决"本身是假的"。</p>
+<p>跨组织的 agent 调用引入了全新的信任问题面。认证方面，协议不发明新机制：企业内用服务账号与 mTLS，组织间用 OAuth2 客户端凭证或 API key，名片的安全方案字段声明"我接受哪些认证方式"，客户端按自己能提供的凭证选择端点。授权的关键原则是<strong>最小技能暴露</strong>：对外名片只列你愿意被外部调用的技能，内部技能不进公开卡。信任链上最容易被忽视的一环是<strong>输出即输入</strong>：远端 agent 返回的 artifact 与 history 对本地调用方而言是不可信输入——它是另一个组织的 LLM 产物，<strong>可能包含提示注入载荷</strong>。调用方把远端产物拼进自己的上下文之前，必须过与处理用户输入同级的防线（第 5 章的幻觉调用防线、内容过滤），绝不能因为"这是 agent 不是人"就放松。审计方面，跨组织调用的对账依赖三件套：task_id 关联全链、消息历史留存、认证身份与任务绑定——出问题时能回答"哪个身份、哪个任务、谁给的产物"。最后是恶意名片的风险：名片可以撒谎（夸大技能、隐藏限制），公网消费名片前应经注册表或人工审批，签名卡只解决"没被篡改"，不解决"本身是假的"。</p>
 <h3 id="1556-何时不用-a2a">15.5.6 何时不用 A2A</h3>
-<p>协议再好也是成本，三种情况不该上。<strong>同进程同框架</strong>：第 7 章的多智能体编排，直接用框架原生 sub-agent 机制——同内存传递、类型紧耦合、零序列化，A2A 的网络跳与信封解析纯属浪费。<strong>组织内但框架不统一</strong>：优先评估企业内部的 agent 网关/目录方案，A2A 的开放治理与公网语义在企业内未必是加分项；不过当组织内团队边界已经"像外部"（各自部署、独立发布节奏）时，A2A 反而是诚实的选择——把团队边界当网络边界设计。<strong>纯工具调用</strong>：对方是资源不是自治方，用 MCP。判断的尺子一句话：<strong>A2A 解决的是组织边界</strong>——出现了"对方的部署、发布、模型、权限都不归你管"这一事实，才需要名片与状态机；没有这条边界，就用更轻的机制。</p>
+<p>协议再好也是成本，三种情况不该上。<strong>同进程同框架</strong>：第 7 章的多智能体编排，直接用框架原生 sub-agent 机制——同内存传递、类型紧耦合、零序列化，A2A 的网络跳与信封解析纯属浪费。<strong>组织内但框架不统一</strong>：优先评估企业内部的 agent 网关/目录方案，A2A 的开放治理与公网语义在企业内未必是加分项；不过当组织内团队边界已经"像外部"（各自部署、独立发布节奏）时，A2A 反而是诚实的选择——把团队边界当网络边界设计。<strong>纯工具调用</strong>：对方是资源不是自治方，用 MCP。判断的尺子一句话：<strong>A2A 解决的是组织边界</strong>——出现了"对方的部署、发布、模型、权限都不归你管"这一事实，才需要名片与状态机；没有这条边界，<strong>就用更轻的机制</strong>。</p>
 <h2 id="156-工程落地实践代码示例">15.6 工程落地：实践代码示例</h2>
 <h3 id="1561-框架无关实现完整可运行">15.6.1 框架无关实现（完整可运行）</h3>
 <p>下面的实现用两个"假 agent"完整模拟 A2A 的协议形状：Agent Card 发现、表驱动的 Task 状态机（非法转移直接拒绝）、Message/Part/Artifact 信封、<code>input-required</code> 挂起与跟进恢复、JSON-RPC 风格错误、任务取消与查询。纯标准库，HTTP 层用进程内 handler 模拟——真实部署把 <code>handle()</code> 换成 HTTP 服务端即可，协议骨架不变。</p>
@@ -457,7 +482,7 @@ if __name__ == &quot;__main__&quot;:
 </ul>
 <h2 id="157-概览-核心要点-结论">15.7 概览 / 核心要点 / 结论</h2>
 <h3 id="本章小结">本章小结</h3>
-<p>A2A 把 agent 之间的连接从点对点定制变成了开放协议：名片解决发现，信封解决通信，状态机解决长任务与挂起，Web 安全体系解决认证。它与 MCP 的分工清晰——MCP 纵向装备 agent、A2A 横向连接 agent——两者合起来，agent 才同时拥有了"自己的手"和"可以求助的同行"。协议设计上最深的启示来自它的克制：KQML 时代把语义塞进协议失败了，A2A 把语义留给端到端的模型，只做传输与生命周期——三十年的探索证明，模型足够聪明之后，协议只需诚实。</p>
+<p>A2A 把 agent 之间的连接从点对点定制变成了开放协议：名片解决发现，信封解决通信，状态机解决长任务与挂起，Web 安全体系解决认证。它与 MCP 的分工清晰——MCP 纵向装备 agent、A2A 横向连接 agent——两者合起来，agent 才同时拥有了"自己的手"和"可以求助的同行"。协议设计上最深的启示来自它的克制：KQML 时代把语义塞进协议失败了，A2A 把语义留给端到端的模型，只做传输与生命周期——三十年的探索证明，<strong>模型足够聪明之后，协议只需诚实</strong>。</p>
 <h3 id="核心要点">核心要点</h3>
 <ul>
 <li>A2A 连 agent 与 agent，MCP 连 agent 与工具/数据，纵向横向互补而非竞争；一个 A2A 节点内部照常用 MCP。</li>
@@ -469,12 +494,35 @@ if __name__ == &quot;__main__&quot;:
 <li>远端产物是不可信输入，进本地上下文前要过注入防线；跨组织审计靠 task_id + 消息历史 + 认证身份三件套。</li>
 </ul>
 <h3 id="结论">结论</h3>
-<p>智能体间通信的三十年的确走了一段弯路：上世纪九十年代的通信语言把太多智能塞进了协议，重到没人用得起；A2A 把协议减到只剩发现、信封与状态机，把理解交还给模型，反而第一次让跨组织协作有了落地的生态。对工程师而言，真正要掌握的不是协议细节——那些会随版本漂移——而是边界判断：什么时候该把一个 agent 当工具（MCP），什么时候当同行（A2A），什么时候当同事（框架内编排）。边界画对，协议各归其位；边界画错，再好的协议也救不了错误的架构。</p></div>
+<p>智能体间通信的三十年的确走了一段弯路：上世纪九十年代的通信语言把太多智能塞进了协议，重到没人用得起；A2A 把协议减到只剩发现、信封与状态机，把理解交还给模型，反而第一次让跨组织协作有了落地的生态。对工程师而言，真正要掌握的不是协议细节——那些会随版本漂移——而是边界判断：什么时候该把一个 agent 当工具（MCP），什么时候当同行（A2A），什么时候当同事（框架内编排）。边界画对，协议各归其位；边界画错，再好的协议也救不了错误的架构。</p>
+<h2 id="158-延伸阅读与参考链接">15.8 延伸阅读与参考链接</h2>
+<p><strong>规范与论文</strong></p>
+<ul>
+<li>A2A 协议官网（规范、Agent Card schema、任务生命周期）：<a href="https://a2a-protocol.org">https://a2a-protocol.org</a></li>
+<li>A2A 协议主仓库与各语言官方 SDK（Apache 2.0）：<a href="https://github.com/a2aproject/A2A">https://github.com/a2aproject/A2A</a></li>
+<li>KQML：第一代 agent 通信语言（Finin et al., 1993，言语行为式消息原语，历史背景）</li>
+<li>FIPA-ACL：带形式语义的 agent 通信语言标准（FIPA 组织，2000，历史背景）</li>
+</ul>
+<p><strong>官方文档与发布</strong></p>
+<ul>
+<li>Google 发布 A2A 的官方公告（A New Era of Agent Interoperability，2025-04）：<a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">developers.googleblog.com</a></li>
+<li>Linux Foundation 接收 A2A 的官方新闻稿（2025-06）：<a href="https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents">linuxfoundation.org</a></li>
+<li>Anthropic 发布 MCP 的官方公告（2024-11）：<a href="https://www.anthropic.com/news/model-context-protocol">anthropic.com</a></li>
+<li>Google ADK 文档（<code>RemoteA2aAgent</code> 与 <code>to_a2a</code> 装配）：<a href="https://google.github.io/adk-docs/">https://google.github.io/adk-docs/</a></li>
+<li>LangGraph 官方文档（跨框架编排侧）：<a href="https://langchain-ai.github.io/langgraph/">https://langchain-ai.github.io/langgraph/</a></li>
+</ul>
+<p><strong>案例来源</strong></p>
+<ul>
+<li>a2a-samples 官方示例仓库（含 LangGraph/ADK 互操作样例）：<a href="https://github.com/a2aproject/a2a-samples">https://github.com/a2aproject/a2a-samples</a></li>
+<li>A2A 版本发布记录（v0.3.0 破坏性变更与 v1.0 稳定版）：<a href="https://github.com/a2aproject/A2A/releases">https://github.com/a2aproject/A2A/releases</a></li>
+<li>Google Cloud《A2A 协议工具箱升级》（v0.3.0、gRPC 绑定与签名卡，2025-08）：<a href="https://cloud.google.com/blog/products/ai-machine-learning/agent2agent-protocol-is-getting-an-upgrade">cloud.google.com/blog</a></li>
+</ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch14-knowledge-retrieval-rag.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第14章 知识检索</span></a><a class="pager" href="../chapters/ch16-resource-aware-optimization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第16章 资源感知优化</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 15.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#151-模式概述">15.1 模式概述</a></li><li class="toc-l3"><a href="#1511-问题背景为什么需要这个模式">15.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1512-核心机制它如何工作">15.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1513-与相邻模式的关系与组合">15.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#152-起源与历史最早是谁提出来的">15.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#153-发挥的作用为什么重要">15.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#154-实际应用与案例">15.4 实际应用与案例</a></li><li class="toc-l2"><a href="#155-深度讲解">15.5 深度讲解</a></li><li class="toc-l3"><a href="#1551-为什么不能直接用-mcp-连-agent">15.5.1 为什么不能直接用 MCP 连 agent</a></li><li class="toc-l3"><a href="#1552-能力发现agent-card-与中心注册表">15.5.2 能力发现：Agent Card 与中心注册表</a></li><li class="toc-l3"><a href="#1553-任务状态机与长任务把等待做成协议原语">15.5.3 任务状态机与长任务：把"等待"做成协议原语</a></li><li class="toc-l3"><a href="#1554-跨框架互操作协议之下的框架自由">15.5.4 跨框架互操作：协议之下的框架自由</a></li><li class="toc-l3"><a href="#1555-信任与认证边界">15.5.5 信任与认证边界</a></li><li class="toc-l3"><a href="#1556-何时不用-a2a">15.5.6 何时不用 A2A</a></li><li class="toc-l2"><a href="#156-工程落地实践代码示例">15.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1561-框架无关实现完整可运行">15.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1562-框架集成实现google-adk本地转交-远端-a2a-互调">15.6.2 框架集成实现（Google ADK：本地转交 + 远端 A2A 互调）</a></li><li class="toc-l3"><a href="#1563-生产化改造清单">15.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#157-概览-核心要点-结论">15.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#151-模式概述">15.1 模式概述</a></li><li class="toc-l3"><a href="#1511-问题背景为什么需要这个模式">15.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1512-核心机制它如何工作">15.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1513-与相邻模式的关系与组合">15.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#152-起源与历史最早是谁提出来的">15.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#153-发挥的作用为什么重要">15.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#154-实际应用与案例">15.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#155-深度讲解">15.5 深度讲解</a></li><li class="toc-l3"><a href="#1551-为什么不能直接用-mcp-连-agent">15.5.1 为什么不能直接用 MCP 连 agent</a></li><li class="toc-l3"><a href="#1552-能力发现agent-card-与中心注册表">15.5.2 能力发现：Agent Card 与中心注册表</a></li><li class="toc-l3"><a href="#1553-任务状态机与长任务把等待做成协议原语">15.5.3 任务状态机与长任务：把"等待"做成协议原语</a></li><li class="toc-l3"><a href="#1554-跨框架互操作协议之下的框架自由">15.5.4 跨框架互操作：协议之下的框架自由</a></li><li class="toc-l3"><a href="#1555-信任与认证边界">15.5.5 信任与认证边界</a></li><li class="toc-l3"><a href="#1556-何时不用-a2a">15.5.6 何时不用 A2A</a></li><li class="toc-l2"><a href="#156-工程落地实践代码示例">15.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1561-框架无关实现完整可运行">15.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1562-框架集成实现google-adk本地转交-远端-a2a-互调">15.6.2 框架集成实现（Google ADK：本地转交 + 远端 A2A 互调）</a></li><li class="toc-l3"><a href="#1563-生产化改造清单">15.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#157-概览-核心要点-结论">15.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#158-延伸阅读与参考链接">15.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
+<script src="../assets/vendor-mermaid.min.js"></script>
 </body>
 </html>
