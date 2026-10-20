@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第2章 路由 · 智能体设计模式</title>
 <meta name="description" content="按输入特征把请求分流到合适的提示、模型或智能体，用前置的分类判断换取出错的隔离、成本的下降与专业度的集中。">
+<meta property="og:title" content="第2章 路由 · 智能体设计模式">
+<meta property="og:description" content="按输入特征把请求分流到合适的提示、模型或智能体，用前置的分类判断换取出错的隔离、成本的下降与专业度的集中。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch02-routing.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a class="active" href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a class="active" href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -31,7 +38,7 @@
 <p><strong>一句话定义</strong>：在请求进入处理逻辑之前，用一个轻量的判断步骤决定它该走哪条提示、哪个模型或哪个智能体。
 <strong>解决什么问题</strong>：单一处理路径无法同时满足多类任务的口径、成本与延迟要求 ｜ <strong>适用场景</strong>：多技能客服、强弱模型混部、查询分流（闲聊/检索/工具）、敏感请求前置拦截 ｜ <strong>核心机制</strong>：规则、分类器、语义相似度或级联信号产生路由决策，附置信度兜底 ｜ <strong>代价</strong>：误路由有业务代价，路由器自身需要维护与监控。</p>
 </blockquote>
-<div class="quick-read"><b>本章速读</b>　路由把"这个请求是什么、该由谁处理"拆成处理逻辑之前的独立决策点：规则、分类器、语义相似度或级联信号给出决策，请求落进路由表的一行，各通道互不干扰。三步落地：选最轻的决策信号 → 建路由表与专用通道 → 设置信度兜底与 fail-open 出口。误路由成本不对称时**门槛向"宁可多升舱"倾斜**；任务同质、流量太小或类目未稳**时都别上路由**。</div>
+<div class="quick-read"><b>本章速读</b>　路由把"这个请求是什么、该由谁处理"拆成处理逻辑之前的独立决策点：规则、分类器、语义相似度或级联信号给出决策，请求落进路由表的一行，各通道互不干扰。三步落地：选最轻的决策信号 → 建路由表与专用通道 → 设置信度兜底与 fail-open 出口。误路由成本不对称时<strong>门槛向"宁可多升舱"倾斜</strong>；任务同质、流量太小或类目未稳<strong>时都别上路由</strong>。</div>
 
 <h2 id="21-模式概述">2.1 模式概述</h2>
 <h3 id="211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</h3>
@@ -50,9 +57,9 @@
     E --> OUT
     S --> OUT
     H --> OUT</div>
-<div class="fig-caption">图 2-1：入口路由的决策结构与兜底出口——低置信度与解析失败一律升舱到强模型，路由器只分诊、不处理，决策逻辑集中在这一处。</div>
+<div class="fig-caption" id="fig-2-1">图 2-1：入口路由的决策结构与兜底出口——低置信度与解析失败一律升舱到强模型，路由器只分诊、不处理，决策逻辑集中在这一处。</div>
 <h3 id="213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</h3>
-<p>路由与并行化（第 3 章）常一起出现：分流之后的多个通道往往并发执行再汇合。路由是静态结构上的分支，而动态链（第 1 章）里的条件步骤是链内的分支——前者在入口处分诊，后者在流程中途改道，两者可以叠加。级联路由与资源感知优化（第 16 章）是近亲：都关心成本与质量的权衡，区别在于级联只在"强弱模型"一维上排序，而资源感知优化把延迟、配额、上下文长度都纳入考量。路由器的决策质量本身需要评估与监控（第 19 章）来保障——路由分布的漂移往往先于业务指标恶化出现。</p>
+<p>路由与并行化（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）常一起出现：分流之后的多个通道往往并发执行再汇合。路由是静态结构上的分支，而动态链（<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）里的条件步骤是链内的分支——前者在入口处分诊，后者在流程中途改道，两者可以叠加。级联路由与资源感知优化（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）是近亲：都关心成本与质量的权衡，区别在于级联只在"强弱模型"一维上排序，而资源感知优化把延迟、配额、上下文长度都纳入考量。路由器的决策质量本身需要评估与监控（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）来保障——路由分布的漂移往往先于业务指标恶化出现。</p>
 <h2 id="22-起源与历史最早是谁提出来的">2.2 起源与历史：最早是谁提出来的</h2>
 <p>路由并不是大模型时代的新发明，它的前身是对话系统时代的意图分类。2010 年代的 NLU 框架（如开源的 <a href="https://rasa.com">Rasa NLU</a>）把"意图分类 + 实体识别"做成对话机器人的标配组件：每句话先判意图，再按意图进入对应的对话流程。2017 年公开的 SNIPS 数据集为这一任务提供了标准基准，七类用户意图（订餐厅、比价、播放音乐等）成为后来所有意图理解系统的公共考卷。</p>
 <p>大模型时代的变化是路由的对象从"对话流程"扩展到了"提示、模型与智能体"，而级联路由把路由的判据从"先验意图"扩展到了"运行时代价"。2023 年 5 月，斯坦福大学的 Chen、Zaharia 与 Zou 发表 FrugalGPT：用级联——便宜模型先答，评分不达标再升级——把 LLM 推理成本降低约 88% 到 98%，第一次系统论证了"按难度分流模型"的经济价值。同年，LangChain 的路由链让"按输入动态选提示或模型"成为框架级的标准写法。2023 年末，Aurelio AI 开源 Semantic Router，把路由规则编码为向量、用相似度匹配实现零训练意图路由。2024 年 6 月，LMSYS 发表 RouteLLM，用人类偏好数据训练路由器在强弱模型间分流，在保持响应质量的前提下把成本降低约 2 到 3 倍，该工作后发表于 ICLR 2025。</p>
@@ -124,7 +131,7 @@
 <h2 id="25-深度讲解">2.5 深度讲解</h2>
 <p><strong>机制细节与变体谱系：四种路由器。</strong> 第一种是规则路由：关键词、正则、长度阈值等显式条件。它零成本、完全可解释、毫秒级完成，适合封闭域里的高置信度规则（"包含退款并包含投诉的请求进售后通道"）。它的死穴是维护腐化：用户换一种说法（"钱多扣了"与"重复扣款"），规则就静默失灵，规则库只会越积越长、互相打架。第二种是分类器路由：用小模型乃至传统机器学习模型做意图分类，这是对话系统时代延续下来的标配，需要标注数据与再训练管线，类目边界清晰时表现优秀，但长尾输入与新增类目要靠持续回灌。第三种是语义路由（Semantic Router 路线）：把每条路由规则写成示例语句并编码为向量，运行时用输入的向量与规则向量做相似度匹配，超过阈值即命中。它零训练、规则可以即时增删（加一条规则只是加一行向量），代价是阈值成为核心超参——阈值松了多条规则同时沾边产生歧义命中，紧了又漏。第四种是级联路由（FrugalGPT、RouteLLM 路线）：它与前三种有本质区别——判据不是"请求是什么"这个先验，而是"处理得怎么样"这个运行时证据。便宜模型先答，答案过不了机械校验或置信度评估就升级到贵模型。级联把"路由"变成了"分级服务"，其代价是简单请求也要先付一次便宜模型的成本，且弱模型的错误有时是"自信地错"，校验器必须独立于弱模型的自我报告。</p>
 <p><strong>机制细节：误路由的成本不对称。</strong> 路由决策要按成本矩阵设计，而不是按准确率。把复杂任务路由给弱模型，代价是答案质量——可能引发返工、投诉甚至业务损失；把简单任务路由给强模型，代价只是几秒延迟与一点预算。两侧代价经常差一个数量级，因此<strong>阈值必须向"宁可多升舱"倾斜</strong>：置信度门槛设在偏高位置，兜底通道配最强模型。更隐蔽的问题是分类器的校准性——模型输出的 0.9 未必对应 90% 的正确率，过度自信是常态，置信度阈值要用本系统真实流量回放校准，不能照搬论文数值。任何路由器都必须有"我不知道"出口：解析失败、多规则冲突、置信度全面低于阈值时走默认通道，fail-open 到强模型比 fail-close 到错误通道便宜得多。</p>
-<p><strong>机制细节：路由粒度与决策位置。</strong> 路由可以在三个粒度上发生：提示路由（同一模型，按意图换提示模板）、模型路由（按难度换模型）、智能体路由（按任务类型换工具集与子智能体）。粒度越粗，单次误路由的代价越大：提示路由错了还能靠模型兜底，智能体路由错了整条工具链都白跑。决策位置同理：入口路由（分诊）看 whole 请求，链中路由（条件步骤）看中间结果——第 1 章的动态链就是链中路由的特例。生产系统常见形态是两级路由：入口做粗粒度的模型/智能体路由，通道内部做细粒度的提示路由，两级各自简单，组合起来覆盖复杂分布。</p>
+<p><strong>机制细节：路由粒度与决策位置。</strong> 路由可以在三个粒度上发生：提示路由（同一模型，按意图换提示模板）、模型路由（按难度换模型）、智能体路由（按任务类型换工具集与子智能体）。粒度越粗，单次误路由的代价越大：提示路由错了还能靠模型兜底，智能体路由错了整条工具链都白跑。决策位置同理：入口路由（分诊）看 whole 请求，链中路由（条件步骤）看中间结果——<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>的动态链就是链中路由的特例。生产系统常见形态是两级路由：入口做粗粒度的模型/智能体路由，通道内部做细粒度的提示路由，两级各自简单，组合起来覆盖复杂分布。</p>
 <p><strong>失效模式与反模式。</strong> 第一个是域漂移：上线三个月后用户问法演变，规则与分类器静默劣化，而路由错误的表现是"答案质量下降"而非报错，往往要等业务指标恶化才被发现。对策是把路由分布本身做成监控指标——某个通道的流量占比突降、兜底通道占比突升，都是漂移的早期信号。第二个是级联的隐性失败：弱模型给出了格式完美、置信度很高但事实错误的答案，机械校验全部通过，错误一路下行。对策是给高风险通道叠加第二道独立信号（如引用核对、抽样人工复核），并持续审计"升级通道的捕获率"——级联真正拦下了多少次坏答案，这个数字若趋近于零，说明级联只是白白多了一次调用。第三个是语义路由的组合意图："查一下账单然后我要投诉"同时命中两条规则，路由器若不定义优先级与合并策略，就会随机选一条，用户体验随机劣化。第四个反模式是过度路由：任务本质同质却切出十几个通道，每个通道样本稀疏到无法调优，路由器本身成了最大的复杂度来源。</p>
 <p><strong>何时不要用。</strong> 单一任务类型的系统不需要路由，强行分流只会增加故障面。流量小到成本无关紧要时，统一用最强模型比维护路由器划算。路由类目还不稳定的产品早期（这周三类下周五类），先把所有流量打到一个通道积累数据，等分布稳定了再切——路由的价值建立在"你对流量分布有可靠认知"之上，认知未成，路由先行就是猜。</p>
 <h2 id="26-工程落地实践代码示例">2.6 工程落地：实践代码示例</h2>
@@ -476,7 +483,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Intercom Fin 计费与路由结果定义（routing outcomes / qualification 路由）：<a href="https://www.intercom.com/help/en/articles/8205718-fin-ai-agent-outcomes">https://www.intercom.com/help/en/articles/8205718-fin-ai-agent-outcomes</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch01-prompt-chaining.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第1章 提示链</span></a><a class="pager" href="../chapters/ch03-parallelization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第3章 并行化</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#21-模式概述">2.1 模式概述</a></li><li class="toc-l3"><a href="#211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#212-核心机制它如何工作">2.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#22-起源与历史最早是谁提出来的">2.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#23-发挥的作用为什么重要">2.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#24-实际应用与案例">2.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#25-深度讲解">2.5 深度讲解</a></li><li class="toc-l2"><a href="#26-工程落地实践代码示例">2.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#261-框架无关实现完整可运行">2.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#262-框架集成实现langgraph-条件边">2.6.2 框架集成实现（LangGraph 条件边）</a></li><li class="toc-l3"><a href="#263-生产化改造清单">2.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#27-概览-核心要点-结论">2.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#271-本章小结">2.7.1 本章小结</a></li><li class="toc-l3"><a href="#272-核心要点">2.7.2 核心要点</a></li><li class="toc-l3"><a href="#273-结论">2.7.3 结论</a></li><li class="toc-l2"><a href="#28-延伸阅读与参考链接">2.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

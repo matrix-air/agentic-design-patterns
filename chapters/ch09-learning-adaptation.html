@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第9章 学习与适应 · 智能体设计模式</title>
 <meta name="description" content="以技能库、经验库与进化循环实现非参数化的持续改进，让智能体不改权重也能越用越好。">
+<meta property="og:title" content="第9章 学习与适应 · 智能体设计模式">
+<meta property="og:description" content="以技能库、经验库与进化循环实现非参数化的持续改进，让智能体不改权重也能越用越好。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch09-learning-adaptation.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a class="active" href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a class="active" href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -37,7 +44,7 @@
 <h3 id="911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</h3>
 <p>机器学习意义上的"学习"指改参数，但智能体的学习绝大多数不发生在权重里。把视角拉高，智能体变好有两条路线。<strong>参数化路线</strong>：用微调、强化学习改模型权重，改动的是能力本身，代价是训练数据、算力与一轮完整的发布流程，产物是不透明的权重。<strong>非参数化路线</strong>：不改权重，改的是模型外部的文本工件——系统提示、少样本示例、技能代码库、经验记忆、工作流程序列。这些工件可读、可审计、可版本化、可随时回滚，写入成本低到一次调用就能完成。</p>
 <p>智能体工程的重心明显偏向非参数化路线，原因有三。第一，反馈信号天然存在且廉价：一次任务跑完，成功与否、错误日志、用户修正都是现成的学习信号，不需要标注团队。第二，学习单元是自然语言或代码，可以直接被人审查——"它学到了什么"以文本形式摆在库里，这与权重更新有本质的治理差异。第三，学习即时生效：新技能入库下一次检索即可用，不用等训练与部署。参数化路线并没有出局——当非参数化工件积累到足够规模，把它们蒸馏进微调数据（把成功的提示+上下文+输出变成训练样本）是自然的混合路径——但在智能体的日常迭代里，本章聚焦非参数化路线。</p>
-<p>按载体分，非参数化学习有四种形态：<strong>提示的进化</strong>（<a href="https://dspy.ai">DSPy</a> 把提示当作编译产物自动优化）、<strong>技能的积累</strong>（Voyager 式技能库，学到的技能是经验证的可执行代码）、<strong>经验的沉淀</strong>（第 4 章 Reflexion 的情景记忆向前一步，成为跨会话经验库）、<strong>程序的进化</strong>（AlphaEvolve 式进化循环，直接演化代码工件本身）。四者共享同一个骨架：捕获经验 → 工件化 → 检索复用 → 反馈修正。</p>
+<p>按载体分，非参数化学习有四种形态：<strong>提示的进化</strong>（<a href="https://dspy.ai">DSPy</a> 把提示当作编译产物自动优化）、<strong>技能的积累</strong>（Voyager 式技能库，学到的技能是经验证的可执行代码）、<strong>经验的沉淀</strong>（<a href="../chapters/ch04-reflection.html">第 4 章</a> Reflexion 的情景记忆向前一步，成为跨会话经验库）、<strong>程序的进化</strong>（AlphaEvolve 式进化循环，直接演化代码工件本身）。四者共享同一个骨架：捕获经验 → 工件化 → 检索复用 → 反馈修正。</p>
 <h3 id="912-核心机制它如何工作">9.1.2 核心机制：它如何工作</h3>
 <p>所有形态的共同骨架是一个闭环。<strong>捕获</strong>：从任务执行中提取反馈——显式的（测试通过/失败、指标分数）或隐式的（用户改写了答案、会话被放弃）。<strong>工件化</strong>：把经验固化成可检索的单元，关键是带结构与元数据：什么情境下、什么做法、结果如何、教训是什么，而不是一段无上下文的日志。<strong>复用</strong>：下次遇到相似情境时按嵌入相似度或结构化条件检索，把相关经验注入上下文。<strong>修正</strong>：工件本身也受反馈约束——被复用后效果差的技能降权或改写，错误的经验被后续证据覆盖。</p>
 <p>进化循环是这个骨架的强化版：不满足于"记录已有经验"，而是主动生成变体（变异）、用评估器批量打分（选择）、保留最优并继续变异，把搜索做成一个自动化循环。它能否工作的前提是存在<strong>廉价、自动、可信的评估器</strong>——这也是本章最重要的判据，9.5 节会展开。</p>
@@ -53,11 +60,11 @@
     EV --> SEL["选择：质量+多样性"]
     SEL -->|"新种群"| EV
     E -->|"满分或预算尽"| STOP["终止并沉淀"]</div>
-<div class="fig-caption">图 9-1：学习闭环的骨架（捕获-工件化-复用-修正）与强化版进化环（生成-评估-选择-变异）。</div>
+<div class="fig-caption" id="fig-9-1">图 9-1：学习闭环的骨架（捕获-工件化-复用-修正）与强化版进化环（生成-评估-选择-变异）。</div>
 <h3 id="913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</h3>
-<p>学习与适应是若干模式的"时间维度"扩展。反思模式（第 4 章）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（第 8 章）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
+<p>学习与适应是若干模式的"时间维度"扩展。反思模式（<a href="../chapters/ch04-reflection.html">第 4 章</a>）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（<a href="../chapters/ch08-memory.html">第 8 章</a>）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
 <h2 id="92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</h2>
-<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见第 4 章）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 <a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a>（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 <a href="https://github.com/codelion/openevolve">OpenEvolve</a>，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
+<p>"生成—评估—选择"的循环在计算科学里源头极早：1975 年，密歇根大学的 John Holland 出版《Adaptation in Natural and Artificial Systems》，确立遗传算法，把自然选择抽象为可执行的搜索机制——今天所有"种群+变异+适应度"的进化式智能体，方法骨架都能追溯到这里。LLM 时代的第一步是 2023 年 3 月的 Reflexion（Shinn 等，arXiv:2303.11366，NeurIPS 2023；详见<a href="../chapters/ch04-reflection.html">第 4 章</a>）：失败后生成语言化自我反思存入情景记忆，下次尝试时注入——它证明了"语言即学习信号"在智能体中成立，但记忆只活在单任务内。2023 年 5 月，NVIDIA、Caltech 等机构的 Wang 等人发表 Voyager：在 Minecraft 中用自动课程生成下一个学习目标，把每次成功的操作固化为带文档字符串的技能代码入库、按嵌入检索复用，成为"技能库终身学习"的完整原型。2023 年 10 月，斯坦福的 Khattab 等人发布 DSPy（arXiv:2310.03714，后中稿 ICLR 2024），主张提示词应当像代码一样由编译器从数据自动优化，而非手工雕琢。2024 年 1 月，Codium AI（现 Qodo）的 Tal Ridnik 与 Ido Rivero 发表 AlphaCodium（arXiv:2401.08500），提出测试驱动的多阶段编码流程——反思、公共测试推理、AI 生成补充测试、迭代修复，在 CodeContests 上把 GPT-4 的 pass@5 从 19% 提到 44%。2025 年 5 月，Google DeepMind 发布 <a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a>（团队论文 arXiv:2506.13131）：进化数据库 + 提示采样器 + LLM ensemble（Gemini Flash 负责广度出想法、Gemini Pro 负责深度改写）+ 自动评估器的完整进化编码智能体，在 50 多个数学开放问题上约 20% 的案例改进了已知最优解（含用 48 次标量乘法完成 4×4 复矩阵乘法、刷新 Strassen 1969 年以来的纪录），并把发现的算法部署进了 Google 的数据中心调度与 Gemini 训练的矩阵乘 kernel。2025 年，开源社区推出 <a href="https://github.com/codelion/openevolve">OpenEvolve</a>，把 AlphaEvolve 的进化循环复刻为可对任意可评估函数使用的开源实现。</p>
 <table>
 <thead>
 <tr>
@@ -78,7 +85,7 @@
 <td>2023.3</td>
 <td>Reflexion：语言化反思的情景式在线学习</td>
 <td>Noah Shinn 等</td>
-<td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>；NeurIPS 2023（详见第 4 章）</td>
+<td><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>；NeurIPS 2023（详见<a href="../chapters/ch04-reflection.html">第 4 章</a>）</td>
 </tr>
 <tr>
 <td>2023.5</td>
@@ -175,7 +182,7 @@
 <h3 id="953-技能库与自动课程">9.5.3 技能库与自动课程</h3>
 <p>Voyager 的两个设计值得单独拆解。其一是<strong>技能的验证门槛</strong>：只有执行成功（Minecraft 中任务达成）的代码才获得入库资格，技能天然可信；每条技能带文档字符串描述功能，检索靠查询与描述的嵌入相似度，而不是全文匹配。其二是<strong>自动课程</strong>：让智能体自己问自己"按我当前的能力，下一步学什么有点挑战但可达"，环境反馈自动判卷。课程机制解决的是技能库冷启动与停滞问题——没有课程，智能体会重复练习已会的东西；课程让库的生长沿着难度曲线推进。迁移到业务场景：技能库型产品的课程可以由"高频失败任务"驱动——失败聚类分析自动生成下一个要沉淀的技能主题，这与 Voyager 的自动课程在结构上同构。</p>
 <h3 id="954-从经验回放到经验库">9.5.4 从经验回放到经验库</h3>
-<p>Reflexion 的情景记忆只服务单次任务（几轮尝试之间），把它变成跨会话资产需要跨过三道坎。<strong>抽象层级</strong>：单次反思是"这次我错在哪"，经验库条目必须是"这类情境下应如何"——要再抽一层模式，条目 schema 建议：触发条件/情境、采取的行动、结果、教训、置信度、来源。<strong>信任分级</strong>：自动沉淀的经验初始置信度低，被复用且成功的次数累积置信度，人工审核直接给高置信；检索时低置信经验只作参考、高置信经验可直接影响行为。<strong>防腐</strong>：经验库与记忆库一样需要去重、合并与过期（第 8 章的机制全部适用），此外还要防"回音室"——智能体检索自己的经验、按经验行动、又把行动结果写成新经验，若评估信号有偏，错误会在库里自我强化。打断回音室的手段是引入外部信号（真实用户反馈、独立评审）定期校准。</p>
+<p>Reflexion 的情景记忆只服务单次任务（几轮尝试之间），把它变成跨会话资产需要跨过三道坎。<strong>抽象层级</strong>：单次反思是"这次我错在哪"，经验库条目必须是"这类情境下应如何"——要再抽一层模式，条目 schema 建议：触发条件/情境、采取的行动、结果、教训、置信度、来源。<strong>信任分级</strong>：自动沉淀的经验初始置信度低，被复用且成功的次数累积置信度，人工审核直接给高置信；检索时低置信经验只作参考、高置信经验可直接影响行为。<strong>防腐</strong>：经验库与记忆库一样需要去重、合并与过期（<a href="../chapters/ch08-memory.html">第 8 章</a>的机制全部适用），此外还要防"回音室"——智能体检索自己的经验、按经验行动、又把行动结果写成新经验，若评估信号有偏，错误会在库里自我强化。打断回音室的手段是引入外部信号（真实用户反馈、独立评审）定期校准。</p>
 <h3 id="955-失效模式与反模式">9.5.5 失效模式与反模式</h3>
 <p><strong>评估器被攻破（Goodhart 陷阱）</strong>：进化循环是最强力的 Goodhart 放大器——它不优化你以为的目标，只优化你的评分函数。测试覆盖不全时，进化会找到"通过测试但错误"的解；评分函数有代理缝隙，进化一定钻进去。对策：评估器分层（快筛+全量）、定期人工抽查高分个体、评估集与选择集分离。<strong>自我强化回音室</strong>：如上所述，无外部信号的自评闭环会让偏见固化。<strong>库膨胀与检索退化</strong>：技能/经验条目无限增长后，相似条目互相稀释，检索精度下降，旧技能与新环境不符却不自知。对策：容量上限、定期合并去重、复用失败即降权。<strong>环境漂移</strong>：经验是历史的快照，接口升级、业务规则变化后，旧经验从资产变成误导源。对策：经验条目带时间与适用范围，关键条目复用前做低成本验证。<strong>成本失控</strong>：进化循环、批量评估、技能验证都在放大调用量。对策：调用预算硬编码、廉价评估器前置过滤、高分个体缓存复用。</p>
 <h3 id="956-何时不要用">9.5.6 何时不要用</h3>
@@ -460,7 +467,7 @@ if __name__ == &quot;__main__&quot;:
 <h2 id="98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</h2>
 <p><strong>论文</strong></p>
 <ul>
-<li><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>　Reflexion：语言化反思的情景式在线学习（NeurIPS 2023，详见第 4 章）。</li>
+<li><a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a>　Reflexion：语言化反思的情景式在线学习（NeurIPS 2023，详见<a href="../chapters/ch04-reflection.html">第 4 章</a>）。</li>
 <li><a href="https://arxiv.org/abs/2305.16291">arXiv:2305.16291</a>　Voyager：开放世界中的技能库终身学习智能体。</li>
 <li><a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a>　DSPy：把提示词作为编译产物程序化优化（ICLR 2024）。</li>
 <li><a href="https://arxiv.org/abs/2401.08500">arXiv:2401.08500</a>　AlphaCodium：测试驱动的迭代编码流程（CodeContests pass@5 19%→44%）。</li>
@@ -479,7 +486,7 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://arxiv.org/abs/2401.08500">AlphaCodium 论文摘要</a>：CodeContests 成绩出处</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第8章 记忆管理</span></a><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第10章 模型上下文协议</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-起源与历史最早是谁提出来的">9.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l2"><a href="#96-工程落地实践代码示例">9.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#961-框架无关实现完整可运行">9.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#962-框架集成实现dspy提示词是编译产物">9.6.2 框架集成实现（DSPy：提示词是编译产物）</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

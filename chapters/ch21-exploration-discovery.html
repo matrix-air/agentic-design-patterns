@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第21章 探索与发现 · 智能体设计模式</title>
 <meta name="description" content="把智能体从"执行已知"扩展到"发现未知"——用探索-利用权衡管理搜索预算，用假设-实验-证伪循环产生可验证的新知识，并用自动验证闸门守住发现的成色。">
+<meta property="og:title" content="第21章 探索与发现 · 智能体设计模式">
+<meta property="og:description" content="把智能体从"执行已知"扩展到"发现未知"——用探索-利用权衡管理搜索预算，用假设-实验-证伪循环产生可验证的新知识，并用自动验证闸门守住发现的成色。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch21-exploration-discovery.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a class="active" href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a class="active" href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -49,9 +56,9 @@
     FAIL --> POOL
     POOL -->|变异再生成| GEN
     BUD["预算管理：硬上限/无改进早停"] --> GEN</div>
-<div class="fig-caption">图 21-1：假设-实验-证伪-知识入库的发现环——生成与验证隔离，证伪记录与冠军共同构成下一轮的母本与先验。</div>
+<div class="fig-caption" id="fig-21-1">图 21-1：假设-实验-证伪-知识入库的发现环——生成与验证隔离，证伪记录与冠军共同构成下一轮的母本与先验。</div>
 <h3 id="2113-与相邻模式的关系与组合">21.1.3 与相邻模式的关系与组合</h3>
-<p>与<strong>学习与适应</strong>（第 9 章）是"探索产生训练信号"的供需关系：探索循环的每一次验证结果都是一条标注数据（这个策略值多少分），沉淀下来就是第 9 章优化提示词、更新 few-shot 库、微调的原料；反过来，学习到的先验又让下一轮探索的假设质量更高——探索与学习构成"越用越聪明"的外环。与<strong>优先级排序</strong>（第 20 章）共享多臂老虎机的数学基座：第 20 章用 UCB 思想分配任务预算，本章用它分配搜索预算——探索本身就是一种要排队的任务。与<strong>反思</strong>（第 4 章）的区别在对象：反思改进的是单次产出的质量（已知好坏标准），探索寻找的是未知的好坏标准下的新解；反思的判据是给定的，探索的核心难题恰是判据的可信。与<strong>评估与监控</strong>（第 19 章）是验证闸门的供应商：探索产出的每个"发现"都要过第 19 章的评估流程（留出集复验、防污染），否则就是自卖自夸。与<strong>并行化</strong>（第 3 章）是执行加速：多个假设可以并行验证，验证器天然是无依赖的批处理负载。</p>
+<p>与<strong>学习与适应</strong>（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）是"探索产生训练信号"的供需关系：探索循环的每一次验证结果都是一条标注数据（这个策略值多少分），沉淀下来就是<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>优化提示词、更新 few-shot 库、微调的原料；反过来，学习到的先验又让下一轮探索的假设质量更高——探索与学习构成"越用越聪明"的外环。与<strong>优先级排序</strong>（<a href="../chapters/ch20-prioritization.html">第 20 章</a>）共享多臂老虎机的数学基座：<a href="../chapters/ch20-prioritization.html">第 20 章</a>用 UCB 思想分配任务预算，本章用它分配搜索预算——探索本身就是一种要排队的任务。与<strong>反思</strong>（<a href="../chapters/ch04-reflection.html">第 4 章</a>）的区别在对象：反思改进的是单次产出的质量（已知好坏标准），探索寻找的是未知的好坏标准下的新解；反思的判据是给定的，探索的核心难题恰是判据的可信。与<strong>评估与监控</strong>（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）是验证闸门的供应商：探索产出的每个"发现"都要过<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的评估流程（留出集复验、防污染），否则就是自卖自夸。与<strong>并行化</strong>（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）是执行加速：多个假设可以并行验证，验证器天然是无依赖的批处理负载。</p>
 <h2 id="212-起源与历史最早是谁提出来的">21.2 起源与历史：最早是谁提出来的</h2>
 <p>探索的思想源头有两条并流的河：一条是统计与机器学习的"在不确定性下分配尝试"，从农业试验到老虎机到强化学习；另一条是科学哲学的"猜想与反驳"，规定了什么配称为发现。LLM 时代的工作把两条河接到了一起：模型当猜想者，自动验证器当实验与评审。</p>
 <table>
@@ -135,15 +142,15 @@
 <p>演化脉络的主线是<strong>验证器的形态决定探索的边界</strong>。Thompson 与 Robbins 时代的验证器是真实世界的反馈（疗法疗效、老虎机赔付），一次实验成本极高，理论焦点全在"少试几次"；UCB1 给出了"对不确定性本身定价"的最优策略。强化学习时代验证器变成模拟环境，试错成本骤降，探索进入工程日常。FunSearch 与 AlphaEvolve 则找到了 LLM 时代的关键组合：<strong>可自动执行的验证器</strong>（数学构造的可检验性、算法的正确性与性能测试）配上<strong>有先验的假设生成器</strong>（LLM），让探索第一次能在开放问题域里稳定产出可发表的新知识——FunSearch 的 cap set 下界、AlphaEvolve 的矩阵乘法算法与 11 维 kissing number 新下界都是"自动验证器说了算"的发现，而不是模型宣称的发现。The AI Scientist 的争议（自动评审器被提示注入操纵、生成论文质量参差）从反面确认了同一条原则：<strong>验证环节一旦可以被生成方操纵，探索就退化为自嗨</strong>。</p>
 <h2 id="213-发挥的作用为什么重要">21.3 发挥的作用：为什么重要</h2>
 <p>第一，它把系统的能力上限从"训练数据"扩展到"搜索空间"。执行型系统再精巧，最好成绩也不会超过其内置策略；带探索循环的系统可以持续刷新自己的最好成绩——FunSearch 与 AlphaEvolve 发现的不是"模型记得的答案"，而是搜索过程第一次产生的新构造。对企业系统，这对应着提示词、策略、配置的持续自动改进：探索循环每周跑一遍，最优解持续进化。</p>
-<p>第二，它是学习与适应（第 9 章）的燃料来源。学习需要"哪个更好"的标注，而标注要么靠人（贵、慢），要么靠探索（自动产生带分数的对照数据）。没有探索机制的学习系统只能复述历史偏好；有探索机制的系统在不断制造自己的训练数据——<strong>这是"越用越好"与"越用越僵"的分水岭</strong>。</p>
+<p>第二，它是学习与适应（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）的燃料来源。学习需要"哪个更好"的标注，而标注要么靠人（贵、慢），要么靠探索（自动产生带分数的对照数据）。没有探索机制的学习系统只能复述历史偏好；有探索机制的系统在不断制造自己的训练数据——<strong>这是"越用越好"与"越用越僵"的分水岭</strong>。</p>
 <p>第三，它为开放域任务提供了诚实的产出标准。深度研究、科学辅助这类任务的难点不在生成而在<strong>担保</strong>：结论凭什么可信。探索-验证循环把"担保"工程化——<strong>每个结论背后是一条可复查的实验链（假设、判据、结果、复验），而不是一段流畅的论证</strong>。这让智能体的研究产出第一次可以被同行审计，也让 Deep Research 类产品敢于把"带引用"作为核心承诺。</p>
 <h2 id="214-实际应用与案例">21.4 实际应用与案例</h2>
-<p><strong>提示词与策略的自动优化</strong>。场景：客服 agent 的系统提示词需要持续改进。做法：把提示词当作"基因组"，验证器是黄金集上的评估分数（第 19 章），LLM 每轮阅读当前最优提示词与失败案例后提出变体，进化保留最优；<strong>每版新冠军必须在留出集复验</strong>。关键设计点：变异幅度受限（一次只改一段），防止"推倒重来"式变异摧毁已积累的性能。</p>
-<p><strong>冷启动策略发现</strong>。场景：新上线的数据分析 agent 不知道哪类检索策略适合企业内部语料。做法：预置策略池（关键词、向量、混合、重排序）加几个新组合假设，在抽样任务集上自动评测各策略，UCB 式分配评测预算——前期雨露均沾，后期集中验证领先者。关键设计点：<strong>探索结果（策略排名及其置信区间）沉淀为第 9 章可学习的先验</strong>。</p>
+<p><strong>提示词与策略的自动优化</strong>。场景：客服 agent 的系统提示词需要持续改进。做法：把提示词当作"基因组"，验证器是黄金集上的评估分数（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>），LLM 每轮阅读当前最优提示词与失败案例后提出变体，进化保留最优；<strong>每版新冠军必须在留出集复验</strong>。关键设计点：变异幅度受限（一次只改一段），防止"推倒重来"式变异摧毁已积累的性能。</p>
+<p><strong>冷启动策略发现</strong>。场景：新上线的数据分析 agent 不知道哪类检索策略适合企业内部语料。做法：预置策略池（关键词、向量、混合、重排序）加几个新组合假设，在抽样任务集上自动评测各策略，UCB 式分配评测预算——前期雨露均沾，后期集中验证领先者。关键设计点：<strong>探索结果（策略排名及其置信区间）沉淀为<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>可学习的先验</strong>。</p>
 <p><strong>数学与算法发现</strong>。场景：团队需要优化一个热点函数的性能。做法：FunSearch 式配置——LLM 变异函数实现，验证器先跑正确性测试再测性能，进化数据库保留 Pareto 前沿；发现的新实现必须通过 fuzzing 与代码评审双闸门才能合入。关键设计点：<strong>正确性验证是硬门槛（一票否决），性能是优化目标——顺序不可颠倒</strong>。</p>
 <p><strong>深度调研 agent</strong>。场景：产出行业综述报告。做法：把"哪些子问题值得查"本身作为探索空间——第一轮广撒网获取信息增益信号（哪些查询带回新事实），后续轮次向高增益方向收敛；<strong>每条关键结论必须有两个独立来源交叉验证</strong>（可证伪性的信息版）。关键设计点：信息增益的估计天然倾向冷门来源，需配冗余惩罚防止猎奇跑偏。</p>
-<p><strong>科学实验辅助</strong>。场景：生物或材料实验室的假设排期。做法：Agent Laboratory 式分工——LLM 负责文献综述、假设清单与实验方案草案，验证器是预注册的统计检验方案，人类科学家保留假设取舍权；自动系统的产出定位为"待验证的建议"而非"结论"。关键设计点：<strong>预注册（先定判据后跑实验）是防 p-hacking 的闸门</strong>，与第 19 章的"先定判据后看结果"同构。</p>
-<p><strong>工具与接口发现</strong>。场景：接入新环境的 agent 不知道有哪些可用 API。做法：探索循环主动试调未文档化的端点（只读操作优先），把探测结果与 <a href="https://spec.openapis.org/oas/latest.html">OpenAPI 规范</a>（第 10 章 <a href="https://modelcontextprotocol.io/">MCP</a>）交叉验证后写入工具库。关键设计点：探索只允许在只读、沙箱化的操作上进行——写操作的探索权永远留给人类。</p>
+<p><strong>科学实验辅助</strong>。场景：生物或材料实验室的假设排期。做法：Agent Laboratory 式分工——LLM 负责文献综述、假设清单与实验方案草案，验证器是预注册的统计检验方案，人类科学家保留假设取舍权；自动系统的产出定位为"待验证的建议"而非"结论"。关键设计点：<strong>预注册（先定判据后跑实验）是防 p-hacking 的闸门</strong>，与<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的"先定判据后看结果"同构。</p>
+<p><strong>工具与接口发现</strong>。场景：接入新环境的 agent 不知道有哪些可用 API。做法：探索循环主动试调未文档化的端点（只读操作优先），把探测结果与 <a href="https://spec.openapis.org/oas/latest.html">OpenAPI 规范</a>（<a href="../chapters/ch10-mcp.html">第 10 章</a> <a href="https://modelcontextprotocol.io/">MCP</a>）交叉验证后写入工具库。关键设计点：探索只允许在只读、沙箱化的操作上进行——写操作的探索权永远留给人类。</p>
 <h3 id="真实世界实例">真实世界实例</h3>
 <p><strong>OpenAI Deep Research：带引用的自动研究产品</strong>。2025 年 2 月 2 日，OpenAI 发布 Deep Research（基于为浏览与分析优化的 o3 版本）：给定问题后自主多步浏览网页、检索数百个来源并交叉整合，产出带清晰引用的报告，发布时在 Humanity's Last Exam 上取得 26.6% 准确率（远超当时的非推理基线）——"探索-综合-引用"从论文能力变成大众可用的产品形态。来源：<a href="https://openai.com/index/introducing-deep-research/">OpenAI 官方发布</a>。</p>
 <p><strong>Google AI co-scientist：假设生成与实验室验证的分工</strong>。2025 年 2 月，Google 发布基于 Gemini 2.0 的多智能体"AI 共同科学家"（generate-debate-evolve 架构），在药物重定位与靶点发现上产出经实验室验证的假设：急性髓系白血病的重定位候选药在临床可用浓度下显示体外抑瘤活性，肝纤维化的新表观遗传靶点在人体肝脏类器官实验中验证出抗纤维化活性（合作方含 Houston Methodist、斯坦福医学院、帝国理工等）——本章"生成器提名、独立判据裁决"分工的公开案例。来源：<a href="https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist/">Google Research 官方博客</a>与<a href="https://arxiv.org/abs/2502.18864">论文 arXiv:2502.18864</a>。</p>
@@ -160,18 +167,18 @@
 <p>预算在"广度与深度"之间的分配是另一半管理：候选太单一会早熟收敛于局部最优，候选太发散则每个都浅尝辄止。进化计算的 MAP-Elites 类质量-多样性算法给了工程化的答案：保留多个"生态位"的最优解（比如按策略风格分桶），而不是只留全局冠军——多样性的母本池是大跳跃式改进的前提。LLM 变异的实践技巧与此一致：给生成器看冠军之外还要看若干"风格不同"的次优解，提示词里显式要求"提出与现有候选不同的方向"，否则模型会反复微调同一个局部。</p>
 <h3 id="2154-发现的验证闸门自动验证器与对抗审稿">21.5.4 发现的验证闸门：自动验证器与对抗审稿</h3>
 <p>探索系统的公信力全部押在验证闸门上，闸门按强度分四级。<strong>一级：可执行判据</strong>（单元测试、数学核验、模拟环境回放）——最硬，FunSearch/AlphaEvolve 的发现都停在这一级（一个矩阵乘法算法要么用 48 次乘法算对，要么不是）；工程要求是验证器与生成器完全隔离（生成器不可访问验证器内部状态或测试数据）。<strong>二级：留出集复验</strong>——训练评测集上选出的冠军必须在从未参与选择的留出集上复现优势；这一级防的是探索循环特有的过拟合形态：几百个候选里挑出来的最好解，很可能只是拟合了评测集的噪声（选择效应），不做留出复验的"发现"大半是幻觉。<strong>三级：对抗审稿</strong>——用独立模型扮演苛刻审稿人攻击发现（找反例、质疑适用范围、检查是否平凡），The AI Scientist 的教训在此必须反转利用：它的自动审稿器与生成器同源且可被注入，正确的配置是审稿模型异源、审稿提示词与生成提示词隔离、审稿意见不回流生成上下文。<strong>四级：人类评审</strong>——对外宣称的发现（写进产品、写进论文）必须过人，人类检查的是自动验证器覆盖不到的东西：新颖性是否平凡、结论是否重要、有没有自欺。</p>
-<p>闸门之外还有<strong>复现性</strong>的工程要求：每个接受的发现附带证据包——假设原文、验证器版本、评测集版本（第 19 章的三元组版本纪律）、随机种子、完整运行日志。发现是可复现的实验结论，不是模型的一段自信输出。反过来说，验证闸门也是探索系统的<strong>成本大头</strong>：验证成本应计入预算管理（21.5.3），验证器太贵的域（真实世界实验）需要便宜的代理验证器（模拟、小规模试验），并接受代理与现实之间的差距风险。</p>
+<p>闸门之外还有<strong>复现性</strong>的工程要求：每个接受的发现附带证据包——假设原文、验证器版本、评测集版本（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的三元组版本纪律）、随机种子、完整运行日志。发现是可复现的实验结论，不是模型的一段自信输出。反过来说，验证闸门也是探索系统的<strong>成本大头</strong>：验证成本应计入预算管理（21.5.3），验证器太贵的域（真实世界实验）需要便宜的代理验证器（模拟、小规模试验），并接受代理与现实之间的差距风险。</p>
 <div class="mermaid">flowchart TD
     L1["一级：可执行判据<br/>单元测试/数学核验/模拟回放"] --> L2["二级：留出集复验<br/>防「几百选一」的选择效应"]
     L2 --> L3["三级：对抗审稿<br/>异源模型扮演苛刻审稿人"]
     L3 --> L4["四级：人类签核<br/>对外宣称的发现必须过人"]</div>
-<div class="fig-caption">图 21-2：验证闸门的四级强度阶梯——越靠后越接近"担保"，对外宣称的发现至少要走到第四级。</div>
-<h3 id="2155-与学习适应第-9-章的配合及失效模式">21.5.5 与学习适应（第 9 章）的配合及失效模式</h3>
-<p>探索与学习的分工可以一句话说清：<strong>探索负责制造"哪个更好"的数据，学习负责把数据固化成无需再探索的直觉</strong>。工程上的配合接口有三个。数据接口：探索循环的每次验证产出（上下文、候选、分数）按第 9 章的格式沉淀，优化器（提示词改写、few-shot 库增删、模型微调）定期消化。策略接口：学习产出的先验（哪类假设历史上成功率高）反哺探索的预算分配——成功率高的一类假设获得更多变异轮次。节奏接口：探索是主动的、批式的、昂贵的；学习是被动的、持续的、便宜的；生产系统的常见节奏是"夜间批式探索 + 日间学习更新 + 每周冠军晋升评审"，与第 19 章的评估节奏咬合。</p>
-<p>失效模式清单。<strong>奖励黑客</strong>：候选学会了钻验证器的空子（生成恰好通过测试用例的硬编码代码）——对策是测试集保密与动态轮换（第 19 章防污染纪律在探索场景的翻版）。<strong>冠军腐化</strong>：环境变了，老冠军早已过时，但它的分数还在参考表上镇住新假设——对策是冠军定期复验。<strong>验证器漂移</strong>：验证器自身被"优化"（有人为了让某个候选通过而放宽判据）——验证器的变更走评审流程，与第 19 章的门禁纪律相同。<strong>自恋循环</strong>：生成器与验证器同源（同一模型既出题又判卷），分数系统性虚高——异源是底线。<strong>过度探索</strong>：把生产流量当实验场，用户为低质探索买单——<strong>探索必须在影子流量或旁路环境进行</strong>。何时可以不用：解空间已知且小（枚举即可）；验证成本高到与真实实验无异且系统跑不了真实实验（此时只做执行不做发现）；以及一次性任务（探索的固定成本摊不薄）。</p>
+<div class="fig-caption" id="fig-21-2">图 21-2：验证闸门的四级强度阶梯——越靠后越接近"担保"，对外宣称的发现至少要走到第四级。</div>
+<h3 id="2155-与学习适应第-9-章的配合及失效模式">21.5.5 与学习适应（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）的配合及失效模式</h3>
+<p>探索与学习的分工可以一句话说清：<strong>探索负责制造"哪个更好"的数据，学习负责把数据固化成无需再探索的直觉</strong>。工程上的配合接口有三个。数据接口：探索循环的每次验证产出（上下文、候选、分数）按<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>的格式沉淀，优化器（提示词改写、few-shot 库增删、模型微调）定期消化。策略接口：学习产出的先验（哪类假设历史上成功率高）反哺探索的预算分配——成功率高的一类假设获得更多变异轮次。节奏接口：探索是主动的、批式的、昂贵的；学习是被动的、持续的、便宜的；生产系统的常见节奏是"夜间批式探索 + 日间学习更新 + 每周冠军晋升评审"，与<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的评估节奏咬合。</p>
+<p>失效模式清单。<strong>奖励黑客</strong>：候选学会了钻验证器的空子（生成恰好通过测试用例的硬编码代码）——对策是测试集保密与动态轮换（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>防污染纪律在探索场景的翻版）。<strong>冠军腐化</strong>：环境变了，老冠军早已过时，但它的分数还在参考表上镇住新假设——对策是冠军定期复验。<strong>验证器漂移</strong>：验证器自身被"优化"（有人为了让某个候选通过而放宽判据）——验证器的变更走评审流程，与<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的门禁纪律相同。<strong>自恋循环</strong>：生成器与验证器同源（同一模型既出题又判卷），分数系统性虚高——异源是底线。<strong>过度探索</strong>：把生产流量当实验场，用户为低质探索买单——<strong>探索必须在影子流量或旁路环境进行</strong>。何时可以不用：解空间已知且小（枚举即可）；验证成本高到与真实实验无异且系统跑不了真实实验（此时只做执行不做发现）；以及一次性任务（探索的固定成本摊不薄）。</p>
 <h2 id="216-工程落地实践代码示例">21.6 工程落地：实践代码示例</h2>
 <h3 id="2161-框架无关实现完整可运行">21.6.1 框架无关实现（完整可运行）</h3>
-<p>一个最小发现循环，目标域与第 20 章呼应：进化一个"任务排序启发式函数"，验证器是确定性的加权准时完成率评分（训练集选择、留出集复验防过拟合）。LLM 充当假设生成器与变异算子（配置密钥时启用）；未配置密钥时使用内置候选池（含语法损坏与运行崩溃的失败样本，演示验证闸门的错误路径），保证全流程可验证。安全提示：<code>exec</code> 执行模型生成的代码仅供演示，生产必须换沙箱子进程加资源限额。Python 3.10+ 实测通过。</p>
+<p>一个最小发现循环，目标域与<a href="../chapters/ch20-prioritization.html">第 20 章</a>呼应：进化一个"任务排序启发式函数"，验证器是确定性的加权准时完成率评分（训练集选择、留出集复验防过拟合）。LLM 充当假设生成器与变异算子（配置密钥时启用）；未配置密钥时使用内置候选池（含语法损坏与运行崩溃的失败样本，演示验证闸门的错误路径），保证全流程可验证。安全提示：<code>exec</code> 执行模型生成的代码仅供演示，生产必须换沙箱子进程加资源限额。Python 3.10+ 实测通过。</p>
 <pre><code class="language-python">&quot;&quot;&quot;假设 -&gt; 自动验证 -&gt; 进化 的最小发现循环（框架无关实现）。
 
 发现目标：进化一个任务排序启发式 order(jobs)，最大化加权准时完成数。
@@ -194,7 +201,7 @@ INITIAL_SKELETON = '''def order(jobs):
 '''
 
 
-def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.5) -&gt; str:
+def llm(prompt: str, system: str = &quot;&quot;, temperature: float = 0.3) -&gt; str:
     &quot;&quot;&quot;统一的模型接入辅助函数（OpenAI 兼容协议，只读环境变量）。&quot;&quot;&quot;
     if not os.environ.get(&quot;AGENT_LLM_API_KEY&quot;):
         return mock_generate(prompt)
@@ -444,7 +451,7 @@ if __name__ == &quot;__main__&quot;:
 - FunSearch 发现过程官方解读（DeepMind 博客）：https://deepmind.google/discover/blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/
 - Google AI co-scientist 肝纤维化/AML 验证合作方说明（见官方博客"Validating in the lab"一节，合作方含 Houston Methodist、斯坦福医学院等）：https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist/</p></div>
     <div class="pagers"><a class="pager" href="../chapters/ch20-prioritization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第20章 优先级排序</span></a><a class="pager" href="../chapters/ch22-conclusion.html"><span class="pager-dir">下一章 →</span><span class="pager-title">结语</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#211-模式概述">21.1 模式概述</a></li><li class="toc-l3"><a href="#2111-问题背景为什么需要这个模式">21.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#2112-核心机制它如何工作">21.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#2113-与相邻模式的关系与组合">21.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#212-起源与历史最早是谁提出来的">21.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#213-发挥的作用为什么重要">21.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#214-实际应用与案例">21.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#215-深度讲解">21.5 深度讲解</a></li><li class="toc-l3"><a href="#2151-探索-利用权衡在-agent-中的三形态">21.5.1 探索-利用权衡在 agent 中的三形态</a></li><li class="toc-l3"><a href="#2152-假设-实验-证伪循环可证伪性作为设计要求">21.5.2 假设-实验-证伪循环：可证伪性作为设计要求</a></li><li class="toc-l3"><a href="#2153-搜索预算管理何时停止探索">21.5.3 搜索预算管理：何时停止探索</a></li><li class="toc-l3"><a href="#2154-发现的验证闸门自动验证器与对抗审稿">21.5.4 发现的验证闸门：自动验证器与对抗审稿</a></li><li class="toc-l3"><a href="#2155-与学习适应第-9-章的配合及失效模式">21.5.5 与学习适应（第 9 章）的配合及失效模式</a></li><li class="toc-l2"><a href="#216-工程落地实践代码示例">21.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#2161-框架无关实现完整可运行">21.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#2162-框架集成实现langgraph假设-验证-修正循环">21.6.2 框架集成实现（LangGraph：假设-验证-修正循环）</a></li><li class="toc-l3"><a href="#2163-生产化改造清单">21.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#217-概览-核心要点-结论">21.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#218-延伸阅读与参考链接">21.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

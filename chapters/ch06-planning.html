@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第6章 规划 · 智能体设计模式</title>
 <meta name="description" content="让智能体在行动前把目标分解为可执行的子任务序列，在执行偏差出现时按触发条件重规划，用显式中间结构换长程任务的稳定性与可观测性。">
+<meta property="og:title" content="第6章 规划 · 智能体设计模式">
+<meta property="og:description" content="让智能体在行动前把目标分解为可执行的子任务序列，在执行偏差出现时按触发条件重规划，用显式中间结构换长程任务的稳定性与可观测性。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch06-planning.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a class="active" href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a class="active" href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -49,7 +56,7 @@
     RP --> EX
     EX -->|"全部完成"| S["成功交付"]
     T -->|"重规划次数耗尽"| F["如实报告失败"]</div>
-<div class="fig-caption">图 6-1：规划状态机——计划生成、结构验证、执行跟踪与带证据重规划（重规划次数设硬上限）</div>
+<div class="fig-caption" id="fig-6-1">图 6-1：规划状态机——计划生成、结构验证、执行跟踪与带证据重规划（重规划次数设硬上限）</div>
 <h3 id="613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</h3>
 <p>与 ReAct 的关系最微妙：ReAct 每步基于全部历史重新决策，规划隐式发生在模型内部，好处是适应快，坏处是全局一致性弱、每步昂贵。规划模式把它改成"一次计划、分步执行"，是互补而非替代——<strong>执行器内部常常就是一个 ReAct 循环</strong>。与工具使用是整体与局部：每条计划项的最小执行单元就是工具调用，计划验证的第一课是核对计划引用的工具是否真实存在。与反思是证据链：Reflexion 式的失败反思为重规划提供"为什么失败"的证据，没有反思的重规划只是换个姿势再赌一次。与 Tree of Thoughts 是搜索化：当"生成一份好计划"本身需要探索——分支、评估、回溯——规划就从序列生成升级为树搜索。与多智能体是分派：计划项是天然的分工单元，管理者智能体的核心工作就是把计划项派给合适的执行者（<a href="https://docs.crewai.com/">CrewAI</a> 的 hierarchical 模式即此形态）。</p>
 <h2 id="62-起源与历史最早是谁提出来的">6.2 起源与历史：最早是谁提出来的</h2>
@@ -231,8 +238,8 @@ def make_plan(goal: str, context: str = &quot;&quot;) -&gt; list[Step]:
         raw = llm(prompt, system=PLAN_SYSTEM + (f&quot;\n上轮问题：{last_err}&quot; if last_err else &quot;&quot;))
         try:
             text = raw.strip()
-            if text.startswith(&quot;```&quot;):
-                text = text.strip(&quot;`&quot;).lstrip(&quot;json&quot;)
+            if text.startswith(chr(96) * 3):  # 围栏用 chr 构造，防裸反引号截断文档
+                text = text.strip(chr(96)).lstrip(&quot;json&quot;)
             data = json.loads(text)
             steps = [Step(description=str(item[&quot;description&quot;])) for item in data]
             if not steps:
@@ -453,7 +460,7 @@ if __name__ == &quot;__main__&quot;:
 <li>OpenAI《Introducing Operator》（2025-01）：https://openai.com/index/introducing-operator/</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch05-tool-use.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第5章 工具使用</span></a><a class="pager" href="../chapters/ch07-multi-agent.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第7章 多智能体协作</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#61-模式概述">6.1 模式概述</a></li><li class="toc-l3"><a href="#611-问题背景为什么需要这个模式">6.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#612-核心机制它如何工作">6.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#62-起源与历史最早是谁提出来的">6.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#63-发挥的作用为什么重要">6.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#64-实际应用与案例">6.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#65-深度讲解">6.5 深度讲解</a></li><li class="toc-l3"><a href="#651-计划执行分离-vs-交织一个光谱而非二选一">6.5.1 计划—执行分离 vs 交织：一个光谱而非二选一</a></li><li class="toc-l3"><a href="#652-计划粒度细到哪一步算合适">6.5.2 计划粒度：细到哪一步算合适</a></li><li class="toc-l3"><a href="#653-重规划触发条件与修订纪律">6.5.3 重规划触发条件与修订纪律</a></li><li class="toc-l3"><a href="#654-计划验证执行前与执行中">6.5.4 计划验证：执行前与执行中</a></li><li class="toc-l3"><a href="#655-失效模式与何时不要规划">6.5.5 失效模式与何时不要规划</a></li><li class="toc-l2"><a href="#66-工程落地实践代码示例">6.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#661-框架无关实现完整可运行">6.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#662-框架集成实现crewaihierarchical-process">6.6.2 框架集成实现（CrewAI，hierarchical process）</a></li><li class="toc-l3"><a href="#663-生产化改造清单">6.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#67-概览-核心要点-结论">6.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#671-本章小结">6.7.1 本章小结</a></li><li class="toc-l3"><a href="#672-核心要点">6.7.2 核心要点</a></li><li class="toc-l3"><a href="#673-结论">6.7.3 结论</a></li><li class="toc-l2"><a href="#68-延伸阅读与参考链接">6.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

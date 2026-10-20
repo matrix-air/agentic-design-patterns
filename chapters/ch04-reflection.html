@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第4章 反思 · 智能体设计模式</title>
 <meta name="description" content="让智能体以批评者视角审视自身输出，经"生成-批评-修订"循环与跨尝试教训沉淀提升质量，并明确其能力边界与停止条件。">
+<meta property="og:title" content="第4章 反思 · 智能体设计模式">
+<meta property="og:description" content="让智能体以批评者视角审视自身输出，经"生成-批评-修订"循环与跨尝试教训沉淀提升质量，并明确其能力边界与停止条件。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch04-reflection.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a class="active" href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a class="active" href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -48,9 +55,9 @@
     C -->|"未通过且分数仍在提升"| D["以批评为条件修订"]
     D --> B
     E --> F["交付最终输出"]</div>
-<div class="fig-caption">图 4-1：反思循环的最小闭环——批评驱动修订，多重停止闸门兜底（硬闸：最大轮数与成本预算；软闸：评审通过与分数收敛）</div>
+<div class="fig-caption" id="fig-4-1">图 4-1：反思循环的最小闭环——批评驱动修订，多重停止闸门兜底（硬闸：最大轮数与成本预算；软闸：评审通过与分数收敛）</div>
 <h3 id="413-与相邻模式的关系与组合">4.1.3 与相邻模式的关系与组合</h3>
-<p>反思与提示链的关系是"带反馈回边的链"：提示链是单向无环结构，反思引入循环——这既是力量来源，也是必须配停止条件的原因。反思与工具使用的关系是反馈来源：代码解释器、搜索引擎这些第 5 章的工具，正是外部反馈反思的反馈器，工具结果比模型自评可靠得多。反思与记忆的关系在 Reflexion 里最清楚：语言化自我反思写入情景记忆，跨任务、跨尝试复用。反思与多智能体的关系是批评者独立化：把评审者做成带不同系统提示、甚至不同模型的智能体，可部分缓解模型偏爱自己输出的倾向。最后，反思与规划互为前哨：执行失败后的复盘为第 6 章的重规划提供证据——先搞清哪里错了，再决定怎么重排。</p>
+<p>反思与提示链的关系是"带反馈回边的链"：提示链是单向无环结构，反思引入循环——这既是力量来源，也是必须配停止条件的原因。反思与工具使用的关系是反馈来源：代码解释器、搜索引擎这些<a href="../chapters/ch05-tool-use.html">第 5 章</a>的工具，正是外部反馈反思的反馈器，工具结果比模型自评可靠得多。反思与记忆的关系在 Reflexion 里最清楚：语言化自我反思写入情景记忆，跨任务、跨尝试复用。反思与多智能体的关系是批评者独立化：把评审者做成带不同系统提示、甚至不同模型的智能体，可部分缓解模型偏爱自己输出的倾向。最后，反思与规划互为前哨：执行失败后的复盘为<a href="../chapters/ch06-planning.html">第 6 章</a>的重规划提供证据——先搞清哪里错了，再决定怎么重排。</p>
 <h2 id="42-起源与历史最早是谁提出来的">4.2 起源与历史：最早是谁提出来的</h2>
 <p>"模型检查并修正自己的输出"作为思想，最早在训练侧落地。Anthropic 的 Constitutional AI 论文把"批评—修订"（critique-revise）循环用于改造训练数据：模型依据一组原则批评自己的回答，再依据批评修订出更好的回答，用两版回答构成偏好对，替代人工撰写的对比数据——这确立了"自我批评可以作为训练信号"的可行性。三个月后，两篇把循环搬到推理期的工作在同一个 arXiv 编号段（2303）里先后出现，方向却截然不同：Self-Refine 在单个任务内部迭代打磨一份输出，Reflexion 则让智能体在多次尝试之间积累教训。两个月后的 CRITIC 补上关键一刀：用实验证明纯自反思有明确能力边界，并给出工具增强的修正方案；此后的工作（如 CoVe）多是主线上的变体深化。</p>
 <table>
@@ -104,7 +111,7 @@
 <p><strong>Text-to-SQL 与数据查询。</strong> 生成的 SQL 先在数据库上 EXPLAIN 或试运行，把报错与执行计划作为外部反馈回给模型修订。关键设计点是执行器本身就是免费的评审员——凡有程序化反馈通道的任务，都应优先用外部反馈而非模型自评。</p>
 <p><strong>高风险外发文本质检。</strong> 客服回复、对外公告、合同摘要等发出后难以撤回的文本，出站前过一道聚焦批评（维度：事实一致性、承诺边界、语气合规），不通过则退回修订。关键设计点是批评维度与法务/品牌规范一一对应，每条批评需引用原文位置，便于人工快速复核。</p>
 <h3 id="真实世界实例">真实世界实例</h3>
-<p><strong>Google DeepMind：AlphaEvolve 的"评估器打分—迭代改进"闭环。</strong> 这个进化式编码智能体把 Gemini 的生成能力与自动化评估器配对：候选程序由评估器验证、运行、打分，程序数据库以进化算法决定哪些程序进入下一轮提示，"生成—评分—淘汰"循环往复。官方博客（2025 年 5 月）报告其把 Borg 数据中心调度启发式改进到平均持续回收 Google 全球算力的约 0.7%，并把 Gemini 关键矩阵乘法内核提速 23%（对应训练时间缩短约 1%）——反馈全部来自可程序化判定的评估器，而不是模型自评，正对应本章第二条变体线。来源：<a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">Google DeepMind 官方博客</a></p>
+<p><strong>Google DeepMind：AlphaEvolve 的"评估器打分—迭代改进"闭环。</strong> 这个进化式编码智能体把 Gemini 的生成能力与自动化评估器配对：候选程序由评估器验证、运行、打分，程序数据库以进化算法决定谁进入下一轮提示——反馈全部来自可程序化判定的评估器，而不是模型自评，正对应本章第二条变体线。官方博客（2025 年 5 月）报告其把 Borg 调度启发式改进到平均持续回收 Google 全球算力的约 0.7%；作为"学习与适应"主实例的完整拆解（含矩阵乘内核提速 23% 等其余实绩）见<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>真实世界实例。来源：<a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">Google DeepMind 官方博客</a></p>
 <p><strong>Cognition：Devin 的"跑测试—改代码"自修复循环。</strong> Cognition 的 SWE-bench 技术报告（2024 年 3 月）显示，Devin 端到端解决 13.86% 的真实 GitHub issue（此前最佳无辅助基线为 1.96%），其官方概括的工作方式是"执行多步计划并从环境获取反馈"：先改代码，再自己运行测试，看到报错后修正文件、重跑测试直至通过——报告特别指出，正是具备在环境中运行测试的能力，Devin 才能修正自己的错误，失败即反馈的工程化实例。来源：<a href="https://cognition.ai/blog/swe-bench-technical-report">Cognition 官方技术报告</a></p>
 <p><strong>Cursor：Bugbot 的独立批评者。</strong> Cursor 把"批评者独立于生成者"做成了产品：Bugbot 在 GitHub/GitLab/Bitbucket 的 PR 上自动审查并逐条指出缺陷，发现项带"Fix in Cursor"链接一键回到修复循环；官方以"解决率"（指出的缺陷在合并前被真正修复的比例）为核心迭代指标，官方指南披露经 40 次实验其解决率从 52% 提升到约 80%，月审查 PR 超两百万。来源：<a href="https://cursor.com/cn/guides/ai-code-review">Cursor 官方 AI 代码审查指南</a></p>
 <h2 id="45-深度讲解">4.5 深度讲解</h2>
@@ -224,8 +231,9 @@ def parse_critique(text: str) -&gt; Critique:
     &quot;&quot;&quot;
     cleaned = text.strip()
     try:
-        if cleaned.startswith(&quot;```&quot;):  # 容错：剥掉 markdown 代码块
-            cleaned = cleaned.strip(&quot;`&quot;)
+        fence = chr(96) * 3  # markdown 代码围栏（chr 构造，防裸反引号截断文档）
+        if cleaned.startswith(fence):  # 容错：剥掉 markdown 代码块
+            cleaned = cleaned.strip(chr(96))
             if cleaned.startswith(&quot;json&quot;):
                 cleaned = cleaned[4:]
         data = json.loads(cleaned)
@@ -507,7 +515,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Cursor《AI 代码审查》官方指南（Bugbot）：https://cursor.com/cn/guides/ai-code-review</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch03-parallelization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第3章 并行化</span></a><a class="pager" href="../chapters/ch05-tool-use.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第5章 工具使用</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#41-模式概述">4.1 模式概述</a></li><li class="toc-l3"><a href="#411-问题背景为什么需要这个模式">4.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#412-核心机制它如何工作">4.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#413-与相邻模式的关系与组合">4.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#42-起源与历史最早是谁提出来的">4.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#43-发挥的作用为什么重要">4.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#44-实际应用与案例">4.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#45-深度讲解">4.5 深度讲解</a></li><li class="toc-l3"><a href="#451-三条变体线反馈从哪里来">4.5.1 三条变体线：反馈从哪里来</a></li><li class="toc-l3"><a href="#452-为什么自己改自己会有用">4.5.2 为什么"自己改自己"会有用</a></li><li class="toc-l3"><a href="#453-反思何时失效天花板偏见与过度修改">4.5.3 反思何时失效：天花板、偏见与过度修改</a></li><li class="toc-l3"><a href="#454-停止条件设计">4.5.4 停止条件设计</a></li><li class="toc-l3"><a href="#455-何时不要用">4.5.5 何时不要用</a></li><li class="toc-l2"><a href="#46-工程落地实践代码示例">4.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#461-框架无关实现完整可运行">4.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#462-框架集成实现langgraphcheckpoint-循环">4.6.2 框架集成实现（LangGraph，checkpoint 循环）</a></li><li class="toc-l3"><a href="#463-生产化改造清单">4.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#47-概览-核心要点-结论">4.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#471-本章小结">4.7.1 本章小结</a></li><li class="toc-l3"><a href="#472-核心要点">4.7.2 核心要点</a></li><li class="toc-l3"><a href="#473-结论">4.7.3 结论</a></li><li class="toc-l2"><a href="#48-延伸阅读与参考链接">4.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第1章 提示链 · 智能体设计模式</title>
 <meta name="description" content="把复杂任务拆成只做一件事的顺序提示步骤，前一步结构化输出作为后一步输入，以线性组合换取可靠性与可调试性。">
+<meta property="og:title" content="第1章 提示链 · 智能体设计模式">
+<meta property="og:description" content="把复杂任务拆成只做一件事的顺序提示步骤，前一步结构化输出作为后一步输入，以线性组合换取可靠性与可调试性。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch01-prompt-chaining.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a class="active" href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a class="active" href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -31,7 +38,7 @@
 <p><strong>一句话定义</strong>：把一个复杂任务拆解为一串顺序执行的提示步骤，每步只做一件事，上一步的结构化输出作为下一步的输入。
 <strong>解决什么问题</strong>：单条提示任务过载导致质量崩塌、错误无法定位 ｜ <strong>适用场景</strong>：流程固定、步骤可枚举的多阶段任务（抽取→校验→总结、大纲→撰写→润色）｜ <strong>核心机制</strong>：步骤单一职责 + 结构化中间结果 + 逐步校验与重试 ｜ <strong>代价</strong>：延迟线性叠加、错误会沿链条传播、步骤接口需要人工设计。</p>
 </blockquote>
-<div class="quick-read"><b>本章速读</b>　提示链把一条装不下的大提示拆成**只做一件事**的顺序小步骤：前一步的 JSON 输出经校验后注入下一步，程序串联流程，模型只管单步。三步上手：先定每步输入输出 schema → 再写提示并做结构校验（失败带错误反馈重试）→ 最后检查点落盘支持断点重跑。换来的是错误可定位、每步可测试；代价是延迟线性叠加。**步骤边界无法稳定枚举、或单步已够可靠**时别用——链外 if-else 一多，说明你需要的是路由或规划。</div>
+<div class="quick-read"><b>本章速读</b>　提示链把一条装不下的大提示拆成<strong>只做一件事</strong>的顺序小步骤：前一步的 JSON 输出经校验后注入下一步，程序串联流程，模型只管单步。三步上手：先定每步输入输出 schema → 再写提示并做结构校验（失败带错误反馈重试）→ 最后检查点落盘支持断点重跑。换来的是错误可定位、每步可测试；代价是延迟线性叠加。<strong>步骤边界无法稳定枚举、或单步已够可靠</strong>时别用——链外 if-else 一多，说明你需要的是路由或规划。</div>
 
 <h2 id="11-模式概述">1.1 模式概述</h2>
 <h3 id="111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</h3>
@@ -51,9 +58,9 @@
     V2 -->|"失败，重试未耗尽"| S2
     V1 -->|"重试耗尽"| FAIL["fail-fast 终止"]
     V2 -->|"重试耗尽"| FAIL</div>
-<div class="fig-caption">图 1-1：提示链的执行结构——每个步骤单一职责，步骤之间隔着结构校验门；校验失败带错误反馈重试，重试预算耗尽即走 fail-fast 失败路径，绝不把未校验的中间结果传给下游。</div>
+<div class="fig-caption" id="fig-1-1">图 1-1：提示链的执行结构——每个步骤单一职责，步骤之间隔着结构校验门；校验失败带错误反馈重试，重试预算耗尽即走 fail-fast 失败路径，绝不把未校验的中间结果传给下游。</div>
 <h3 id="113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</h3>
-<p>提示链是多数其他模式的骨架。路由（第 2 章）决定"进哪条链"或在链中选择分支；并行化（第 3 章）让链的某些环节扇出并发再汇合；反思（第 4 章）本质上是在链尾追加"自查并修订"的步骤；规划（第 6 章）生成的计划，落实时往往就是一条动态生成的链；异常处理（第 12 章）给链上每个步骤加装重试与回滚。反过来说，当你发现自己在链外写大量 if-else 决定"下一步跑不跑、跑哪个"，那是路由或规划的职责范围到了，不该再往链里硬塞。<a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic 的分类法</a>把提示链列为最基础的工作流模式，其他工作流几乎都是它的组合与变奏。</p>
+<p>提示链是多数其他模式的骨架。路由（<a href="../chapters/ch02-routing.html">第 2 章</a>）决定"进哪条链"或在链中选择分支；并行化（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）让链的某些环节扇出并发再汇合；反思（<a href="../chapters/ch04-reflection.html">第 4 章</a>）本质上是在链尾追加"自查并修订"的步骤；规划（<a href="../chapters/ch06-planning.html">第 6 章</a>）生成的计划，落实时往往就是一条动态生成的链；异常处理（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）给链上每个步骤加装重试与回滚。反过来说，当你发现自己在链外写大量 if-else 决定"下一步跑不跑、跑哪个"，那是路由或规划的职责范围到了，不该再往链里硬塞。<a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic 的分类法</a>把提示链列为最基础的工作流模式，其他工作流几乎都是它的组合与变奏。</p>
 <h2 id="12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</h2>
 <p>提示链的学术源头是 2022 年谷歌研究团队的两篇工作。思维链（Chain-of-Thought, CoT）证明：让模型在给出答案前显式写出中间推理步骤，可以大幅提升复杂推理任务的可靠性——这确立了"把一个大问题摊开成多个中间步骤"的价值。同年五月的 Least-to-Most Prompting 则更进一步：先把问题分解为一系列由简到繁的子问题，再按顺序逐个求解，后一个子问题可以使用前面子问题的答案。它就是"分解 + 顺序求解 + 中间结果传递"这一结构的直接原型，与本章的模式只差"由程序编排"这一层工程外皮。</p>
 <p>工程化发生在 2022 年 10 月 <a href="https://docs.langchain.com">LangChain</a> 开源发布之后。LangChain 把 chain 做成一等公民——顺序组合、管道传递、可插拔的组件，让"链"从一个论文里的实验设置变成了每个工程师信手可得的构件。2023 年 6 月 OpenAI 上线 function calling、8 月上线 JSON mode，解决了链条最疼的接口问题：模型可以按 schema 稳定输出结构化数据，步骤间的数据契约第一次有了工程保障。2024 年 12 月 <a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic《Building Effective Agents》</a>把 Prompt Chaining 正式列为最基础的工作流模式，完成了从论文技巧到行业共识的定名。</p>
@@ -125,7 +132,7 @@
 <h2 id="15-深度讲解">1.5 深度讲解</h2>
 <p><strong>机制细节：步骤边界的划分。</strong> 划分步骤有一条可操作的经验法则：如果一个提示里需要向模型解释两类彼此独立的质量标准，就该拆。比如"抽取金额并判断该条款是否对己方不利"，抽取的正确标准是"与原文一致"，判断的标准是"商业语义"，两套标准塞在一个提示里，模型就会顾此失彼。拆开的反向检验是中间数据的体积：如果步骤 A 传给步骤 B 的中间 JSON 比 A 的最终输出还长，说明拆得过碎，接口成本已经吃掉收益，应该合并。步骤接口应当先于提示设计——先写清楚每步输入输出的 schema，再写提示正文，顺序反了很容易滑向"每步都在即兴发挥"。</p>
 <p><strong>机制细节：中间表示与上下文裁剪。</strong> 步骤间传递什么，比步骤怎么写更重要。默认原则是最小传递：只传下游需要的字段，不传整个中间结果，更不传原始全文。但有两个例外。一是溯源需要：当下游输出需要引用原文位置（如"第 7 条第 2 款"），上游就必须保留引用锚点字段，否则下游只能编造引用。二是语义完整性：抽取"风险条款"时如果只传风险条款本身，评估步骤就失去了上下文对比的对象（同一个条款，在没有免责条款保护时是高风险，有保护时是中风险），此时应传"风险条款 + 关联条款"。上下文裁剪的本质是在成本与信息完整性之间逐字段权衡，没有普适答案，只有可辩护的取舍。</p>
-<p><strong>变体谱系：静态链、动态链与带分支的链。</strong> 静态链的步骤在开发期固定，是最基本形态，优点是成本可预估、可整体缓存、可画成一张流程图给非工程师审。动态链的步骤序列在运行时决定：某步的输出触发条件步骤——典型如风险检查发现"高风险"才追加"法条引用核查"步骤，或长文按章节数动态生成撰写步骤数。动态链的纪律是：分支逻辑写在代码里而不是写在提示里，且动态性必须可枚举可测试，否则你已经在不知不觉中需要一个规划模式了。第三种是带并行分支的链：主干保持顺序，局部环节扇出为多路并发（如同一份摘要同时送两个独立的事实核查器），归并后在下一节点汇合——这是第 3 章的主题，此处只需知道它是链的自然扩展而非替代。</p>
+<p><strong>变体谱系：静态链、动态链与带分支的链。</strong> 静态链的步骤在开发期固定，是最基本形态，优点是成本可预估、可整体缓存、可画成一张流程图给非工程师审。动态链的步骤序列在运行时决定：某步的输出触发条件步骤——典型如风险检查发现"高风险"才追加"法条引用核查"步骤，或长文按章节数动态生成撰写步骤数。动态链的纪律是：分支逻辑写在代码里而不是写在提示里，且动态性必须可枚举可测试，否则你已经在不知不觉中需要一个规划模式了。第三种是带并行分支的链：主干保持顺序，局部环节扇出为多路并发（如同一份摘要同时送两个独立的事实核查器），归并后在下一节点汇合——这是<a href="../chapters/ch03-parallelization.html">第 3 章</a>的主题，此处只需知道它是链的自然扩展而非替代。</p>
 <p><strong>机制细节：错误传播与检查点。</strong> 链的错误传播有放大效应：上游漏抽一个字段，下游风险检查会基于残缺信息给出"无风险"的错误安心，错误在链条后段才显现，且表现为"看起来合理的错误答案"而非显式异常。对抗传播有三条纪律。第一，fail-fast：链内任何结构校验失败且重试耗尽后立即终止并报警，适用于内部流水线——宁可没有结果，不要错误结果。第二，隔离降级：失败步骤填入保守默认值并在状态里标记 degraded，链继续跑，适用于面向用户的实时链——用户宁可看到"风险评估暂不可用"也不愿看到 500。第三，重试预算：每步最多 N 次带错误反馈的重试，整链设全局 token 与时间预算，防止"每步都重试三次"的雪崩组合。检查点（checkpoint）是配套机制：每步结果落盘，链条可从任意断点恢复，这既是异常处理的物资基础，也让"改了第二步的提示后只重跑第二、三步"成为日常开发体验。</p>
 <p><strong>失效模式与反模式。</strong> 第一个反模式是碎链：步骤多到每个提示都要花一半篇幅重建背景，接口开销超过收益，典型症状是链里出现了"格式整理"这种不涉及语义的步骤——那是代码该干的事，永远不要用模型调用做字符串拼接。第二个是把链当万能药：任务需要根据中间结果选择不同路径，开发者硬写成线性链，再用一层 if-else 在外面补分支，结果分支逻辑散落在提示与代码两处，无人能完整说清执行路径——这是路由或规划模式的领地。第三是格式漂移：模型在第 200 次调用时悄悄把 <code>"risks"</code> 写成 <code>"risk_items"</code>，或者把字符串数组写成逗号拼接字符串。漂移是概率系统的本性，唯一可靠的对策是每步校验，并且把校验失败率做成监控指标——漂移率突增通常意味着上游模型被悄悄换了版本。第四是隐式上下文依赖：第三步的提示里出现"如上所述"，但步骤之间并不共享对话历史，模型只能靠幻觉补全。链条中的每个提示都必须自包含，review 时可以专门搜"如上""同前"这类词。</p>
 <p><strong>何时不要用。</strong> 任务单步就能可靠完成时，链是纯粹的过度工程——两步链的延迟、成本与失败面都是单步的两倍以上。步骤边界无法稳定枚举时（每类输入都会走出不同的流程），提示链会退化成一堆特判，此时应使用规划模式让模型自己分解。强创造性的整体任务（一篇有统一声音的长文）也要慎拆：链式分解天然打断全局一致性，若必须拆，需要在末步安排全文性的统一润色来回收整体感。</p>
@@ -477,7 +484,7 @@ if __name__ == &quot;__main__&quot;:
 <li><strong>并发</strong>：多请求并发跑链时用有界信号量控制对模型端点的并发数，避免触发限流。</li>
 <li><strong>缓存</strong>：以"步骤名 + 提示内容哈希"为 key 缓存中间结果；改了第二步提示后，第一步命中缓存直接跳过。</li>
 <li><strong>可观测</strong>：每步记录输入哈希、输出 token 数、校验失败次数与重试次数；校验失败率突增是模型版本漂移的首要信号。</li>
-<li><strong>成本控制</strong>：按步骤统计成本并设预算告警；可结合第 2 章路由，把抽取这类简单步骤切到便宜模型。</li>
+<li><strong>成本控制</strong>：按步骤统计成本并设预算告警；可结合<a href="../chapters/ch02-routing.html">第 2 章</a>路由，把抽取这类简单步骤切到便宜模型。</li>
 <li><strong>检查点存储</strong>：生产环境把 checkpoint 落到对象存储或数据库（而非本地文件），并带过期策略与 PII 处理。</li>
 </ul>
 <h2 id="17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</h2>
@@ -516,7 +523,7 @@ if __name__ == &quot;__main__&quot;:
 <li>扣子（Coze）工作流官方文档（大模型节点 JSON 输出与异常分支）：<a href="https://www.coze.cn/open/docs/guides/agent_workflow">https://www.coze.cn/open/docs/guides/agent_workflow</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch00-preface.html"><span class="pager-dir">← 上一章</span><span class="pager-title">前言</span></a><a class="pager" href="../chapters/ch02-routing.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第2章 路由</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#11-模式概述">1.1 模式概述</a></li><li class="toc-l3"><a href="#111-问题背景为什么需要这个模式">1.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#112-核心机制它如何工作">1.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#113-与相邻模式的关系与组合">1.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#12-起源与历史最早是谁提出来的">1.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#13-发挥的作用为什么重要">1.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#14-实际应用与案例">1.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#15-深度讲解">1.5 深度讲解</a></li><li class="toc-l2"><a href="#16-工程落地实践代码示例">1.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#161-框架无关实现完整可运行">1.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#162-框架集成实现langchain-lcel">1.6.2 框架集成实现（LangChain LCEL）</a></li><li class="toc-l3"><a href="#163-生产化改造清单">1.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#17-概览-核心要点-结论">1.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#171-本章小结">1.7.1 本章小结</a></li><li class="toc-l3"><a href="#172-核心要点">1.7.2 核心要点</a></li><li class="toc-l3"><a href="#173-结论">1.7.3 结论</a></li><li class="toc-l2"><a href="#18-延伸阅读与参考链接">1.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

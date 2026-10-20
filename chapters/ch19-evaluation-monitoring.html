@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第19章 评估与监控 · 智能体设计模式</title>
 <meta name="description" content="用分层评估体系（单点断言、场景回归、在线 A/B）与 LLM 裁判、黄金集、CI 门禁和在线监控三件套，让智能体系统的质量从感觉变成可度量、可回归、可告警的工程事实。">
+<meta property="og:title" content="第19章 评估与监控 · 智能体设计模式">
+<meta property="og:description" content="用分层评估体系（单点断言、场景回归、在线 A/B）与 LLM 裁判、黄金集、CI 门禁和在线监控三件套，让智能体系统的质量从感觉变成可度量、可回归、可告警的工程事实。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch19-evaluation-monitoring.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a class="active" href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a class="active" href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -36,10 +43,10 @@
 <h2 id="191-模式概述">19.1 模式概述</h2>
 <h3 id="1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</h3>
 <p>传统软件的质量问题在编译器和测试套件里基本就解决了：代码要么编译通过，要么测试断言成立或不成立。智能体系统把这一切推翻了。第一，输出是自然语言，"对"与"错"之间隔着大片灰色地带——一份客服回复语法无错、格式漂亮，但答非所问。第二，行为是非确定的：同一段提示词今天跑通，明天换个采样结果就失败，单次运行什么也证明不了。第三，系统由"提示词 + 模型版本 + 工具实现 + 检索语料"多个部件复合而成，改任何一件都可能引发连锁质量变化，而提示词的改动恰恰是最高频的——团队每周都在改提示词，却很少有人每周都在验证提示词。</p>
-<p>后果在工程上表现为两种典型事故。其一是<strong>静默回归</strong>：为了让"数学题场景"表现更好，团队在系统提示里加了一句"解题时一步步推理"，结果闲聊场景的回复全变成了机械的分步说教，两周后用户流失数据才暴露问题。其二是<strong>无法比较</strong>：模型供应商发布了新版本，价格便宜三成，团队想切换，却拿不出"新旧版本在我们业务任务上的对比数据"，只能凭感觉决策——感觉往往是错的。评估与监控模式的立场是：<strong>质量必须成为可度量、可回归、可比较的工程事实，与功能代码受同等的版本管理与门禁约束</strong>。第 11 章的目标监控管的是"这一次执行有没有跑偏"，本章管的是"这个系统整体上变好还是变坏"——前者是运行时控制，后者是工程治理。</p>
+<p>后果在工程上表现为两种典型事故。其一是<strong>静默回归</strong>：为了让"数学题场景"表现更好，团队在系统提示里加了一句"解题时一步步推理"，结果闲聊场景的回复全变成了机械的分步说教，两周后用户流失数据才暴露问题。其二是<strong>无法比较</strong>：模型供应商发布了新版本，价格便宜三成，团队想切换，却拿不出"新旧版本在我们业务任务上的对比数据"，只能凭感觉决策——感觉往往是错的。评估与监控模式的立场是：<strong>质量必须成为可度量、可回归、可比较的工程事实，与功能代码受同等的版本管理与门禁约束</strong>。<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的目标监控管的是"这一次执行有没有跑偏"，本章管的是"这个系统整体上变好还是变坏"——前者是运行时控制，后者是工程治理。</p>
 <h3 id="1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</h3>
 <p>机制可以概括为"一座金字塔 + 一个双回路"。<strong>评估金字塔</strong>把评估手段按成本与置信度分层：塔基是<strong>单点断言</strong>（针对单个案例的程序化检查，快、便宜、确定，如"输出是合法 JSON""引用编号存在于源文档"）；中层是<strong>场景回归</strong>（在一个有代表性的任务集合上批量跑完整智能体，计算通过率与分维度得分，回答"这版改动让系统整体变好还是变坏"）；塔尖是<strong>在线 A/B</strong>（真实流量分桶对照，以业务指标裁决，是唯一能回答"用户是否真的受益"的手段）。层数越往上，越接近真相，也越贵、越慢、风险越高，所以好的实践是"塔基高频、塔尖低频"。</p>
-<p><strong>双回路</strong>指离线与在线的闭环。离线回路：从线上采样或人工构造<strong>黄金集</strong>（带参考答案或评分标准的任务集），每次改动后在黄金集上跑回归，分数低于阈值则 CI 门禁拦截发布。在线回路：生产流量的每条执行轨迹被记录为 <strong>trace</strong>（结构化的调用链），从 trace 聚合出 <strong>metric</strong>（成功率、成本、延迟分位值），并按比例抽样做 <strong>eval</strong>（程序断言或 LLM 裁判打分），eval 结果与业务指标共同构成发布后监控。在线发现的坏案例经过人工标注回流黄金集——这是评估体系自我进化的关键一环，也直接喂养第 9 章的学习与适应机制。</p>
+<p><strong>双回路</strong>指离线与在线的闭环。离线回路：从线上采样或人工构造<strong>黄金集</strong>（带参考答案或评分标准的任务集），每次改动后在黄金集上跑回归，分数低于阈值则 CI 门禁拦截发布。在线回路：生产流量的每条执行轨迹被记录为 <strong>trace</strong>（结构化的调用链），从 trace 聚合出 <strong>metric</strong>（成功率、成本、延迟分位值），并按比例抽样做 <strong>eval</strong>（程序断言或 LLM 裁判打分），eval 结果与业务指标共同构成发布后监控。在线发现的坏案例经过人工标注回流黄金集——这是评估体系自我进化的关键一环，也直接喂养<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>的学习与适应机制。</p>
 <p>判定手段上，本章与全书其余部分有一个重要交集：<strong>LLM-as-judge</strong>。程序断言覆盖不了语义质量（"这个摘要忠实吗"），人工标注太贵太慢，于是用强模型按评分规则（rubric）给输出打分。它灵活到几乎任何语义维度都能评，但它是一个有系统性偏差的裁判，必须配套消偏手段（19.5.2 节详解）。</p>
 <div class="mermaid">flowchart TD
     PY1["塔基：单点断言（每次提交，成本趋零）"] --> PY2["塔身：场景回归（黄金集，发布前）"]
@@ -52,9 +59,9 @@
     ON2 --> ON3["抽样 eval（LLM 裁判）"]
     ON3 --> BAD["坏案例人工标注"]
     BAD -->|"单向回流"| OFF1</div>
-<div class="fig-caption">图 19-1：评估金字塔与离线-在线双回路——在线发现的坏案例单向回流黄金集，是评估体系自我进化的关键一环。</div>
+<div class="fig-caption" id="fig-19-1">图 19-1：评估金字塔与离线-在线双回路——在线发现的坏案例单向回流黄金集，是评估体系自我进化的关键一环。</div>
 <h3 id="1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</h3>
-<p>与<strong>目标设定与监控</strong>（第 11 章）是"点与面"：第 11 章的判据、trace、metric、eval 四件套在单次任务尺度上运转，本章把它们在系统尺度上组织成评估金字塔与 CI 门禁；第 11 章的完成判据往往是本章场景回归中单个案例的判分函数。与<strong>异常处理</strong>（第 12 章）的接口在监控侧：在线 metric 的异常（成功率骤降、p95 延迟飙升）是熔断与降级的触发源。与<strong>学习与适应</strong>（第 9 章）是上下游：在线评估发现的坏案例是优化提示词、微调与 few-shot 库的原料，而学习产出的新版本必须回到本章的场景回归里验证——没有评估闭环的"学习"无法区分改进与过拟合。与<strong>人机协同</strong>（第 13 章）的接口在标定环节：LLM 裁判的结论需要定期抽样人工复核以校准，争议样本升级人工标注。与<strong>多智能体/A2A</strong>（第 7、15 章）的关系在归因：多角色系统的失败定位需要按角色切分的 trace，本章的观测约定（19.5.5 节）为此提供结构。</p>
+<p>与<strong>目标设定与监控</strong>（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）是"点与面"：<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的判据、trace、metric、eval 四件套在单次任务尺度上运转，本章把它们在系统尺度上组织成评估金字塔与 CI 门禁；<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的完成判据往往是本章场景回归中单个案例的判分函数。与<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的接口在监控侧：在线 metric 的异常（成功率骤降、p95 延迟飙升）是熔断与降级的触发源。与<strong>学习与适应</strong>（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）是上下游：在线评估发现的坏案例是优化提示词、微调与 few-shot 库的原料，而学习产出的新版本必须回到本章的场景回归里验证——没有评估闭环的"学习"无法区分改进与过拟合。与<strong>人机协同</strong>（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）的接口在标定环节：LLM 裁判的结论需要定期抽样人工复核以校准，争议样本升级人工标注。与<strong>多智能体/A2A</strong>（第 7、15 章）的关系在归因：多角色系统的失败定位需要按角色切分的 trace，本章的观测约定（19.5.5 节）为此提供结构。</p>
 <h2 id="192-起源与历史最早是谁提出来的">19.2 起源与历史：最早是谁提出来的</h2>
 <p>评估这件事的学术史几乎与 NLP 同龄，但 LLM 时代的评估体系有三条清晰的转折线：从"任务专用指标"到"综合评测套件"，从"静态榜单"到"人类偏好竞技场"，以及从"评模型"到"评智能体系统"。工程侧的可观测性则直接继承了微服务时代 OpenTelemetry 的遗产。</p>
 <table>
@@ -150,8 +157,8 @@
 <p>演化脉络有三条主线。<strong>判据线</strong>：BLEU 类重叠指标的失灵（同义改写被罚、流畅错误得分）推动了两个方向——要么把判据交给可执行测试（HumanEval 的单元测试、SWE-bench 的测试套件），要么交给另一个模型（LLM-as-judge）；后者由 MT-Bench 工作完成了第一次系统性验证与偏差命名。<strong>环境线</strong>：静态考卷（MMLU）很快被背题与饱和侵蚀，于是评估转向动态（Arena 的持续对战）、转向环境（AgentBench 的多场景、SWE-bench 的真实仓库）、转向私有化（GAIA 的答案保密、τ-bench 的用户模拟器），本质都是同一场对抗：<strong>让"考过试"不能再替代"有能力"</strong>。<strong>工程线</strong>：微服务时代的观测标准（OpenTelemetry）被移植到 LLM 领域，GenAI 语义约定把 prompt、completion、token 用量、工具调用纳入统一遥测，使智能体系统的质量数据可以汇入企业既有观测设施，而不是自建孤岛。</p>
 <h2 id="193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</h2>
 <p>第一，它把迭代从赌博变成工程。智能体系统的改动频率远高于传统软件（提示词、检索配置、模型版本都可能周更），每次改动都埋着回归风险。有了场景回归与 CI 门禁，<strong>"改坏了"在合并前就被拦下，而不是上线后由用户发现</strong>——这与单元测试之于传统代码的价值完全同构，只是判据更贵、更软、更需要消偏。</p>
-<p>第二，它让多目标决策有了共同语言。智能体系统永远在多个目标间权衡：质量、成本、延迟、安全。没有统一度量，这些讨论沦为各说各话的立场之争；有了分维度的评估剖面（HELM 方法论的核心思想），团队可以量化"多花 20% 成本换 3 个点的质量"是否值得，路由决策（第 2 章）与资源感知优化（第 16 章）也因此有了输入。</p>
-<p>第三，它是在线系统安全运行的哨兵。模型供应商悄悄更新、上游 API 行为漂移、语料库被污染、某类流量突然劣化——这些都不是离线测试能预见的事件，<strong>只有在线监控三件套能在第一时间发出信号</strong>。评估体系还是安全模式（第 18 章）的验证器：护栏有没有效、攻击面有没有扩大，都要靠对抗性评估集来回答。</p>
+<p>第二，它让多目标决策有了共同语言。智能体系统永远在多个目标间权衡：质量、成本、延迟、安全。没有统一度量，这些讨论沦为各说各话的立场之争；有了分维度的评估剖面（HELM 方法论的核心思想），团队可以量化"多花 20% 成本换 3 个点的质量"是否值得，路由决策（<a href="../chapters/ch02-routing.html">第 2 章</a>）与资源感知优化（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）也因此有了输入。</p>
+<p>第三，它是在线系统安全运行的哨兵。模型供应商悄悄更新、上游 API 行为漂移、语料库被污染、某类流量突然劣化——这些都不是离线测试能预见的事件，<strong>只有在线监控三件套能在第一时间发出信号</strong>。评估体系还是安全模式（<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）的验证器：护栏有没有效、攻击面有没有扩大，都要靠对抗性评估集来回答。</p>
 <h2 id="194-实际应用与案例">19.4 实际应用与案例</h2>
 <p><strong>RAG 客服系统的分维度评估</strong>。场景：企业知识库问答机器人每次更新检索配置都要验证质量。做法：用 <a href="https://docs.ragas.io/">RAGAS</a> 式维度拆解（忠实度、答案相关性、上下文精确率/召回率）构建评估流水线，忠实度用 LLM 裁判判"每个论断是否被检索片段支撑"，上下文指标程序化计算。关键设计点：<strong>忠实度一票否决（编造比不答更伤信任）</strong>，其余维度看加权分；黄金集按问题类型分层，每层独立报告，避免全局均值掩盖某类问题的塌方。</p>
 <p><strong>编码智能体的回归验证</strong>。场景：内部代码修复 agent 每周迭代。做法：从历史工单采样构造几十个"仓库快照 + issue + 测试"的任务，每次改动全量重跑，统计解决率与回归数。关键设计点：<strong>判据是测试通过且 diff 未触碰测试文件</strong>（防"改测试作弊"，SWE-bench 揭示的经典漏洞）；任务按难度分级，区分"变强了"与"只是运气好"。</p>
@@ -178,10 +185,10 @@
     J4 --> J5{"结论可采信？"}
     J5 -->|是| J6["计分并进 CI 门禁"]
     J5 -->|否| J7["降级/平局 + 人工复核标定"]</div>
-<div class="fig-caption">图 19-2：LLM 裁判的消偏流水线——断言先行省钱，换序消位置偏差，人工抽检给裁判做实时体检。</div>
+<div class="fig-caption" id="fig-19-2">图 19-2：LLM 裁判的消偏流水线——断言先行省钱，换序消位置偏差，人工抽检给裁判做实时体检。</div>
 <h3 id="1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</h3>
 <p>黄金集（golden set / 评估数据集）是整个体系的度量基准，它自身的管理比评估算法更值得投入。<strong>分层结构</strong>是第一原则：冒烟层（10-20 条，秒级，验证链路通不通）、回归层（100-500 条，覆盖各任务类型与历史事故案例）、挑战层（对抗样本、边界案例、已知难例，用于观察退化而非卡门禁）。每条样本包含：输入、判据（参考答案或 rubric）、元数据（任务类型、难度、来源、加入时间）。<strong>版本化</strong>是第二原则：黄金集与代码一样进版本管理，评估结果必须绑定"代码版本 × 数据集版本 × 裁判版本"三元组，否则任何跨时间的分数比较都是刻舟求剑。</p>
-<p><strong>防污染</strong>（decontamination）是 LLM 时代评估的独特课题：训练数据里出现过考题，分数就变成记忆力的度量。SWE-bench 论文专门讨论了这一问题（其任务来自公开仓库，作者做了提交时间切分与去重），GAIA 更进一步把测试集答案完全私有化。生产系统的对策按强度递进：公开基准只作参考不作门禁；自建黄金集绝不进入任何公开语料，并在系统提示与 RAG 语料中加入金丝雀串（canary string）以检测泄漏；测试用例与参考答案对执行 agent 保密（第 11 章的"不许改测试"约束在此重申——<strong>判据对被测者可见的那天，就是判据死亡之日</strong>）。<strong>保鲜</strong>是第三原则：黄金集会自然腐化——任务类型随业务漂移，旧案例被新版本反复"学习"。机制上要建立单向流入：在线监控发现的坏案例（用户负反馈、人工改写、裁判低分）经人工标注后进入回归层；定期（如每季度）淘汰过时案例并审视各类型覆盖度。黄金集的大小以"全量回归一次的成本可承受"为准，宁小而准、不到大而杂。</p>
+<p><strong>防污染</strong>（decontamination）是 LLM 时代评估的独特课题：训练数据里出现过考题，分数就变成记忆力的度量。SWE-bench 论文专门讨论了这一问题（其任务来自公开仓库，作者做了提交时间切分与去重），GAIA 更进一步把测试集答案完全私有化。生产系统的对策按强度递进：公开基准只作参考不作门禁；自建黄金集绝不进入任何公开语料，并在系统提示与 RAG 语料中加入金丝雀串（canary string）以检测泄漏；测试用例与参考答案对执行 agent 保密（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的"不许改测试"约束在此重申——<strong>判据对被测者可见的那天，就是判据死亡之日</strong>）。<strong>保鲜</strong>是第三原则：黄金集会自然腐化——任务类型随业务漂移，旧案例被新版本反复"学习"。机制上要建立单向流入：在线监控发现的坏案例（用户负反馈、人工改写、裁判低分）经人工标注后进入回归层；定期（如每季度）淘汰过时案例并审视各类型覆盖度。黄金集的大小以"全量回归一次的成本可承受"为准，宁小而准、不到大而杂。</p>
 <h3 id="1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</h3>
 <p>门禁的本质是<strong>把质量分数变成发布流程的一等公民</strong>，与单元测试同级。设计门禁要回答四个问题。一是<strong>卡什么指标</strong>：核心维度设硬阈值（如忠实度均值不低于基线减 1 分），次要维度只记录不拦截；绝对阈值不如<strong>相对基线</strong>（与本版本相比下降超过 x% 即拦），后者能随系统演进自动校准。二是<strong>噪声怎么处理</strong>：非确定性输出意味着单次跑分有方差。对策是关键指标多次采样（每个案例跑 3-5 次报均值），并把采样方差计入判定——新版本均值微升但方差翻倍，通常应视为退化。统计上，小样本黄金集的分数差异要过显著性检验再下结论，两个版本 3% 的差距在 100 个案例上大概率是噪声。三是<strong>失败了怎么办</strong>：门禁失败分两型——确定性失败（断言不过、语法错误）直接打回；边缘失败（分数临界）允许标记例外并强制人工审批，但要留痕，例外不能静默累积成常态。四是<strong>门禁自身会不会腐化</strong>：阈值与 rubric 变更必须走与代码同样的评审流程，且<strong>"放宽门禁让这次改动通过"的每一次都应触发警报</strong>——门禁被业务压力侵蚀是这类体系最常见的死法。</p>
 <p>成本上，回归不必每次全量：CI 日常跑冒烟层加抽样回归（如每类型抽 20%），夜间或发布前跑全量。判分顺序也有讲究——先跑程序断言再跑 LLM 裁判，让免费判据先把结构性失败筛掉，裁判预算只花在语义判定上。</p>
@@ -498,7 +505,7 @@ if __name__ == &quot;__main__&quot;:
 <li><strong>数据卫生</strong>：黄金集进版本管理并设访问控制；金丝雀串检测泄漏；对执行 agent 保密参考答案；坏案例回流走人工标注闸门。</li>
 <li><strong>裁判治理</strong>：裁判与执行模型异源；定期人工标定一致率；rubric 变更走评审；对照样本常驻评估集做裁判体检。</li>
 <li><strong>门禁纪律</strong>：阈值绑定基线相对比较；例外合并强制留痕并告警；分数必须绑定"代码×数据集×裁判"三元组版本。</li>
-<li><strong>在线联动</strong>：metric 异常（成功率、p95、eval 均分）接告警与自动回滚；降级事件（第 12 章）打标进 trace，降级率超阈值同样告警。</li>
+<li><strong>在线联动</strong>：metric 异常（成功率、p95、eval 均分）接告警与自动回滚；降级事件（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）打标进 trace，降级率超阈值同样告警。</li>
 </ul>
 <h2 id="197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</h2>
 <h3 id="本章小结">本章小结</h3>
@@ -515,7 +522,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Goodhart 陷阱是体系的终极敌人：定期轮换 rubric、混入对抗样本、以在线真实指标为最终裁决。</li>
 </ul>
 <h3 id="结论">结论</h3>
-<p>一个智能体团队的迭代速度上限，<strong>不由模型能力决定，而由评估体系的置信度决定</strong>——敢不敢合并、敢不敢上线、敢不敢切模型，背后都是"我们的分数可信吗"。评估与监控模式的全部工程细节（消偏、防污染、分位值、门禁纪律）都在回答同一个问题：如何让度量在噪声、偏差与博弈权衡的围攻下依然指向真相。把这个体系搭好，第 9 章的学习与适应才有安全的燃料，前十八章的每一个模式才有被验证的机会。</p>
+<p>一个智能体团队的迭代速度上限，<strong>不由模型能力决定，而由评估体系的置信度决定</strong>——敢不敢合并、敢不敢上线、敢不敢切模型，背后都是"我们的分数可信吗"。评估与监控模式的全部工程细节（消偏、防污染、分位值、门禁纪律）都在回答同一个问题：如何让度量在噪声、偏差与博弈权衡的围攻下依然指向真相。把这个体系搭好，<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>的学习与适应才有安全的燃料，前十八章的每一个模式才有被验证的机会。</p>
 <h2 id="198-延伸阅读与参考链接">19.8 延伸阅读与参考链接</h2>
 <p><strong>论文</strong>
 - MT-Bench / LLM-as-judge（裁判一致性与四类偏差的系统验证）：<a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>
@@ -535,7 +542,7 @@ if __name__ == &quot;__main__&quot;:
 - Klarna AI 助手首月数据官方新闻稿（2024-02-27）：https://www.klarna.com/international/press/klarna-ai-assistant-handles-two-thirds-of-customer-service-chats-in-its-first-month/
 - OpenAI 发布 SWE-bench Verified（2024-08-13）：https://openai.com/index/introducing-swe-bench-verified/</p></div>
     <div class="pagers"><a class="pager" href="../chapters/ch18-guardrails-safety.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第18章 护栏机制</span></a><a class="pager" href="../chapters/ch20-prioritization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第20章 优先级排序</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#191-模式概述">19.1 模式概述</a></li><li class="toc-l3"><a href="#1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#192-起源与历史最早是谁提出来的">19.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#194-实际应用与案例">19.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#195-深度讲解">19.5 深度讲解</a></li><li class="toc-l3"><a href="#1951-评估金字塔分层配比与预算分配">19.5.1 评估金字塔：分层、配比与预算分配</a></li><li class="toc-l3"><a href="#1952-llm-as-judge偏差来源与消偏工程">19.5.2 LLM-as-judge：偏差来源与消偏工程</a></li><li class="toc-l3"><a href="#1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</a></li><li class="toc-l3"><a href="#1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</a></li><li class="toc-l3"><a href="#1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</a></li><li class="toc-l3"><a href="#1956-失效模式反模式与何时不需要">19.5.6 失效模式、反模式与何时不需要</a></li><li class="toc-l2"><a href="#196-工程落地实践代码示例">19.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1961-框架无关实现完整可运行">19.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1962-框架集成实现opentelemetry-genai-风格-trace-埋点">19.6.2 框架集成实现（OpenTelemetry GenAI 风格 trace 埋点）</a></li><li class="toc-l3"><a href="#1963-生产化改造清单">19.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#198-延伸阅读与参考链接">19.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

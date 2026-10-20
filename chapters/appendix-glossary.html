@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>附录 A · 术语表 · 智能体设计模式</title>
+<meta name="description" content="全书 45 个核心术语的速查定义，按基础、编排、记忆与学习、保障与效率四组排列。">
+<meta property="og:title" content="附录 A · 术语表 · 智能体设计模式">
+<meta property="og:description" content="全书 45 个核心术语的速查定义，按基础、编排、记忆与学习、保障与效率四组排列。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/appendix-glossary.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="menu-btn" aria-label="目录">☰</button>
+  <a class="topbar-title" href="../index.html">智能体设计模式</a>
+  <span class="topbar-part">收官与附录</span>
+  <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
+  <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
+  <div id="search-results"></div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a class="active" href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
+  </aside>
+  <main class="content">
+    <div class="chapter-head">
+      <div class="chapter-part">收官与附录</div>
+      <h1>附录 A · 术语表 <span class="en-title">Glossary</span></h1>
+      <p class="chapter-summary">全书 45 个核心术语的速查定义，按基础、编排、记忆与学习、保障与效率四组排列。</p>
+    </div>
+    <div class="chapter-body">
+<blockquote>
+<p>术语按全书使用口径定义，括号内为对应英文；"见第 N 章"指向主讲章节。定义压到一句话，求准不求全。</p>
+</blockquote>
+<h2 id="基础概念">基础概念</h2>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>英文</th>
+<th>一句话定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>智能体</td>
+<td>Agent</td>
+<td>能感知环境、自主决策、调用工具并朝目标行动的 LLM 驱动系统，核心是"模型 + 循环 + 工具 + 状态"（见<a href="../chapters/ch05-tool-use.html">第 5 章</a>）。</td>
+</tr>
+<tr>
+<td>工作流</td>
+<td>Workflow</td>
+<td>按预定代码路径编排 LLM 调用的流程，路径由开发者写死；智能体的路径由模型自己决定（见<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）。</td>
+</tr>
+<tr>
+<td>上下文窗口</td>
+<td>Context Window</td>
+<td>模型单次能读入的最大 token 量，是一切编排决策的硬约束（见第 8、16 章）。</td>
+</tr>
+<tr>
+<td>上下文工程</td>
+<td>Context Engineering</td>
+<td>决定"哪一步让模型看到什么"的工程学科，比提示词工程范围更大（见<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）。</td>
+</tr>
+<tr>
+<td>系统提示</td>
+<td>System Prompt</td>
+<td>设定模型角色、边界与输出契约的常驻指令，护栏的第一道防线（见<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）。</td>
+</tr>
+<tr>
+<td>结构化输出</td>
+<td>Structured Output</td>
+<td>强制模型输出 JSON 等可校验格式，是步骤间可靠交接的契约（见<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）。</td>
+</tr>
+<tr>
+<td>幻觉</td>
+<td>Hallucination</td>
+<td>模型生成看似合理但与事实不符的内容；RAG 与反思模式的主要抑制对象（见第 4、14 章）。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="编排模式族">编排模式族</h2>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>英文</th>
+<th>一句话定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>提示链</td>
+<td>Prompt Chaining</td>
+<td>把复杂任务拆成顺序步骤链，前一步结构化输出作为后一步输入（见<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）。</td>
+</tr>
+<tr>
+<td>路由</td>
+<td>Routing</td>
+<td>按输入特征把请求分发给最合适的处理路径、模型或智能体（见<a href="../chapters/ch02-routing.html">第 2 章</a>）。</td>
+</tr>
+<tr>
+<td>切分</td>
+<td>Sectioning</td>
+<td>并行化变体：把独立子任务并发执行后归并（见<a href="../chapters/ch03-parallelization.html">第 3 章</a>）。</td>
+</tr>
+<tr>
+<td>投票</td>
+<td>Voting</td>
+<td>并行化变体：同一任务多次采样后多数投票，用方差换准确率（见<a href="../chapters/ch03-parallelization.html">第 3 章</a>）。</td>
+</tr>
+<tr>
+<td>自洽性</td>
+<td>Self-Consistency</td>
+<td>投票的学术原型：多次采样推理路径、归一化后计票（见第 3、17 章）。</td>
+</tr>
+<tr>
+<td>反思</td>
+<td>Reflection</td>
+<td>生成-批评-修订的质量迭代循环，分自反思与外部反馈两条线（见<a href="../chapters/ch04-reflection.html">第 4 章</a>）。</td>
+</tr>
+<tr>
+<td>工具使用</td>
+<td>Tool Use</td>
+<td>智能体经结构化接口调用外部 API/代码/数据，突破参数化知识边界（见<a href="../chapters/ch05-tool-use.html">第 5 章</a>）。</td>
+</tr>
+<tr>
+<td>函数调用</td>
+<td>Function Calling</td>
+<td>工具使用的 API 协议形态：模型输出符合 schema 的调用参数（见<a href="../chapters/ch05-tool-use.html">第 5 章</a>）。</td>
+</tr>
+<tr>
+<td>规划</td>
+<td>Planning</td>
+<td>先生成显式计划再执行、失败后重规划的闭环，计划-执行可分离也可交织（见<a href="../chapters/ch06-planning.html">第 6 章</a>）。</td>
+</tr>
+<tr>
+<td>多智能体协作</td>
+<td>Multi-Agent Collaboration</td>
+<td>多个角色化智能体经编排器/协议协同分工，换专业化与制衡（见<a href="../chapters/ch07-multi-agent.html">第 7 章</a>）。</td>
+</tr>
+<tr>
+<td>编排者-工人</td>
+<td>Orchestrator-Workers</td>
+<td>多智能体拓扑：主智能体动态拆解派发，工人并发执行后归并（见第 3、7 章）。</td>
+</tr>
+<tr>
+<td>模型上下文协议</td>
+<td>MCP（Model Context Protocol）</td>
+<td>Anthropic 2024 年发布的工具/数据接入开放标准，"AI 应用的 USB-C"（见<a href="../chapters/ch10-mcp.html">第 10 章</a>）。</td>
+</tr>
+<tr>
+<td>智能体间通信</td>
+<td>A2A（Agent2Agent）</td>
+<td>Google 2025 年发布的 agent 互操作开放协议：能力名片 + 任务生命周期（见<a href="../chapters/ch15-agent-communication-a2a.html">第 15 章</a>）。</td>
+</tr>
+<tr>
+<td>智能体名片</td>
+<td>Agent Card</td>
+<td>A2A 里服务方自描述能力与端点的发现文档（见<a href="../chapters/ch15-agent-communication-a2a.html">第 15 章</a>）。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="记忆与学习族">记忆与学习族</h2>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>英文</th>
+<th>一句话定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>短期记忆</td>
+<td>Short-term Memory</td>
+<td>当前会话窗口内的对话状态，靠截断/摘要管理（见<a href="../chapters/ch08-memory.html">第 8 章</a>）。</td>
+</tr>
+<tr>
+<td>长期记忆</td>
+<td>Long-term Memory</td>
+<td>跨会话持久化的事实与偏好，靠检索注入生效（见<a href="../chapters/ch08-memory.html">第 8 章</a>）。</td>
+</tr>
+<tr>
+<td>情景记忆</td>
+<td>Episodic Memory</td>
+<td>按经历存储的"发生过什么"，Reflexion 用它存放语言化反思（见第 4、8 章）。</td>
+</tr>
+<tr>
+<td>语义记忆</td>
+<td>Semantic Memory</td>
+<td>抽象化的知识事实，与具体经历分离（见<a href="../chapters/ch08-memory.html">第 8 章</a>）。</td>
+</tr>
+<tr>
+<td>记忆分页</td>
+<td>Memory Paging</td>
+<td>MemGPT 提出的主上下文/外部上下文自主换页机制（见<a href="../chapters/ch08-memory.html">第 8 章</a>）。</td>
+</tr>
+<tr>
+<td>检索增强生成</td>
+<td>RAG（Retrieval-Augmented Generation）</td>
+<td>先检索外部知识再生成，抑幻觉、接私有数据的第一模式（见<a href="../chapters/ch14-knowledge-retrieval-rag.html">第 14 章</a>）。</td>
+</tr>
+<tr>
+<td>分块</td>
+<td>Chunking</td>
+<td>把文档切成适合检索的片段，粒度决定召回上限（见<a href="../chapters/ch14-knowledge-retrieval-rag.html">第 14 章</a>）。</td>
+</tr>
+<tr>
+<td>混合检索</td>
+<td>Hybrid Retrieval</td>
+<td>稀疏（BM25）+ 稠密（向量）双路召回再融合，抗单一检索失效（见<a href="../chapters/ch14-knowledge-retrieval-rag.html">第 14 章</a>）。</td>
+</tr>
+<tr>
+<td>重排</td>
+<td>Rerank</td>
+<td>用交叉编码器对初筛结果精排，花小钱买大精度（见<a href="../chapters/ch14-knowledge-retrieval-rag.html">第 14 章</a>）。</td>
+</tr>
+<tr>
+<td>查询改写</td>
+<td>Query Rewriting</td>
+<td>把用户原话改写成更适合检索的查询，HyDE 为代表（见<a href="../chapters/ch14-knowledge-retrieval-rag.html">第 14 章</a>）。</td>
+</tr>
+<tr>
+<td>学习与适应</td>
+<td>Learning and Adaptation</td>
+<td>智能体从经验反馈中持续改进提示、技能与策略的非参数化学习（见<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）。</td>
+</tr>
+<tr>
+<td>技能库</td>
+<td>Skill Library</td>
+<td>Voyager 提出的可复用代码技能沉淀，学会的能力可检索复用（见<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）。</td>
+</tr>
+<tr>
+<td>进化循环</td>
+<td>Evolutionary Loop</td>
+<td>生成-评估-选择-变异的自动改进环，AlphaEvolve 为代表（见第 9、21 章）。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="保障与效率族">保障与效率族</h2>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>英文</th>
+<th>一句话定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>护栏</td>
+<td>Guardrails</td>
+<td>约束智能体输入输出的安全机制层，纵深防御部署（见<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）。</td>
+</tr>
+<tr>
+<td>提示注入</td>
+<td>Prompt Injection</td>
+<td>用恶意指令劫持模型行为，间接注入经检索内容进体（见<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）。</td>
+</tr>
+<tr>
+<td>越狱</td>
+<td>Jailbreak</td>
+<td>绕过模型安全对齐的攻击，GCG 为自动化代表（见<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）。</td>
+</tr>
+<tr>
+<td>人在回路</td>
+<td>Human-in-the-Loop</td>
+<td>关键决策点引入人工审批，置信度不足时升级（见<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）。</td>
+</tr>
+<tr>
+<td>置信度升级</td>
+<td>Confidence-based Escalation</td>
+<td>低置信输出自动转人工或转更强模型（见第 13、16 章）。</td>
+</tr>
+<tr>
+<td>异常恢复</td>
+<td>Exception Recovery</td>
+<td>重试、降级、检查点续跑的组合，从演示级到生产级的分水岭（见<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）。</td>
+</tr>
+<tr>
+<td>幂等性</td>
+<td>Idempotency</td>
+<td>同一操作重复执行结果不变，是安全重试的前提（见<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）。</td>
+</tr>
+<tr>
+<td>熔断</td>
+<td>Circuit Breaker</td>
+<td>连续失败后快速拒绝并等待恢复，防故障雪崩（见<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）。</td>
+</tr>
+<tr>
+<td>补偿事务</td>
+<td>SAGA/Compensation</td>
+<td>长流程失败后用反向操作回滚已完成步骤（见<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）。</td>
+</tr>
+<tr>
+<td>目标监控</td>
+<td>Goal Setting and Monitoring</td>
+<td>目标-判据-进度-偏差的反馈环，防目标漂移（见<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）。</td>
+</tr>
+<tr>
+<td>评估</td>
+<td>Evaluation</td>
+<td>离线断言、场景回归与在线 A/B 的质量度量体系（见<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）。</td>
+</tr>
+<tr>
+<td>LLM 裁判</td>
+<td>LLM-as-Judge</td>
+<td>用模型给输出打分，需消位置与冗长偏差（见<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）。</td>
+</tr>
+<tr>
+<td>测试时扩展</td>
+<td>Test-time Scaling</td>
+<td>推理期投入更多算力换正确率，推理模型的理论基础（见<a href="../chapters/ch17-reasoning-techniques.html">第 17 章</a>）。</td>
+</tr>
+<tr>
+<td>过程奖励</td>
+<td>Process Reward Model</td>
+<td>对推理每一步打分而非只看结果，过程监督优于结果监督（见<a href="../chapters/ch17-reasoning-techniques.html">第 17 章</a>）。</td>
+</tr>
+<tr>
+<td>级联</td>
+<td>Cascade</td>
+<td>先用便宜模型、置信不足再升级贵模型的成本优化策略（见<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）。</td>
+</tr>
+<tr>
+<td>语义缓存</td>
+<td>Semantic Cache</td>
+<td>按语义相似度命中历史答案，跳过重复推理（见<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）。</td>
+</tr>
+<tr>
+<td>提示缓存</td>
+<td>Prompt Caching</td>
+<td>供应商侧缓存重复提示前缀，按折扣计费（见<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）。</td>
+</tr>
+<tr>
+<td>优先级排序</td>
+<td>Prioritization</td>
+<td>有限资源下按依赖/截止/价值密度排序与抢占调度（见<a href="../chapters/ch20-prioritization.html">第 20 章</a>）。</td>
+</tr>
+<tr>
+<td>探索与发现</td>
+<td>Exploration and Discovery</td>
+<td>假设生成-自动验证-知识入库的开放域搜索循环（见<a href="../chapters/ch21-exploration-discovery.html">第 21 章</a>）。</td>
+</tr>
+<tr>
+<td>探索-利用权衡</td>
+<td>Exploration-Exploitation Tradeoff</td>
+<td>试新选项还是吃老选项，多臂老虎机为数学模型（见<a href="../chapters/ch21-exploration-discovery.html">第 21 章</a>）。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="使用说明">使用说明</h2>
+<p>术语表按"主讲章"索引——查一个词，先到主讲章读机制，再到该章"延伸阅读"要一手资料。跨章组合的用法见结语"场景→模式组合速查表"。</p></div>
+    <div class="pagers"><a class="pager" href="../chapters/ch22-conclusion.html"><span class="pager-dir">← 上一章</span><span class="pager-title">结语</span></a><span></span></div>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+  </main>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#基础概念">基础概念</a></li><li class="toc-l2"><a href="#编排模式族">编排模式族</a></li><li class="toc-l2"><a href="#记忆与学习族">记忆与学习族</a></li><li class="toc-l2"><a href="#保障与效率族">保障与效率族</a></li><li class="toc-l2"><a href="#使用说明">使用说明</a></li></ul></nav></aside>
+</div>
+<script src="../assets/app.js"></script>
+
+</body>
+</html>

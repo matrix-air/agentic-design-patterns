@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第5章 工具使用 · 智能体设计模式</title>
 <meta name="description" content="让模型通过结构化协议调用外部函数获取信息或执行动作，用注册表、schema 校验、观察回注与停止条件把文本生成器变成可靠的执行器。">
+<meta property="og:title" content="第5章 工具使用 · 智能体设计模式">
+<meta property="og:description" content="让模型通过结构化协议调用外部函数获取信息或执行动作，用注册表、schema 校验、观察回注与停止条件把文本生成器变成可靠的执行器。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch05-tool-use.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a class="active" href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a class="active" href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -47,9 +54,9 @@
     ERR --> M
     O --> M
     M -->|"final 声明 / 最大步数 / 预算耗尽 / 重复检测"| F["最终答案"]</div>
-<div class="fig-caption">图 5-1：agent 循环——能力呈现、调用生成、校验执行、观察回注与四道停止条件</div>
+<div class="fig-caption" id="fig-5-1">图 5-1：agent 循环——能力呈现、调用生成、校验执行、观察回注与四道停止条件</div>
 <h3 id="513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</h3>
-<p>ReAct 与工具使用的关系是决策骨架与执行器官的关系：ReAct 定义了"思考—行动—观察"的循环结构，工具是"行动"的具体内容，两者在工程上几乎总是合并出现。与规划模式的关系是整体与局部：工具调用是计划的最小执行单元，长程任务由规划模式把目标分解成一串工具调用（第 6 章）。与反思模式的关系是反馈来源：工具执行结果是最可靠的"外部反馈"，代码跑不通的报错比模型自评的批评有价值得多。与检索增强生成（RAG）的关系是包含：检索本质上是"只读工具"里最常用的一个，工具使用是 RAG 的推广。与记忆模式的关系是状态管理：工具调用的历史、结果摘要如何保存与复用，是记忆模式要回答的问题。</p>
+<p>ReAct 与工具使用的关系是决策骨架与执行器官的关系：ReAct 定义了"思考—行动—观察"的循环结构，工具是"行动"的具体内容，两者在工程上几乎总是合并出现。与规划模式的关系是整体与局部：工具调用是计划的最小执行单元，长程任务由规划模式把目标分解成一串工具调用（<a href="../chapters/ch06-planning.html">第 6 章</a>）。与反思模式的关系是反馈来源：工具执行结果是最可靠的"外部反馈"，代码跑不通的报错比模型自评的批评有价值得多。与检索增强生成（RAG）的关系是包含：检索本质上是"只读工具"里最常用的一个，工具使用是 RAG 的推广。与记忆模式的关系是状态管理：工具调用的历史、结果摘要如何保存与复用，是记忆模式要回答的问题。</p>
 <h2 id="52-起源与历史最早是谁提出来的">5.2 起源与历史：最早是谁提出来的</h2>
 <p>工具使用的现代形态由 ReAct 奠定。2022 年 10 月，Princeton 与 Google Brain 的研究者发表 ReAct，把模型的推理轨迹（Thought）与对环境的行动（Action）交织起来，每一步行动之后把环境观察（Observation）拼回上下文——这个 Thought→Action→Observation 的循环就是今天 agent 循环的直接原型，此后几乎所有 agent 框架的执行内核都是它的变体。三个月后 Meta AI 的 Toolformer 换了条路：不改推理框架，改训练——用自监督方法从普通语料中挖掘"哪里插入 API 调用能帮助预测后续文本"，让模型自己学会在合适的位置发起调用。2023 年 5 月，两条工程化主线同时推进：Gorilla 用检索增强的微调模型专门解决"调用参数 hallucinate"的问题；同月的 Tool Learning 综述把这一波工作系统化为"工具学习"版图。真正把工具使用从研究界推入 every API 的是 2023 年 6 月 OpenAI Function Calling 正式可用：工具声明变成结构化 JSON schema，调用变成 API 原生协议，开发者第一次不用自己解析模型文本就能拿到合法调用。生态层的下一跃是 2024 年 11 月 Anthropic 发布 <a href="https://modelcontextprotocol.io">Model Context Protocol（MCP）</a>开放标准，把"每个工具对每个应用点对点集成"变成"工具服务器对协议互联"，工具生态自此有了统一的接线标准。</p>
 <table>
@@ -325,8 +332,8 @@ def run_agent(task: str, registry: ToolRegistry, max_steps: int = 10,
                   temperature=0.1)
         try:
             text = raw.strip()
-            if text.startswith(&quot;```&quot;):
-                text = text.strip(&quot;`&quot;).lstrip(&quot;json&quot;)
+            if text.startswith(chr(96) * 3):  # 围栏用 chr 构造，防裸反引号截断文档
+                text = text.strip(chr(96)).lstrip(&quot;json&quot;)
             decision = json.loads(text)
         except json.JSONDecodeError:
             history.append(f&quot;【观察】输出解析失败：{raw[:200]}。请严格按 JSON 格式重发。&quot;)
@@ -484,7 +491,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Manus《Context Engineering for AI Agents: Lessons from Building Manus》（2025-07）：https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch04-reflection.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第4章 反思</span></a><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第6章 规划</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#51-模式概述">5.1 模式概述</a></li><li class="toc-l3"><a href="#511-问题背景为什么需要这个模式">5.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#512-核心机制它如何工作">5.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#52-起源与历史最早是谁提出来的">5.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#53-发挥的作用为什么重要">5.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#54-实际应用与案例">5.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#55-深度讲解">5.5 深度讲解</a></li><li class="toc-l3"><a href="#551-工具选择机制schema-描述质量决定选择质量">5.5.1 工具选择机制：schema 描述质量决定选择质量</a></li><li class="toc-l3"><a href="#552-参数生成与校验">5.5.2 参数生成与校验</a></li><li class="toc-l3"><a href="#553-结果观察注入上下文经济学">5.5.3 结果观察注入：上下文经济学</a></li><li class="toc-l3"><a href="#554-循环与停止agent-循环的骨架决策">5.5.4 循环与停止：agent 循环的骨架决策</a></li><li class="toc-l3"><a href="#555-并行工具调用">5.5.5 并行工具调用</a></li><li class="toc-l3"><a href="#556-幻觉调用的防线">5.5.6 幻觉调用的防线</a></li><li class="toc-l2"><a href="#56-工程落地实践代码示例">5.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#561-框架无关实现完整可运行">5.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#562-框架集成实现google-adk-风格">5.6.2 框架集成实现（Google ADK 风格）</a></li><li class="toc-l3"><a href="#563-生产化改造清单">5.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#57-概览-核心要点-结论">5.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#571-本章小结">5.7.1 本章小结</a></li><li class="toc-l3"><a href="#572-核心要点">5.7.2 核心要点</a></li><li class="toc-l3"><a href="#573-结论">5.7.3 结论</a></li><li class="toc-l2"><a href="#58-延伸阅读与参考链接">5.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

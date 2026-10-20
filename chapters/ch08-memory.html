@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第8章 记忆管理 · 智能体设计模式</title>
 <meta name="description" content="在有限上下文之外，用短窗、摘要与检索分层管理状态，让智能体跨轮次、跨会话记住该记的事。">
+<meta property="og:title" content="第8章 记忆管理 · 智能体设计模式">
+<meta property="og:description" content="在有限上下文之外，用短窗、摘要与检索分层管理状态，让智能体跨轮次、跨会话记住该记的事。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch08-memory.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a class="active" href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a class="active" href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -51,7 +58,7 @@
     S --> CTX
     W --> CTX
     CTX --> P["注入提示"]</div>
-<div class="fig-caption">图 8-1：三层记忆的写入路径（对话→短窗→摘要→长期库）与读取路径（检索→拼装→注入）。</div>
+<div class="fig-caption" id="fig-8-1">图 8-1：三层记忆的写入路径（对话→短窗→摘要→长期库）与读取路径（检索→拼装→注入）。</div>
 <h3 id="813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</h3>
 <p>记忆管理与检索增强生成共享"检索后注入"的机制，区别在数据源：RAG 检索外部静态语料，记忆检索的是智能体自身经历中沉淀的条目。记忆是反思模式的落点——反思产生的洞见若不写入记忆，反思就只是一次性的。多智能体协作中的黑板/共享状态本质上是"会话内的共享记忆"。工具使用模式则常把记忆库封装为工具（<code>remember</code>/<code>recall</code>），让模型自己决定存取时机。在实际系统中，记忆管理几乎总是与这几者组合出现：一个长期运行的助手 = 分层记忆 + 会话末反思写入 + 记忆读写以工具形式暴露。</p>
 <h2 id="82-起源与历史最早是谁提出来的">8.2 起源与历史：最早是谁提出来的</h2>
@@ -131,7 +138,7 @@
 </table>
 <p>演化脉络呈两条线交汇：认知科学线提供了分层与分类的概念骨架（多级存储、情景/语义之分），工程线则从"对话窗口不够用"这一具体痛点出发，先做出记忆流与虚拟上下文的原型，再沉淀为开源记忆层与云托管服务。趋势是记忆从"应用代码里的一段逻辑"变成"平台提供的基础设施"。</p>
 <h2 id="83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</h2>
-<p>记忆是把"聊天机器人"变成"助理"的分界线。第一，连续性：用户不用再自我介绍——偏好、约束、历史决定都还在，这在客服（用户档案）、编程助手（项目约定）与陪伴类产品（关系延续）里直接决定体验下限。第二，长任务的连贯性：多日推进的复杂任务中，记忆让智能体记得自己做过什么决定、为什么放弃某方案，避免循环重复劳动。第三，成本结构改善：有了摘要与检索，应用不再需要每轮携带全部历史，token 成本从平方级回到近似常数加检索开销。第四，个性化与复利：用户级记忆随使用积累，产品对老用户越来越"懂"，这是记忆带来的产品护城河。第五，它是其他模式的前提——反思需要落点，多智能体需要共享黑板，学习进化（第 9 章）需要经验库，全都依赖本章的存储与检索机制。</p>
+<p>记忆是把"聊天机器人"变成"助理"的分界线。第一，连续性：用户不用再自我介绍——偏好、约束、历史决定都还在，这在客服（用户档案）、编程助手（项目约定）与陪伴类产品（关系延续）里直接决定体验下限。第二，长任务的连贯性：多日推进的复杂任务中，记忆让智能体记得自己做过什么决定、为什么放弃某方案，避免循环重复劳动。第三，成本结构改善：有了摘要与检索，应用不再需要每轮携带全部历史，token 成本从平方级回到近似常数加检索开销。第四，个性化与复利：用户级记忆随使用积累，产品对老用户越来越"懂"，这是记忆带来的产品护城河。第五，它是其他模式的前提——反思需要落点，多智能体需要共享黑板，学习进化（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）需要经验库，全都依赖本章的存储与检索机制。</p>
 <h2 id="84-实际应用与案例">8.4 实际应用与案例</h2>
 <p><strong>客服长期用户档案。</strong> 每次会话结束后提取用户级事实（套餐、设备型号、历史工单主题）写入用户级记忆；下次用户开口，先检索再应答。关键设计点：事实条目必须带时间戳并与用户 ID 隔离，旧套餐信息要在新信息到达时显式覆盖而不是并存。</p>
 <p><strong>编程助手的项目记忆。</strong> 跨会话记住项目的命名约定、目录结构、技术选型与"为什么不用某方案"的决策理由。关键设计点：区分"代码里可查到的"（不记，用检索代码库代替）与"代码里查不到的"（约定、坑、决策，记）。</p>
@@ -529,7 +536,7 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://mem0.ai/series-a">Mem0 Series A 公告</a>（生产采用规模与 AWS Agent SDK 合作）</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch07-multi-agent.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第7章 多智能体协作</span></a><a class="pager" href="../chapters/ch09-learning-adaptation.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第9章 学习与适应</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-起源与历史最早是谁提出来的">8.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l2"><a href="#86-工程落地实践代码示例">8.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#861-框架无关实现完整可运行">8.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#862-框架集成实现google-adk-的-session-state-memory">8.6.2 框架集成实现（Google ADK 的 Session / State / Memory）</a></li><li class="toc-l3"><a href="#863-生产化改造清单">8.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

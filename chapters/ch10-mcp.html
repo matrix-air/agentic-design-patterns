@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第10章 模型上下文协议 · 智能体设计模式</title>
 <meta name="description" content="MCP 用一个开放协议把"模型应用×工具数据源"的 M×N 集成爆炸压成 M+N，是智能体工具生态的事实标准接口层。">
+<meta property="og:title" content="第10章 模型上下文协议 · 智能体设计模式">
+<meta property="og:description" content="MCP 用一个开放协议把"模型应用×工具数据源"的 M×N 集成爆炸压成 M+N，是智能体工具生态的事实标准接口层。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch10-mcp.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a class="active" href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a class="active" href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -50,11 +57,11 @@
     C2 --> S2["MCP 服务器 2：文件工具"]
     S1 --> D1[("业务数据库")]
     S2 --> D2[("本地文件")]</div>
-<div class="fig-caption">图 10-1：MCP 的宿主-客户端-服务器三层架构——宿主为每个服务器维护一个客户端，服务器各自对接数据源，能力实现一次、全宿主复用。</div>
+<div class="fig-caption" id="fig-10-1">图 10-1：MCP 的宿主-客户端-服务器三层架构——宿主为每个服务器维护一个客户端，服务器各自对接数据源，能力实现一次、全宿主复用。</div>
 <h3 id="1013-与相邻模式的关系与组合">10.1.3 与相邻模式的关系与组合</h3>
-<p>MCP 与<strong>工具调用/函数调用（function calling）</strong>最容易被混为一谈，但两者处在不同层次：function calling 是模型与推理服务之间的接口约定，回答"模型如何表达'我想调一个函数'"；MCP 是宿主应用与工具提供方之间的协议约定，回答"这些函数从哪来、怎么发现、怎么鉴权、怎么安全地执行"。MCP 定义的工具最终仍要转换成模型上下文里的 function calling schema 才能被模型"看见"。二者是互补的上下层，本书第 3 章讨论的工具使用模式讲的是上层语义，MCP 讲的是接入层标准化。</p>
+<p>MCP 与<strong>工具调用/函数调用（function calling）</strong>最容易被混为一谈，但两者处在不同层次：function calling 是模型与推理服务之间的接口约定，回答"模型如何表达'我想调一个函数'"；MCP 是宿主应用与工具提供方之间的协议约定，回答"这些函数从哪来、怎么发现、怎么鉴权、怎么安全地执行"。MCP 定义的工具最终仍要转换成模型上下文里的 function calling schema 才能被模型"看见"。二者是互补的上下层，本书<a href="../chapters/ch03-parallelization.html">第 3 章</a>讨论的工具使用模式讲的是上层语义，MCP 讲的是接入层标准化。</p>
 <p>与<strong>智能体间协作协议（A2A，Agent2Agent）</strong>的分工同样清晰：MCP 解决"智能体↔工具/数据"的纵向连接，A2A 解决"智能体↔智能体"的横向协作。Google 于 2025 年 4 月 9 日发布的 A2A 协议在<a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">官方博客</a>中明确把自己定位为"MCP 的补充而非竞争"；此后 A2A 也进入 Linux 基金会中立治理，与 MCP 同属一个开源生态。实践中常见组合是：一个库存智能体用 MCP 读数据库，发现缺货后通过 A2A 委托采购智能体下单。</p>
-<p>与其他模式的组合：MCP 为<strong>路由</strong>提供动态能力清单，为<strong>多智能体协作</strong>提供统一工具层；第 12 章的超时、重试、熔断策略落在 MCP 客户端的调用路径上；而工具调用 trace 又是第 11 章监控模式最重要的信号源之一。</p>
+<p>与其他模式的组合：MCP 为<strong>路由</strong>提供动态能力清单，为<strong>多智能体协作</strong>提供统一工具层；<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>的超时、重试、熔断策略落在 MCP 客户端的调用路径上；而工具调用 trace 又是<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>监控模式最重要的信号源之一。</p>
 <h2 id="102-起源与历史最早是谁提出来的">10.2 起源与历史：最早是谁提出来的</h2>
 <p>MCP 的直接思想源头是 LSP，而 LSP 的"协议解耦"思想又可以追溯到更早的客户端-服务器与中间件传统。下表给出从思想源头到事实标准的关键节点。</p>
 <table>
@@ -155,7 +162,7 @@
     C --> S["MCP 服务器执行"]
     S --> R["结果翻译回 tool 消息"]
     R --> M</div>
-<div class="fig-caption">图 10-2：一次 MCP 工具调用的"两道翻译"——发现时工具定义翻译为 function calling schema，执行时模型调用翻译为 JSON-RPC 请求、结果再翻译回来。</div>
+<div class="fig-caption" id="fig-10-2">图 10-2：一次 MCP 工具调用的"两道翻译"——发现时工具定义翻译为 function calling schema，执行时模型调用翻译为 JSON-RPC 请求、结果再翻译回来。</div>
 <p>这个分层视角解释了三个工程现象。第一，为什么 MCP 不会自动提升工具调用成功率：选工具、填参数由模型能力决定，MCP 只保证"工具定义无损到达模型、调用被执行"。第二，为什么同一个 MCP 服务器在不同宿主上的表现可能不同：不同宿主对工具描述的截断策略、对 schema 的兼容子集、对分页的处理各不相同。第三，为什么工具数量一大就出问题：所有工具定义都要占用上下文窗口，成百上千个工具的描述文本本身就能吃掉数万 token——这正是 Tool Search 类技术（先检索再注入少量工具定义）出现的原因。给工程团队的推论是：<strong>工具描述是 prompt 的一部分</strong>，要像评审提示词一样评审它。</p>
 <h3 id="1054-安全模型混淆代理工具描述注入与审计">10.5.4 安全模型：混淆代理、工具描述注入与审计</h3>
 <p>MCP 的安全模型围绕<strong>"宿主是唯一受信方"</strong>展开，规范在 2025-06-18 版专设安全考量章节，核心威胁有三类。</p>
@@ -408,7 +415,7 @@ if __name__ == &quot;__main__&quot;:
 <li><strong>确认闸门</strong>：destructive 类工具强制二次确认（Elicitation 或宿主 UI），并默认开启工具注解过滤。</li>
 <li><strong>工具治理</strong>：工具数量按任务裁剪，超量时用工具检索；工具描述纳入 prompt 评审流程；服务器更新触发工具定义 diff 审查与回归。</li>
 <li><strong>供应链隔离</strong>：第三方服务器在容器/沙箱中运行，限定文件系统（配合 Roots）与网络出口，最小权限账号。</li>
-<li><strong>可观测</strong>：每次调用记录 trace（服务器身份、工具、参数摘要、耗时、isError），错误率与延迟进入指标看板，与第 11 章监控打通。</li>
+<li><strong>可观测</strong>：每次调用记录 trace（服务器身份、工具、参数摘要、耗时、isError），错误率与延迟进入指标看板，与<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>监控打通。</li>
 <li><strong>输出校验</strong>：有 outputSchema 的工具做结构化校验，校验失败计入工具健康分，触发熔断或摘除。</li>
 <li><strong>成本控制</strong>：Sampling 调用设预算上限；按宿主会话缓存 <code>tools/list</code> 结果，变更通知驱动刷新而非轮询。</li>
 <li><strong>版本锁定</strong>：初始化协商后锁定协议版本，服务器升级走灰度与兼容性测试。</li>
@@ -451,7 +458,7 @@ if __name__ == &quot;__main__&quot;:
 <li>Google A2A 协议发布公告（2025-04-09，定位为 MCP 补充）：<a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch09-learning-adaptation.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第9章 学习与适应</span></a><a class="pager" href="../chapters/ch11-goal-monitoring.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第11章 目标设定与监控</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#101-模式概述">10.1 模式概述</a></li><li class="toc-l3"><a href="#1011-问题背景为什么需要这个模式">10.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1012-核心机制它如何工作">10.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1013-与相邻模式的关系与组合">10.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#102-起源与历史最早是谁提出来的">10.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#103-发挥的作用为什么重要">10.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#104-实际应用与案例">10.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#105-深度讲解">10.5 深度讲解</a></li><li class="toc-l3"><a href="#1051-mnmn这笔账到底省在哪又不省在哪">10.5.1 M×N→M+N：这笔账到底省在哪，又不省在哪</a></li><li class="toc-l3"><a href="#1052-协议解剖json-rpc-之上三对原语的分工逻辑">10.5.2 协议解剖：JSON-RPC 之上，三对原语的分工逻辑</a></li><li class="toc-l3"><a href="#1053-与-function-calling-的分层关系一次调用要过两道翻译">10.5.3 与 function calling 的分层关系：一次调用要过两道翻译</a></li><li class="toc-l3"><a href="#1054-安全模型混淆代理工具描述注入与审计">10.5.4 安全模型：混淆代理、工具描述注入与审计</a></li><li class="toc-l3"><a href="#1055-变体谱系与工程权衡">10.5.5 变体谱系与工程权衡</a></li><li class="toc-l3"><a href="#1056-失效模式与反模式">10.5.6 失效模式与反模式</a></li><li class="toc-l3"><a href="#1057-何时不要用-mcp">10.5.7 何时不要用 MCP</a></li><li class="toc-l2"><a href="#106-工程落地实践代码示例">10.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#1061-框架无关实现完整可运行">10.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#1062-框架集成实现官方-sdk同文件内自举服务器客户端端到端演示">10.6.2 框架集成实现（官方 SDK：同文件内自举"服务器+客户端"端到端演示）</a></li><li class="toc-l3"><a href="#1063-生产化改造清单">10.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#107-概览-核心要点-结论">10.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#108-延伸阅读与参考链接">10.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

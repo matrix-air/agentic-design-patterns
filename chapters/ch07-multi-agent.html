@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第7章 多智能体协作 · 智能体设计模式</title>
 <meta name="description" content="把单个智能体拆成角色化团队，用显式消息协议与合适的拓扑结构完成单点难以胜任的大型任务。">
+<meta property="og:title" content="第7章 多智能体协作 · 智能体设计模式">
+<meta property="og:description" content="把单个智能体拆成角色化团队，用显式消息协议与合适的拓扑结构完成单点难以胜任的大型任务。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch07-multi-agent.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a class="active" href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a class="active" href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -53,7 +60,7 @@
     R -->|"通过"| F["最终交付"]
     R -->|"退回修订"| C
     C -->|"ESCALATE 升级"| H["人工介入"]</div>
-<div class="fig-caption">图 7-1：星型协调器-专家拓扑：TASK/RESULT/ESCALATE 结构化消息流与独立评审闭环。</div>
+<div class="fig-caption" id="fig-7-1">图 7-1：星型协调器-专家拓扑：TASK/RESULT/ESCALATE 结构化消息流与独立评审闭环。</div>
 <h3 id="713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</h3>
 <p>多智能体协作与多个模式存在亲缘关系。提示链（串行提示接力）可以看作它的退化形态：角色固定、顺序固定、每环只有一次调用。路由与编排模式对应它的星型拓扑：协调器本质上是一个会说话的路由器。反思模式常以"独立评审智能体"的身份嵌入多智能体系统——写作者与批评者分属两个上下文，制衡才真实成立。记忆管理提供多智能体的共享工作区（黑板），让协作不依赖消息全文转发。工具使用模式则为每个角色配置专属工具箱。生产中最常见的组合形态是：星型协调器 + 各专家 + 一个独立评审者 + 共享状态存储。</p>
 <h2 id="72-起源与历史最早是谁提出来的">7.2 起源与历史：最早是谁提出来的</h2>
@@ -223,7 +230,7 @@
     TOPO -->|"动态分解"| STAR["星型协调器"]
     TOPO -->|"需多视角激辩"| GC["群聊：3-5 人+主持人"]
     TOPO -->|"规模超大/权限分层"| HI["层次式委托"]</div>
-<div class="fig-caption">图 7-2：从单智能体到多智能体的拆分决策与四种拓扑的选型路径。</div>
+<div class="fig-caption" id="fig-7-2">图 7-2：从单智能体到多智能体的拆分决策与四种拓扑的选型路径。</div>
 <h3 id="752-消息协议设计">7.5.2 消息协议设计</h3>
 <p>智能体间传递裸字符串是新手最常见的坑：接收方要靠猜测理解"这是任务还是闲聊、完成后回给谁、和哪个任务相关"。最小可行的消息结构只需五个字段——<code>sender</code>、<code>recipient</code>、<code>type</code>（TASK/RESULT/ESCALATE/QUERY）、<code>content</code>、<code>correlation_id</code>。类型字段让<strong>失败成为一等公民</strong>：专家执行失败时不返回含糊的文本，而是一显式的 ESCALATE，由协调器决定重试、换人或上报。关联 ID 让同一任务的完整消息链可以被检索与审计，这在事后归因"这个错误结论是谁给的"时不可或缺。</p>
 <p>历史在此处值得回望：合同网协议 1980 年提出的"招标—投标—中标"，本质就是让具备不同能力的智能体先声明能力，再按任务匹配。今天协调器用 LLM 做路由，等于把"投标"换成了"模型读角色描述做选择"——当路由准确率不足时，老办法依然有效：让各智能体对子任务做可行性自评（自评即投标），协调器按自评与历史成功率分配。</p>
@@ -537,7 +544,7 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://github.com/openai/swarm">OpenAI Swarm 实验性轻量编排库</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第6章 规划</span></a><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第8章 记忆管理</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#71-模式概述">7.1 模式概述</a></li><li class="toc-l3"><a href="#711-问题背景为什么需要这个模式">7.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#712-核心机制它如何工作">7.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#72-起源与历史最早是谁提出来的">7.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#73-发挥的作用为什么重要">7.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#74-实际应用与案例">7.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#75-深度讲解">7.5 深度讲解</a></li><li class="toc-l3"><a href="#751-四种通信拓扑及适用性">7.5.1 四种通信拓扑及适用性</a></li><li class="toc-l3"><a href="#752-消息协议设计">7.5.2 消息协议设计</a></li><li class="toc-l3"><a href="#753-上下文经济学">7.5.3 上下文经济学</a></li><li class="toc-l3"><a href="#754-失效模式与反模式">7.5.4 失效模式与反模式</a></li><li class="toc-l3"><a href="#755-何时不要用">7.5.5 何时不要用</a></li><li class="toc-l2"><a href="#76-工程落地实践代码示例">7.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#761-框架无关实现完整可运行">7.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#762-框架集成实现crewai">7.6.2 框架集成实现（CrewAI）</a></li><li class="toc-l3"><a href="#763-生产化改造清单">7.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#77-概览-核心要点-结论">7.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#78-延伸阅读与参考链接">7.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

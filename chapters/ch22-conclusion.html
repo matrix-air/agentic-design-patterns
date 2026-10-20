@@ -5,24 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>结语 · 智能体设计模式</title>
 <meta name="description" content="把二十一个模式收拢为五层架构视图，给出典型场景的模式组合速查表、从原型到生产的五级成熟度阶梯，以及评估、安全、成本、标准化四个开放问题。">
+<meta property="og:title" content="结语 · 智能体设计模式">
+<meta property="og:description" content="把二十一个模式收拢为五层架构视图，给出典型场景的模式组合速查表、从原型到生产的五级成熟度阶梯，以及评估、安全、成本、标准化四个开放问题。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch22-conclusion.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 <header class="topbar">
   <button id="menu-btn" aria-label="目录">☰</button>
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
-  <span class="topbar-part">收官</span>
+  <span class="topbar-part">收官与附录</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a class="active" href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a class="active" href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
-      <div class="chapter-part">收官</div>
+      <div class="chapter-part">收官与附录</div>
       <h1>结语</h1>
       <p class="chapter-summary">把二十一个模式收拢为五层架构视图，给出典型场景的模式组合速查表、从原型到生产的五级成熟度阶梯，以及评估、安全、成本、标准化四个开放问题。</p>
     </div>
@@ -128,21 +135,21 @@
     S4["自动化运维"] --> M4["目标监控+异常恢复+优先级+工具+人在回路"]
     S5["内容生产"] --> M5["提示链+并行化+反思+路由+评估"]
     S6["多部门协作"] --> M6["多智能体+A2A+优先级+目标监控+守护栏"]</div>
-<div class="fig-caption">图 22-1：典型场景到主干模式组合的映射（模式名对应章号见 22.2 节速查表；评估(19)与守护栏(18)几乎在所有场景都应早接入）。</div>
+<div class="fig-caption" id="fig-22-1">图 22-1：典型场景到主干模式组合的映射（模式名对应章号见 22.2 节速查表；评估(19)与守护栏(18)几乎在所有场景都应早接入）。</div>
 <h2 id="223-从原型到生产五级成熟度阶梯">22.3 从原型到生产：五级成熟度阶梯</h2>
 <p>把一个智能体 demo 变成生产系统，中间要爬一道阶梯。五级划分的依据是：<strong>每一级回答一个此前可以回避的问题</strong>。</p>
 <p><strong>第一级：能演示</strong>（happy path 可跑）。单一提示词、单轮调用、手工触发。这一级的产出是可行性判断，它的全部价值就是被推翻或确认——不要在此恋战打磨提示词，因为脱离真实输入分布的打磨大概率白费。</p>
-<p><strong>第二级：能复现</strong>（评估进入）。黄金集建立、评估流水线跑通（第 19 章）、每次改动有分数可比。这一级标志团队从"改了感觉好"进入"改了分数好"。多数团队低估这一级的难度：判据设计、裁判消偏、黄金集建设都是实打实的工程，但它是后面所有级别的地基。</p>
-<p><strong>第三级：能扛错</strong>（失败被设计）。错误分类、重试熔断、降级、检查点恢复（第 12 章）就位，目标监控锚定长任务（第 11 章），危险动作有守护栏（第 18 章）与人工闸门（第 13 章）。这一级的验收标准不是"不出错"——出错不可避免——而是<strong>出错的剧本存在且演练过</strong>。</p>
-<p><strong>第四级：能经营</strong>（成本与调度被管理）。资源感知路由（第 16 章）、优先级排序与预算降级（第 20 章）、在线监控三件套与告警（第 19 章）就位。系统有了预算账户、有了降级率与延迟分位的看板、有了"资源不够时牺牲什么"的显式决策。到了这一级，智能体系统才第一次可以被当作一项可持续运营的服务，而非一个不断冒烟的项目。</p>
-<p><strong>第五级：能进化</strong>（系统随时间变好）。学习与适应闭环（第 9 章）与探索机制（第 21 章）运转，在线坏案例自动回流黄金集，提示词与策略在评估门禁的保护下持续进化，多智能体协作的效率有度量和优化。这一级的标志是一个反直觉的现象：<strong>团队敢于让系统改自己</strong>，因为每一处改动都被门禁看住。</p>
+<p><strong>第二级：能复现</strong>（评估进入）。黄金集建立、评估流水线跑通（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）、每次改动有分数可比。这一级标志团队从"改了感觉好"进入"改了分数好"。多数团队低估这一级的难度：判据设计、裁判消偏、黄金集建设都是实打实的工程，但它是后面所有级别的地基。</p>
+<p><strong>第三级：能扛错</strong>（失败被设计）。错误分类、重试熔断、降级、检查点恢复（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）就位，目标监控锚定长任务（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>），危险动作有守护栏（<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）与人工闸门（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）。这一级的验收标准不是"不出错"——出错不可避免——而是<strong>出错的剧本存在且演练过</strong>。</p>
+<p><strong>第四级：能经营</strong>（成本与调度被管理）。资源感知路由（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）、优先级排序与预算降级（<a href="../chapters/ch20-prioritization.html">第 20 章</a>）、在线监控三件套与告警（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）就位。系统有了预算账户、有了降级率与延迟分位的看板、有了"资源不够时牺牲什么"的显式决策。到了这一级，智能体系统才第一次可以被当作一项可持续运营的服务，而非一个不断冒烟的项目。</p>
+<p><strong>第五级：能进化</strong>（系统随时间变好）。学习与适应闭环（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）与探索机制（<a href="../chapters/ch21-exploration-discovery.html">第 21 章</a>）运转，在线坏案例自动回流黄金集，提示词与策略在评估门禁的保护下持续进化，多智能体协作的效率有度量和优化。这一级的标志是一个反直觉的现象：<strong>团队敢于让系统改自己</strong>，因为每一处改动都被门禁看住。</p>
 <p>阶梯的读法是"不可跳级、逐级驻留"。跳过第二级直奔第四级（很多团队的热切愿望）等于在没有度量的情况下做成本优化——你不知道省下的钱有没有以质量为代价。每一级驻留时间的长短因场景而异，但顺序几乎不可交换。</p>
 <h2 id="224-开放问题与展望">22.4 开放问题与展望</h2>
 <p>本书收尾于四个尚无定论的问题。它们不是本书的遗憾，而是这个领域当下最真实的形状——读者接下来一到三年的工程实践，大概率就发生在这四条战线上。</p>
 <p><strong>评估滞后于能力</strong>。模型能力的扩散速度（新版本几周内铺开）远快于评估体系的建设速度（黄金集与判据以月计），结果是每次能力跃迁后都有一段"没有尺子的时期"：旧基准饱和失效（<a href="https://arxiv.org/abs/2009.03300">MMLU</a> 类考卷被普遍背题后区分度归零），新基准的公信力需要时间建立。对工程团队的直接含义是：公开榜单只能当参考，<strong>自建黄金集是唯一可以信赖的比较基准</strong>，而它必须随业务演化持续保鲜。<a href="https://arxiv.org/abs/2306.05685">LLM-as-judge</a> 缓解了判据生产的瓶颈，但裁判的偏差管理、对抗样本的军备升级，都还是进行中的战斗。</p>
-<p><strong>安全军备竞赛</strong>。守护栏（第 18 章）面对的是一场没有终点的对抗：提示注入的手法随模型能力同步进化，多智能体系统把攻击面从单个模型扩展到通信链路（第 15 章），The AI Scientist 的自动评审被注入事件（第 21 章，<a href="https://arxiv.org/abs/2408.06292">arXiv:2408.06292</a>）预示了"探索与自主性越强、被操纵的杠杆越多"。当前工程界的基本盘仍是纵深防御——输入过滤、行为约束、权限最小化、人类闸门层层设防——但防御方天然处于滞后位置。本书能给的原则只有一条：<strong>把安全当作与功能同级的持续工程，而不是一次性的合规检查</strong>。</p>
-<p><strong>成本曲线</strong>。推理成本在单位能力维度上持续下降，但智能体系统的总成本曲线未必下降——因为能力的解锁会引来更长链路、更多轮次、更大规模的任务。第 16 章与第 20 章的机制（按任务定价、预算降级）是当下的答案，但更深的问题尚未收敛：什么时候值得让 agent 多想一步（第 17 章）、多验证一遍（第 19 章）、多探索一轮（第 21 章）？这些"思考的经济学"问题，本质上是把经典的最优停止与决策理论放到一个成本结构仍在剧烈变化的平台上。</p>
-<p><strong>多智能体标准化</strong>。<a href="https://a2a-protocol.org/">A2A</a>（第 15 章）与 <a href="https://modelcontextprotocol.io/">MCP</a>（第 10 章）分别从智能体互联与工具接入两个方向推进互操作标准，生态正在快速聚拢，但尚未尘埃落定：智能体的能力描述、信任传递、计费结算、故障责任划分都还没有跨厂商的共识。对采用者的建议是务实的：<strong>按标准的形状设计自己的接口</strong>（属性命名跟随<a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">语义约定</a>、能力声明可机读），但把核心业务逻辑留在标准覆盖不到的地方——标准是护城河上的桥，不是护城河本身。</p>
+<p><strong>安全军备竞赛</strong>。守护栏（<a href="../chapters/ch18-guardrails-safety.html">第 18 章</a>）面对的是一场没有终点的对抗：提示注入的手法随模型能力同步进化，多智能体系统把攻击面从单个模型扩展到通信链路（<a href="../chapters/ch15-agent-communication-a2a.html">第 15 章</a>），The AI Scientist 的自动评审被注入事件（<a href="../chapters/ch21-exploration-discovery.html">第 21 章</a>，<a href="https://arxiv.org/abs/2408.06292">arXiv:2408.06292</a>）预示了"探索与自主性越强、被操纵的杠杆越多"。当前工程界的基本盘仍是纵深防御——输入过滤、行为约束、权限最小化、人类闸门层层设防——但防御方天然处于滞后位置。本书能给的原则只有一条：<strong>把安全当作与功能同级的持续工程，而不是一次性的合规检查</strong>。</p>
+<p><strong>成本曲线</strong>。推理成本在单位能力维度上持续下降，但智能体系统的总成本曲线未必下降——因为能力的解锁会引来更长链路、更多轮次、更大规模的任务。<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>与<a href="../chapters/ch20-prioritization.html">第 20 章</a>的机制（按任务定价、预算降级）是当下的答案，但更深的问题尚未收敛：什么时候值得让 agent 多想一步（<a href="../chapters/ch17-reasoning-techniques.html">第 17 章</a>）、多验证一遍（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）、多探索一轮（<a href="../chapters/ch21-exploration-discovery.html">第 21 章</a>）？这些"思考的经济学"问题，本质上是把经典的最优停止与决策理论放到一个成本结构仍在剧烈变化的平台上。</p>
+<p><strong>多智能体标准化</strong>。<a href="https://a2a-protocol.org/">A2A</a>（<a href="../chapters/ch15-agent-communication-a2a.html">第 15 章</a>）与 <a href="https://modelcontextprotocol.io/">MCP</a>（<a href="../chapters/ch10-mcp.html">第 10 章</a>）分别从智能体互联与工具接入两个方向推进互操作标准，生态正在快速聚拢，但尚未尘埃落定：智能体的能力描述、信任传递、计费结算、故障责任划分都还没有跨厂商的共识。对采用者的建议是务实的：<strong>按标准的形状设计自己的接口</strong>（属性命名跟随<a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/">语义约定</a>、能力声明可机读），但把核心业务逻辑留在标准覆盖不到的地方——标准是护城河上的桥，不是护城河本身。</p>
 <h2 id="225-结语">22.5 结语</h2>
 <p>二十一个模式讲完，值得回望全书真正反复出现的那几条线索。<strong>第一条：老智慧，新容器。</strong>拓扑排序来自 1962 年（<a href="https://doi.org/10.1145/368996.369025">Kahn, CACM</a>），EDF 来自 1973 年（<a href="https://doi.org/10.1145/321738.321743">Liu &amp; Layland, JACM</a>），熔断器来自微服务时代，猜想与反驳来自 1934 年——智能体工程几乎没有发明新的底层原理，它做的事情是把人类在实时系统、分布式事务、科学方法论上的积累，重新组装进"语言模型步进执行"这个新运行时，并为语义故障、不可重放输出、自然语言判据这些新问题补上对应的新件。这意味着这门学科的半壁江山是现成的：当你在 agent 场景遇到一个调度、容错或验证问题时，先去找那个领域的经典答案，通常都在。</p>
 <p><strong>第二条：判据先于行动。</strong>从提示链每一步的出口检查，到反思的评分标准，到目标监控的完成判据，到评估的黄金集，到探索的验证闸门——全书二十一章里，几乎每个模式的核心难点都是同一个：<strong>"好"由谁、按什么标准、在什么时机说了算</strong>。判据可信，模式才有用；判据被生成方污染或自任裁判，一切机制都沦为表演。这条线索值得写进每个智能体团队的章程。</p>
@@ -164,8 +171,8 @@
 - OpenTelemetry GenAI 语义约定（gen_ai.* 遥测标准）：https://opentelemetry.io/docs/specs/semconv/gen-ai/</p>
 <p><strong>探索与发现的标杆</strong>
 - FunSearch（Nature 2024，LLM+自动验证器产出数学新发现）：https://www.nature.com/articles/s41586-023-06924-6</p></div>
-    <div class="pagers"><a class="pager" href="../chapters/ch21-exploration-discovery.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第21章 探索与发现</span></a><span></span></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <div class="pagers"><a class="pager" href="../chapters/ch21-exploration-discovery.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第21章 探索与发现</span></a><a class="pager" href="../chapters/appendix-glossary.html"><span class="pager-dir">下一章 →</span><span class="pager-title">附录 A · 术语表</span></a></div>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#221-二十一个模式一张架构视图">22.1 二十一个模式，一张架构视图</a></li><li class="toc-l2"><a href="#222-场景到模式组合速查表">22.2 场景到模式组合：速查表</a></li><li class="toc-l2"><a href="#223-从原型到生产五级成熟度阶梯">22.3 从原型到生产：五级成熟度阶梯</a></li><li class="toc-l2"><a href="#224-开放问题与展望">22.4 开放问题与展望</a></li><li class="toc-l2"><a href="#225-结语">22.5 结语</a></li><li class="toc-l2"><a href="#延伸阅读与参考链接">延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>

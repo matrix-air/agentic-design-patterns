@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第20章 优先级排序 · 智能体设计模式</title>
 <meta name="description" content="把多任务竞争下的"先做哪个"从直觉变成算法——以四类稀缺资源为约束，用依赖、截止期、价值密度等信号定序，支持动态重排与预算耗尽时的优雅降级。">
+<meta property="og:title" content="第20章 优先级排序 · 智能体设计模式">
+<meta property="og:description" content="把多任务竞争下的"先做哪个"从直觉变成算法——以四类稀缺资源为约束，用依赖、截止期、价值密度等信号定序，支持动态重排与预算耗尽时的优雅降级。">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://matrix-air.github.io/agentic-design-patterns/chapters/ch20-prioritization.html">
+<meta property="og:image" content="https://matrix-air.github.io/agentic-design-patterns/assets/og-cover.png">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,12 +19,13 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
 </header>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a class="active" href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-part"><div class="nav-part-name">开篇</div><ul><li><a href="../chapters/ch00-preface.html">前言</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第一部分 · 核心模式</div><ul><li><a href="../chapters/ch01-prompt-chaining.html">第1章 提示链</a></li><li><a href="../chapters/ch02-routing.html">第2章 路由</a></li><li><a href="../chapters/ch03-parallelization.html">第3章 并行化</a></li><li><a href="../chapters/ch04-reflection.html">第4章 反思</a></li><li><a href="../chapters/ch05-tool-use.html">第5章 工具使用</a></li><li><a href="../chapters/ch06-planning.html">第6章 规划</a></li><li><a href="../chapters/ch07-multi-agent.html">第7章 多智能体协作</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第二部分 · 认知机制</div><ul><li><a href="../chapters/ch08-memory.html">第8章 记忆管理</a></li><li><a href="../chapters/ch09-learning-adaptation.html">第9章 学习与适应</a></li><li><a href="../chapters/ch10-mcp.html">第10章 模型上下文协议</a></li><li><a href="../chapters/ch11-goal-monitoring.html">第11章 目标设定与监控</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第三部分 · 容错与扩展</div><ul><li><a href="../chapters/ch12-exception-recovery.html">第12章 异常处理与恢复</a></li><li><a href="../chapters/ch13-human-in-the-loop.html">第13章 人在回路</a></li><li><a href="../chapters/ch14-knowledge-retrieval-rag.html">第14章 知识检索</a></li></ul></div><div class="nav-part"><div class="nav-part-name">第四部分 · 高级架构</div><ul><li><a href="../chapters/ch15-agent-communication-a2a.html">第15章 智能体间通信</a></li><li><a href="../chapters/ch16-resource-aware-optimization.html">第16章 资源感知优化</a></li><li><a href="../chapters/ch17-reasoning-techniques.html">第17章 推理技术</a></li><li><a href="../chapters/ch18-guardrails-safety.html">第18章 护栏机制</a></li><li><a href="../chapters/ch19-evaluation-monitoring.html">第19章 评估与监控</a></li><li><a class="active" href="../chapters/ch20-prioritization.html">第20章 优先级排序</a></li><li><a href="../chapters/ch21-exploration-discovery.html">第21章 探索与发现</a></li></ul></div><div class="nav-part"><div class="nav-part-name">收官与附录</div><ul><li><a href="../chapters/ch22-conclusion.html">结语</a></li><li><a href="../chapters/appendix-glossary.html">附录 A · 术语表</a></li></ul></div></div>
   </aside>
   <main class="content">
     <div class="chapter-head">
@@ -51,9 +58,9 @@
     DONE --> R["波间重算：老化防饥饿、迟滞防震荡"]
     DG --> R
     R -->|"下一波"| W</div>
-<div class="fig-caption">图 20-1：优先级队列与波间动态重排——抢占只发生在波与波之间，执行中的任务不被打断。</div>
+<div class="fig-caption" id="fig-20-1">图 20-1：优先级队列与波间动态重排——抢占只发生在波与波之间，执行中的任务不被打断。</div>
 <h3 id="2013-与相邻模式的关系与组合">20.1.3 与相邻模式的关系与组合</h3>
-<p>与<strong>并行化</strong>（第 3 章）是"定序与并发"的分工：拓扑排序产出的每一波就绪任务正是并行化的输入——依赖图决定"谁必须等谁"，波内任务并行执行，并行宽度由并发额度这一稀缺资源决定。<a href="https://arxiv.org/abs/2312.04511">LLMCompiler</a> 的任务 DAG 并行调度是二者结合的代表。与<strong>资源感知优化</strong>（第 16 章）是"排序与定价"的配合：本章把成本作为排序信号之一，第 16 章决定每个任务用哪个档位的模型执行——联合起来才是完整的预算管理（"先做哪个"+"每个用多贵的模型"）。与<strong>规划</strong>（第 6 章）的关系在层次上：规划把单个目标展开成任务 DAG，本章决定 DAG 上任务的执行顺序与资源分配。与<strong>异常处理</strong>（第 12 章）的接口在预算上：任务失败消耗的重试预算必须计入其成本信号，防止"失败任务靠无限重试霸占预算"。与<strong>多智能体</strong>（第 7 章）的关系在资源共享：多个 agent 竞争同一模型配额或工具限流时，需要一个全局仲裁者按本章机制分配——先来先服务在多 agent 场景下退化为随机。</p>
+<p>与<strong>并行化</strong>（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）是"定序与并发"的分工：拓扑排序产出的每一波就绪任务正是并行化的输入——依赖图决定"谁必须等谁"，波内任务并行执行，并行宽度由并发额度这一稀缺资源决定。<a href="https://arxiv.org/abs/2312.04511">LLMCompiler</a> 的任务 DAG 并行调度是二者结合的代表。与<strong>资源感知优化</strong>（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）是"排序与定价"的配合：本章把成本作为排序信号之一，<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>决定每个任务用哪个档位的模型执行——联合起来才是完整的预算管理（"先做哪个"+"每个用多贵的模型"）。与<strong>规划</strong>（<a href="../chapters/ch06-planning.html">第 6 章</a>）的关系在层次上：规划把单个目标展开成任务 DAG，本章决定 DAG 上任务的执行顺序与资源分配。与<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的接口在预算上：任务失败消耗的重试预算必须计入其成本信号，防止"失败任务靠无限重试霸占预算"。与<strong>多智能体</strong>（<a href="../chapters/ch07-multi-agent.html">第 7 章</a>）的关系在资源共享：多个 agent 竞争同一模型配额或工具限流时，需要一个全局仲裁者按本章机制分配——先来先服务在多 agent 场景下退化为随机。</p>
 <h2 id="202-起源与历史最早是谁提出来的">20.2 起源与历史：最早是谁提出来的</h2>
 <p>优先级排序的学术根源分散在三个传统里：运筹学与图论（依赖与定序）、实时系统（截止期调度）、决策科学（价值与紧急性的权衡）。工程队列设施则由云计算时代的消息队列与任务系统奠定，agent 时代出现了第一批原生实验。</p>
 <table>
@@ -131,13 +138,13 @@
 <p>演化脉络可以读作"调度对象的持续抽象化"。实时系统调度的是有精确工期的进程，EDF 给出了最优性保证；消息队列调度的是同质消息，先进先出加上优先级字段够用；工作流引擎（Airflow）调度的是带依赖的批作业，DAG 成为一等公民。多臂老虎机一脉（Robbins 1952 年奠基的序列实验设计，经 UCB 到 Thompson Sampling）则处理更软的问题：<strong>价值未知时如何在探索与利用之间分配有限预算</strong>——这正是 agent 任务"价值不可预知"场景的数学模型。agent 时代的新困难在于工期与价值都需要估计：BabyAGI 证明了"先能跑"很容易，LLMCompiler 证明了"依赖图+并行"能省钱省时，而两者都没有回答"高价值任务如何不被饿死"——这个问题没有新答案，只有老智慧的新应用：把截止期、价值密度、预算约束显式建模，交给几十年前就成熟的调度理论。</p>
 <h2 id="203-发挥的作用为什么重要">20.3 发挥的作用：为什么重要</h2>
 <p>第一，它把有限资源对准最高价值。智能体系统的边际成本是真实的（token 即金钱），<strong>排序错误的代价可以直接换算</strong>：把预算花在价值密度 0.1 的任务上而不做价值密度 2.0 的任务，等于烧掉了 20 倍的潜在价值。对自治运行的系统（无人值守跑队列），排序就是系统"人格"的体现——它决定了系统在没人盯着时优先讨好谁。</p>
-<p>第二，它提供了可解释的资源仲裁。多任务、多 agent、多租户共享资源时，"为什么先做 A 后做 B"必须可回答，否则就是黑箱偏袒。显式的打分函数（依赖、截止期、价值、风险、成本）让仲裁有据可查、可审计、可调参——这既是工程需要也是治理需要。第 16 章的资源感知优化提供每个任务的"价格"，本章提供"出价顺序"，二者合起来才构成完整的资源市场。</p>
-<p>第三，它定义了系统失败时的姿态。没有降级设计的系统在预算耗尽时崩溃或烂尾；有降级设计的系统在同样预算下交出一份"所有承诺都兑现但部分打了折"的答卷。对面向用户的系统，前者是事故，后者是体验。优雅降级与人在回路（第 13 章）衔接：降级触发的任务自动升级为人工待办，形成闭环。</p>
+<p>第二，它提供了可解释的资源仲裁。多任务、多 agent、多租户共享资源时，"为什么先做 A 后做 B"必须可回答，否则就是黑箱偏袒。显式的打分函数（依赖、截止期、价值、风险、成本）让仲裁有据可查、可审计、可调参——这既是工程需要也是治理需要。<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>的资源感知优化提供每个任务的"价格"，本章提供"出价顺序"，二者合起来才构成完整的资源市场。</p>
+<p>第三，它定义了系统失败时的姿态。没有降级设计的系统在预算耗尽时崩溃或烂尾；有降级设计的系统在同样预算下交出一份"所有承诺都兑现但部分打了折"的答卷。对面向用户的系统，前者是事故，后者是体验。优雅降级与人在回路（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）衔接：降级触发的任务自动升级为人工待办，形成闭环。</p>
 <h2 id="204-实际应用与案例">20.4 实际应用与案例</h2>
 <p><strong>客服工单分级处理</strong>。场景：单 agent 消化不断涌入的工单队列。做法：工单按 SLA（VIP 客户 1 小时、普通 24 小时）映射截止期，价值按客户等级与订单金额加权，EDF 式排序处理；高峰期预算吃紧时，低价值工单先降级为模板回复 + 人工待办。关键设计点：<strong>截止期相同才比价值</strong>，避免"重要但不急"永远压过"急"；每张降级工单必须进人工队列，防止降级变成遗忘。</p>
 <p><strong>深度研究 agent 的子问题分配</strong>。场景：一个研究报告任务分解出几十个子问题，token 预算有限。做法：规划阶段输出 DAG（部分子问题依赖前置结论），拓扑分波执行；每个子问题按"对最终报告的贡献度 × 信息增益估计 / 预计 token"打价值密度，低密度子问题自动降为跳过或一句话带过。关键设计点：<strong>预算消耗过半时触发重估</strong>——已获得的发现会改变剩余子问题的价值排序（这正是动态重排的场景）。</p>
 <p><strong>编码修复机器人</strong>。场景：机器人盯仓库 issue 列表自主修复。做法：依赖深度信号体现为"阻塞多少下游 issue"（从代码依赖图可算），截止期来自 issue 的里程碑标签，风险来自改动文件的核心度；每天为机器人设定 CI 时长预算，预算内按分数排序修。关键设计点：<strong>连续两次修复失败的 issue 自动降权</strong>（成本信号在惩罚它），防止机器人死磕一个坑。</p>
-<p><strong>批量文档处理流水线</strong>。场景：数万份合同的批量摘要，夜间窗口有限。做法：文档按"涉及金额 × 是否临近到期"定优先级，拓扑信号来自"这份合同的结论被后续分析引用"；窗口按 p95 工期（评估体系实测，见第 19 章）估算能做多少，排不进窗口的最低优先级文档自动发"已受理、次日出"回执。关键设计点：用实测工期分布而非拍脑袋估计做容量规划，低估 20% 的工期意味着 20% 的任务被承诺又违约。</p>
+<p><strong>批量文档处理流水线</strong>。场景：数万份合同的批量摘要，夜间窗口有限。做法：文档按"涉及金额 × 是否临近到期"定优先级，拓扑信号来自"这份合同的结论被后续分析引用"；窗口按 p95 工期（评估体系实测，见<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）估算能做多少，排不进窗口的最低优先级文档自动发"已受理、次日出"回执。关键设计点：用实测工期分布而非拍脑袋估计做容量规划，低估 20% 的工期意味着 20% 的任务被承诺又违约。</p>
 <p><strong>多 agent 共享模型配额</strong>。场景：三个业务 agent 共享每分钟令牌限额。做法：全局仲裁者按"任务 SLA 距离 × 业务权重"给每个待执行调用出价，限流触发时价低者等待。关键设计点：要防饥饿（等待超时自动抬价，即老化机制）；仲裁决策全部打日志，争议时 可回放。</p>
 <p><strong>个人助理 agent 的日程缓冲</strong>。场景：助理 agent 管理用户的一天，随时插入新请求。做法：艾森豪威尔象限做粗分类（重要且紧急→立即、重要不紧急→排期、紧急不重要→降级给模板、不重要不紧急→拒绝或攒批），象限之内再按价值密度精排。关键设计点：粗分类供人理解（用户要能看懂为什么），精排供机器执行，两层各有受众。</p>
 <h3 id="真实世界实例">真实世界实例</h3>
@@ -146,20 +153,20 @@
 <p><strong>工程近似二：CI 平台的并发组排队</strong>。GitHub Actions 用 concurrency group 让同一组的运行排队串行：并发冲突时新的运行默认等待或取消旧的，2026 年 5 月起每组还支持最多 100 个待处理运行的队列——生产团队用它保证"发布流水线永远先于日常构建消化"，是任务优先级仲裁在工程侧最成熟的现成实践。来源：<a href="https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/using-concurrency">GitHub Actions 并发组官方文档</a>与<a href="https://github.blog/changelog/2026-05-07-github-actions-concurrency-groups-now-allow-larger-queues/">队列扩容公告</a>。</p>
 <h2 id="205-深度讲解">20.5 深度讲解</h2>
 <h3 id="2051-四类稀缺资源性质不同管理方式不同">20.5.1 四类稀缺资源：性质不同，管理方式不同</h3>
-<p><strong>上下文窗口</strong>是最特殊的资源：它不是"消耗型"而是"挤占型"——同一时刻在处理的任务越多，每个任务能分到的上下文越少，质量随之下降。它的管理策略是控制并发宽度而非排队长度：<strong>宁可队列里排一百个任务，也不要二十个任务共享一个窗口</strong>。<strong>token/资金预算</strong>是消耗型资源，特点是不可逆、单价可变（第 2 章路由与第 16 章资源感知决定每个任务用什么价位的模型）；它的管理靠预算账户：每个任务领取预算、消耗记账、超支熔断，账户体系让"今天还剩多少"成为可查询状态而非感觉。<strong>墙钟时间</strong>的特点是它对所有人流逝速度相同但 deadline 是外部强加的；它的管理靠松弛量（slack = deadline - 预计完工时间）而非剩余时间本身——一个还剩两小时但需要三小时的任务，比还剩十分钟但只需五分钟的任务紧急得多。<strong>并发额度</strong>（工具限流、API 速率）的特点是"不用即浪费"：窗口内的闲置额度不可存储，因此高并发额度应优先供给不确定的任务（多试几次的探索型任务），低并发额度留给确定性任务。</p>
-<p>四类资源互相转换：花更多 token（并行采样多方案）可以省墙钟时间；压缩上下文（摘要历史，第 8 章）可以腾出并发空间。排序算法不必显式优化这种兑换，但预算账户应允许任务间转移——"这个任务值得多花 2 倍 token 换提前 1 小时"应当是可表达的决策。</p>
+<p><strong>上下文窗口</strong>是最特殊的资源：它不是"消耗型"而是"挤占型"——同一时刻在处理的任务越多，每个任务能分到的上下文越少，质量随之下降。它的管理策略是控制并发宽度而非排队长度：<strong>宁可队列里排一百个任务，也不要二十个任务共享一个窗口</strong>。<strong>token/资金预算</strong>是消耗型资源，特点是不可逆、单价可变（<a href="../chapters/ch02-routing.html">第 2 章</a>路由与<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>资源感知决定每个任务用什么价位的模型）；它的管理靠预算账户：每个任务领取预算、消耗记账、超支熔断，账户体系让"今天还剩多少"成为可查询状态而非感觉。<strong>墙钟时间</strong>的特点是它对所有人流逝速度相同但 deadline 是外部强加的；它的管理靠松弛量（slack = deadline - 预计完工时间）而非剩余时间本身——一个还剩两小时但需要三小时的任务，比还剩十分钟但只需五分钟的任务紧急得多。<strong>并发额度</strong>（工具限流、API 速率）的特点是"不用即浪费"：窗口内的闲置额度不可存储，因此高并发额度应优先供给不确定的任务（多试几次的探索型任务），低并发额度留给确定性任务。</p>
+<p>四类资源互相转换：花更多 token（并行采样多方案）可以省墙钟时间；压缩上下文（摘要历史，<a href="../chapters/ch08-memory.html">第 8 章</a>）可以腾出并发空间。排序算法不必显式优化这种兑换，但预算账户应允许任务间转移——"这个任务值得多花 2 倍 token 换提前 1 小时"应当是可表达的决策。</p>
 <h3 id="2052-优先级信号五元组打分函数的设计与陷阱">20.5.2 优先级信号五元组：打分函数的设计与陷阱</h3>
-<p>五个信号的合成没有万能公式，但有设计纪律。<strong>依赖深度</strong>通常不该进打分函数而应进拓扑结构——"阻塞很多任务"的正确处理方式是让它尽早进入就绪波次，而不是给它虚高分数（分数会诱导它插队到已就绪的紧急任务前面，但它的紧急性并不因此改变）。<strong>截止时间</strong>用松弛量度量，且应设为"一票否决级"的信号：松弛量为负（注定迟到）的任务要么立即降级（改为道歉回复 + 人工跟进），要么直接放弃并通知，让它占据队列只会拖累其他任务。<strong>价值</strong>是最难获取的信号：人工赋值（1-5 星）在组织内可行但主观；业务规则（金额、SLA、客户等级）客观但僵化；第 9 章的学习与适应提供第三条路——从历史完成记录里学"哪类任务的实际价值高"。<strong>风险</strong>常被忽略：失败代价不对称时（错误回复会触怒 VIP），期望价值要打折扣（价值 × 成功概率）；失败概率可以从第 19 章的评估数据里查表。<strong>成本</strong>与价值合成<strong>价值密度</strong>（价值/预计成本），这是资源受限场景的核心比值——它回答"每花一分预算买回多少价值"。</p>
+<p>五个信号的合成没有万能公式，但有设计纪律。<strong>依赖深度</strong>通常不该进打分函数而应进拓扑结构——"阻塞很多任务"的正确处理方式是让它尽早进入就绪波次，而不是给它虚高分数（分数会诱导它插队到已就绪的紧急任务前面，但它的紧急性并不因此改变）。<strong>截止时间</strong>用松弛量度量，且应设为"一票否决级"的信号：松弛量为负（注定迟到）的任务要么立即降级（改为道歉回复 + 人工跟进），要么直接放弃并通知，让它占据队列只会拖累其他任务。<strong>价值</strong>是最难获取的信号：人工赋值（1-5 星）在组织内可行但主观；业务规则（金额、SLA、客户等级）客观但僵化；<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>的学习与适应提供第三条路——从历史完成记录里学"哪类任务的实际价值高"。<strong>风险</strong>常被忽略：失败代价不对称时（错误回复会触怒 VIP），期望价值要打折扣（价值 × 成功概率）；失败概率可以从<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的评估数据里查表。<strong>成本</strong>与价值合成<strong>价值密度</strong>（价值/预计成本），这是资源受限场景的核心比值——它回答"每花一分预算买回多少价值"。</p>
 <p>合成时的三个陷阱。一是<strong>量纲混乱</strong>：把 1-5 的价值分与小时计的工期直接四则运算，结果随单位漂移；先各自归一化再合成。二是<strong>虚假精度</strong>：给估计值算到小数点后两位，掩盖了"工期估计本身就是猜的"这一事实；排序对单调变换不敏感，用粗糙但稳定的分数足够，精度焦虑应转化为对最不确定任务的抽样重估。三是<strong>静态快照</strong>：任务入队时打一次分终身使用，而队列是动态的——截止期在逼近、预算在消耗、上游结果在改变下游价值；<strong>重排频率应与信号变化速度匹配</strong>（20.5.3）。</p>
 <h3 id="2053-静态排序动态重排与抢占的代价">20.5.3 静态排序、动态重排与抢占的代价</h3>
 <p>静态排序（一次排序、顺序执行）的优点是可预测、可审计、实现简单，缺点是对变化失明：新到的紧急任务要排到队尾，上游失败后下游任务仍按原计划空转。动态重排（每步重算就绪队列）捕获这些变化，但引入三个经典调度病理。<strong>饥饿</strong>：高价值任务源源不断时，低价值任务永远轮不上——对策是老化机制（等待时间计入优先级，等待越久分数越高），Auer 等人的 UCB 分析给了理论参照：给"不确定"本身分配预算（log 项），保证每个任务被访问的频率有下界。<strong>震荡</strong>：两个任务分数接近且交替领先时，动态重排可能在二者间来回切换，浪费上下文（每次切换都要重载任务状态）——对策是迟滞带（分数差超过阈值才交换）与最小驻留时间。<strong>优先级反转</strong>：低优先级任务持有高优先级任务需要的资源（比如占着工具锁），高优先级任务反被阻塞——操作系统的解法（优先级继承）在 agent 场景对应为：被阻塞的高优任务应触发阻塞源的提权。抢占（中断正在执行的低优任务）在 agent 场景代价高于操作系统：任务状态要序列化回存、上下文要切换，且被抢占的任务未必能干净地半途暂停。实践取舍是<strong>波间抢占</strong>：不中断执行中的任务，但在每个拓扑波次之间重算队列——这已能覆盖 90% 的重排需求，代价仅为每个波次一次排序。</p>
 <h3 id="2054-拓扑排序正确性的地基">20.5.4 拓扑排序：正确性的地基</h3>
-<p>Kahn 算法（1962 年发表，PERT 网络分析的副产品）至今是标准解：反复摘除入度为零的节点，摘不完全即有环。工程要点有三。<strong>环检测是错误路径不是理论细节</strong>：LLM 生成的任务依赖（第 6 章规划器的输出）出现"A 依赖 B、B 依赖 A"并不罕见，必须在排序阶段报错并定位环上的任务，而不是死循环。<strong>波次即并行边界</strong>：拓扑排序天然给出分层（第一波是所有无依赖任务，第二波是仅依赖第一波的任务……），每层内部无依赖可全并行——这就是第 3 章并行化与 LLMCompiler 式 DAG 调度的执行模型。<strong>拓扑序与优先级的合成方式</strong>是"波内排序"：拓扑序负责合法性（跨波不可乱序），优先级分只在同一波内决定先后——不要让优先级跨波插队，那等于破坏依赖。动态加入任务时不必全图重排：增量更新受影响节点的入度与波次即可，任务量在百级以下时全量重排也足够便宜。</p>
+<p>Kahn 算法（1962 年发表，PERT 网络分析的副产品）至今是标准解：反复摘除入度为零的节点，摘不完全即有环。工程要点有三。<strong>环检测是错误路径不是理论细节</strong>：LLM 生成的任务依赖（<a href="../chapters/ch06-planning.html">第 6 章</a>规划器的输出）出现"A 依赖 B、B 依赖 A"并不罕见，必须在排序阶段报错并定位环上的任务，而不是死循环。<strong>波次即并行边界</strong>：拓扑排序天然给出分层（第一波是所有无依赖任务，第二波是仅依赖第一波的任务……），每层内部无依赖可全并行——这就是<a href="../chapters/ch03-parallelization.html">第 3 章</a>并行化与 LLMCompiler 式 DAG 调度的执行模型。<strong>拓扑序与优先级的合成方式</strong>是"波内排序"：拓扑序负责合法性（跨波不可乱序），优先级分只在同一波内决定先后——不要让优先级跨波插队，那等于破坏依赖。动态加入任务时不必全图重排：增量更新受影响节点的入度与波次即可，任务量在百级以下时全量重排也足够便宜。</p>
 <h3 id="2055-预算耗尽时的优雅降级">20.5.5 预算耗尽时的优雅降级</h3>
 <p>降级设计的核心是<strong>预先承诺的放弃</strong>。每个重要任务预配降级阶梯：完整执行（价值 1.0、成本 1.0）→ 简化执行（如换小模型、减采样次数，价值约 0.6、成本约 0.3）→ 占位产出（模板回复 + 人工待办，价值 0.2、成本趋零）。预算监控器持续对账：当剩余预算不足以让队列中所有任务走完当前档位时，按价值保全原则重新分配——通常的规则是"先保广度后保深度"：让所有任务至少达到简化档，再让剩余预算给高密度任务升级完整档。这与"头任务吃满预算、尾任务颗粒无收"的自然行为形成对照，后者正是没有降级设计的系统在预算耗尽时的默认结局。</p>
-<p>降级的工程纪律：<strong>降级必须打标</strong>（产出与 trace 标注 degraded 与原因，第 12 章与第 19 章的观测约定在此交汇），否则降级悄然成为常态而无人知晓；<strong>降级不是静默丢弃</strong>（用户侧要么收到降级产出并被告知，要么收到明确的"已转人工"）；<strong>降级路径要演练</strong>（与第 12 章的故障演练同理——<strong>从没跑过的降级代码等于不存在</strong>）。最后一条是反直觉的：<strong>有时正确动作是砍掉整个任务</strong>而非降级——价值密度低到连简化档都不值得时，占位产出只是给失败化妆，直接报告"本预算下未执行、原因、恢复条件"更诚实。</p>
+<p>降级的工程纪律：<strong>降级必须打标</strong>（产出与 trace 标注 degraded 与原因，<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>与<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的观测约定在此交汇），否则降级悄然成为常态而无人知晓；<strong>降级不是静默丢弃</strong>（用户侧要么收到降级产出并被告知，要么收到明确的"已转人工"）；<strong>降级路径要演练</strong>（与<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>的故障演练同理——<strong>从没跑过的降级代码等于不存在</strong>）。最后一条是反直觉的：<strong>有时正确动作是砍掉整个任务</strong>而非降级——价值密度低到连简化档都不值得时，占位产出只是给失败化妆，直接报告"本预算下未执行、原因、恢复条件"更诚实。</p>
 <h3 id="2056-失效模式与反模式">20.5.6 失效模式与反模式</h3>
-<p>五种典型失效。<strong>打分函数腐化</strong>：业务演变后打分权重没人记得当初为什么这么设，也没人敢改——对策是把权重配置化、每次调整留变更记录，并把"排序决策回放"做成例行审计。<strong>截止期通胀</strong>：业务方学会把所有 deadline 都标成"今天"以抢占队列——对策是截止期与外部事件绑定（SLA 系统而非人工输入），过期惩罚与信用机制。<strong>价值信号寻租</strong>：任务提交者高报价值——对策是事后校准（完成后的实际价值回填，长期高报者的赋值降权）。<strong>降级依赖症</strong>：系统发现降级总是能过，逐渐常态化降级以省成本——对策是监控降级率并设上限告警（第 19 章）。<strong>拓扑洁癖</strong>：为不存在依赖的任务硬造依赖以图省心，DAG 退化为链表，并行度归零——依赖应来自数据流的真实约束。</p>
+<p>五种典型失效。<strong>打分函数腐化</strong>：业务演变后打分权重没人记得当初为什么这么设，也没人敢改——对策是把权重配置化、每次调整留变更记录，并把"排序决策回放"做成例行审计。<strong>截止期通胀</strong>：业务方学会把所有 deadline 都标成"今天"以抢占队列——对策是截止期与外部事件绑定（SLA 系统而非人工输入），过期惩罚与信用机制。<strong>价值信号寻租</strong>：任务提交者高报价值——对策是事后校准（完成后的实际价值回填，长期高报者的赋值降权）。<strong>降级依赖症</strong>：系统发现降级总是能过，逐渐常态化降级以省成本——对策是监控降级率并设上限告警（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）。<strong>拓扑洁癖</strong>：为不存在依赖的任务硬造依赖以图省心，DAG 退化为链表，并行度归零——依赖应来自数据流的真实约束。</p>
 <p>反模式清单：先进先出冒充排序（队首阻塞）；所有任务同一优先级（等于没有）；优先级只有高低两档（分辨率不足以仲裁真实冲突）；重排无迟滞（震荡烧上下文）；预算只算 token 不算时间与并发；降级阶梯没写就用（临场现想的降级就是没有降级）。何时可以不用：单任务系统（无可排序之物）；任务天然同质且都重要（批处理、按序消化即可）；资源充裕到排序成本超过排序收益——但生产系统的经验是第三种情况比想象中罕见。</p>
 <h2 id="206-工程落地实践代码示例">20.6 工程落地：实践代码示例</h2>
 <h3 id="2061-框架无关实现完整可运行">20.6.1 框架无关实现（完整可运行）</h3>
@@ -414,10 +421,10 @@ if __name__ == &quot;__main__&quot;:
 <li><strong>错误处理</strong>：拓扑环、未知依赖、任务执行异常三路都必须显式报错或降级；环报错要列出环上任务，执行异常计入该任务的风险信号与重试预算。</li>
 <li><strong>超时</strong>：每个任务带工期上限，超时按失败处理并触发降级阶梯；调度器自身重排频率设上限，防止病态图导致的排序风暴。</li>
 <li><strong>并发</strong>：波内并行宽度受并发额度约束（信号量）；多 worker 场景下调度决策集中仲裁，避免各自为政。</li>
-<li><strong>状态持久化</strong>：队列、已完成集合、预算账户落检查点（第 12 章），崩溃后从检查点恢复且已执行任务凭幂等记录跳过。</li>
+<li><strong>状态持久化</strong>：队列、已完成集合、预算账户落检查点（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>），崩溃后从检查点恢复且已执行任务凭幂等记录跳过。</li>
 <li><strong>可观测</strong>：每条调度决策记录"当时分数、被跳过的候选、原因"，支持回放审计；队列长度、等待时间分位、降级率为一等指标。</li>
 <li><strong>预算治理</strong>：token、时间、并发三类预算分账户记账；预算消耗速率进监控，异常增速（重试风暴）触发熔断。</li>
-<li><strong>信号校准</strong>：工期与价值估计定期与实测对账（第 19 章的 metric 提供实测值），系统性高估/低估自动校正。</li>
+<li><strong>信号校准</strong>：工期与价值估计定期与实测对账（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>的 metric 提供实测值），系统性高估/低估自动校正。</li>
 <li><strong>老化与防饥饿</strong>：等待时间计入优先级；任何任务的等待时长设硬上限，超限强制执行或升级人工。</li>
 <li><strong>成本控制</strong>：重排只在波间进行（波内抢占代价高）；打分函数保持 O(n log n)，任务量上千时增量化。</li>
 </ul>
@@ -430,10 +437,10 @@ if __name__ == &quot;__main__&quot;:
 <li>依赖深度进拓扑结构而非打分函数；截止期用松弛量度量且松弛为负时一票否决（降级或放弃，不让死任务拖垮队列）。</li>
 <li>价值密度（价值/成本）是资源受限场景的核心比值；价值信号要防寻租，用完成后的实际价值回填校准。</li>
 <li>静态排序可预测，动态重排适应变化；重排要配老化（防饥饿）、迟滞带（防震荡）、波间粒度（避免高代价抢占）。</li>
-<li>Kahn 拓扑排序给出波次结构：波次即并行边界（第 3 章），环是错误路径必须报错定位。</li>
+<li>Kahn 拓扑排序给出波次结构：波次即并行边界（<a href="../chapters/ch03-parallelization.html">第 3 章</a>），环是错误路径必须报错定位。</li>
 <li>优雅降级三纪律：预先配置阶梯（完整→简化→占位）、降级必打标并进监控、降级率超阈值告警；价值密度低过占位档时，诚实放弃优于化妆失败。</li>
 <li>BabyAGI 的教训：能跑的任务队列不等于能用的任务队列——无优先级、无终止控制、无预算的自治循环是事故现场。</li>
-<li>与第 16 章合体才是完整资源管理：本章定"先做哪个"，资源感知定"每个用多贵的模型"。</li>
+<li>与<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>合体才是完整资源管理：本章定"先做哪个"，资源感知定"每个用多贵的模型"。</li>
 </ul>
 <h3 id="结论">结论</h3>
 <p>排序就是预演放弃。一个系统怎么给任务排序，暴露了它认为什么重要；<strong>一个系统在预算耗尽时牺牲什么，暴露了它的真实价值观</strong>。把这套价值观从隐性的随机行为变成显性的、可审计的打分函数与降级阶梯，是智能体系统从玩具走向受托责任体的必要一步——用户把资源和时间交给一个自治系统，理应得到"它会像称职的助理一样分轻重缓急"的保证。</p>
@@ -453,7 +460,7 @@ if __name__ == &quot;__main__&quot;:
 - GitHub Copilot coding agent 公测公告（2025-05-19）：https://github.blog/changelog/2025-05-19-github-copilot-coding-agent-in-public-preview/
 - BabyAGI（任务队列 agent 的早期形态与"无优先级"教训）：https://github.com/yoheinakajima/babyagi</p></div>
     <div class="pagers"><a class="pager" href="../chapters/ch19-evaluation-monitoring.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第19章 评估与监控</span></a><a class="pager" href="../chapters/ch21-exploration-discovery.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第21章 探索与发现</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 23 章 · 约 16.9 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 17.1 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#201-模式概述">20.1 模式概述</a></li><li class="toc-l3"><a href="#2011-问题背景为什么需要这个模式">20.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#2012-核心机制它如何工作">20.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#2013-与相邻模式的关系与组合">20.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#202-起源与历史最早是谁提出来的">20.2 起源与历史：最早是谁提出来的</a></li><li class="toc-l2"><a href="#203-发挥的作用为什么重要">20.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#204-实际应用与案例">20.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#205-深度讲解">20.5 深度讲解</a></li><li class="toc-l3"><a href="#2051-四类稀缺资源性质不同管理方式不同">20.5.1 四类稀缺资源：性质不同，管理方式不同</a></li><li class="toc-l3"><a href="#2052-优先级信号五元组打分函数的设计与陷阱">20.5.2 优先级信号五元组：打分函数的设计与陷阱</a></li><li class="toc-l3"><a href="#2053-静态排序动态重排与抢占的代价">20.5.3 静态排序、动态重排与抢占的代价</a></li><li class="toc-l3"><a href="#2054-拓扑排序正确性的地基">20.5.4 拓扑排序：正确性的地基</a></li><li class="toc-l3"><a href="#2055-预算耗尽时的优雅降级">20.5.5 预算耗尽时的优雅降级</a></li><li class="toc-l3"><a href="#2056-失效模式与反模式">20.5.6 失效模式与反模式</a></li><li class="toc-l2"><a href="#206-工程落地实践代码示例">20.6 工程落地：实践代码示例</a></li><li class="toc-l3"><a href="#2061-框架无关实现完整可运行">20.6.1 框架无关实现（完整可运行）</a></li><li class="toc-l3"><a href="#2062-框架集成实现langgraph-send-api拓扑波次并行调度">20.6.2 框架集成实现（LangGraph Send API：拓扑波次并行调度）</a></li><li class="toc-l3"><a href="#2063-生产化改造清单">20.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#207-概览-核心要点-结论">20.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#208-延伸阅读与参考链接">20.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
