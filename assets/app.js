@@ -82,6 +82,25 @@
     });
   }, { passive: true });
 
+  /* 动效开关：mermaid 连线流动动画（默认开，记忆偏好，尊重系统减弱动效） */
+  var atg = document.getElementById("anim-toggle");
+  if (atg) {
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var saved = localStorage.getItem("adp-anim");
+    var on = saved == null ? !reduced : saved === "1";
+    function apply() {
+      document.body.classList.toggle("anim-on", on);
+      atg.classList.toggle("off", !on);
+      atg.textContent = on ? "✦ 动效" : "✦ 动效·关";
+    }
+    apply();
+    atg.addEventListener("click", function () {
+      on = !on;
+      localStorage.setItem("adp-anim", on ? "1" : "0");
+      apply();
+    });
+  }
+
   /* Mermaid 双主题渲染（本地内置，跟随系统深浅色，切换即重绘） */
   var darkMQ = window.matchMedia("(prefers-color-scheme: dark)");
   if (window.mermaid && document.querySelector(".mermaid")) {

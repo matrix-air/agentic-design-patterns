@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第三部分 · 容错与扩展</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -57,8 +58,23 @@
     DG --> H["依赖恢复（半开探测成功）"]
     H --> A</div>
 <div class="fig-caption" id="fig-12-1">图 12-1：错误分类驱动的重试-熔断-降级状态机——瞬时错误重试，重试穷尽触发熔断统计，熔断打开期以降级维持服务，半开探测成功后回到主路径。</div>
+<div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;异常恢复：退避重试-熔断-降级-半开&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;caller&quot;, &quot;label&quot;: &quot;调用方&quot;, &quot;x&quot;: 75, &quot;y&quot;: 125, &quot;w&quot;: 92, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;rt&quot;, &quot;label&quot;: &quot;重试 + 退避&quot;, &quot;x&quot;: 250, &quot;y&quot;: 55, &quot;w&quot;: 112, &quot;h&quot;: 40}, {&quot;id&quot;: &quot;dep&quot;, &quot;label&quot;: &quot;依赖服务&quot;, &quot;x&quot;: 500, &quot;y&quot;: 55, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;cb&quot;, &quot;label&quot;: &quot;熔断器&quot;, &quot;x&quot;: 250, &quot;y&quot;: 195, &quot;w&quot;: 100, &quot;h&quot;: 52, &quot;shape&quot;: &quot;diamond&quot;}, {&quot;id&quot;: &quot;dg&quot;, &quot;label&quot;: &quot;降级响应&quot;, &quot;x&quot;: 500, &quot;y&quot;: 195, &quot;w&quot;: 104, &quot;h&quot;: 38}], &quot;edges&quot;: [[&quot;caller&quot;, &quot;rt&quot;], [&quot;rt&quot;, &quot;dep&quot;], [&quot;rt&quot;, &quot;cb&quot;], [&quot;rt&quot;, &quot;dg&quot;], [&quot;cb&quot;, &quot;dep&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;一条请求的完整急救链：退避重试 → 熔断打开 → 降级维持 → 半开恢复。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;caller&quot;, &quot;to&quot;: &quot;rt&quot;, &quot;note&quot;: &quot;请求到达执行器：熔断闭合，放行主路径&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rt&quot;, &quot;to&quot;: &quot;dep&quot;, &quot;note&quot;: &quot;首次尝试&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;dep&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;瞬时错误（503）：可重试——计入连错统计，进入退避等待&quot;}, {&quot;t&quot;: &quot;wait&quot;, &quot;ms&quot;: 650}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rt&quot;, &quot;to&quot;: &quot;dep&quot;, &quot;note&quot;: &quot;指数退避 + 抖动后：重试第 1 次&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;dep&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;仍失败——连错继续累加，退避窗口继续翻倍&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rt&quot;, &quot;to&quot;: &quot;dep&quot;, &quot;note&quot;: &quot;重试第 2 次&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;rt&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;这次成功：写检查点，交付结果&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rt&quot;, &quot;to&quot;: &quot;cb&quot;, &quot;note&quot;: &quot;随后依赖持续故障，连错越过阈值：熔断打开，快速失败&quot;, &quot;cls&quot;: &quot;err&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rt&quot;, &quot;to&quot;: &quot;dg&quot;, &quot;note&quot;: &quot;打开期的新请求不再打扰依赖，直接走降级&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;dg&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;降级响应交付：缓存 / 备用模型，业务低质量但继续&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;cb&quot;, &quot;to&quot;: &quot;dep&quot;, &quot;note&quot;: &quot;冷却期满，半开：放行一次探测请求&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;cb&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;探测成功——熔断闭合，流量回到主路径&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：只在一层重试、只重试幂等操作；熔断让依赖喘息，降级保业务不崩。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
+<div class="fig-caption demo-cap" id="demo-12-1">演示 12-1：请求失败后指数退避重试，连错触发熔断打开、请求走降级，半开探测成功后恢复（点「▶ 播放」逐步观看）</div>
 <h3 id="1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</h3>
 <p>与<strong>目标监控</strong>（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）互为攻守：监控判定"预算耗尽、连续失败"后把控制权交给恢复机制；恢复机制的重试与降级动作又必须被监控记录，否则降级会悄悄变成常态。与<strong>工具调用/MCP</strong>的关系在边界上：超时、重试、熔断应实现于工具调用包装层（客户端一侧），让业务编排代码保持干净。与<strong>规划/路由</strong>的关系是恢复的两种出口：可修复的失败（瞬时错误）就地恢复，不可修复的失败改道（换工具、换模型、换路径）。与<strong>人机协同</strong>的关系是最后一道闸：所有自动恢复手段穷尽后，正确动作是把现场打包升级给人，而不是假装问题不存在。</p>
+<div class="mermaid">sequenceDiagram
+    participant A as 调用方
+    participant B as 服务方
+    A->>B: 请求
+    B-->>A: 超时（瞬时错误）
+    Note over A: 指数退避 + 抖动，等待窗口翻倍
+    A->>B: 重试第 1 次
+    B-->>A: 仍失败
+    Note over A: 继续退避，发起第 2 次重试
+    A->>B: 重试第 2 次
+    B-->>A: 成功返回
+    Note over A,B: 若连错越过阈值：熔断打开，请求直接走降级不再打扰服务方；冷却期满进入半开，放行一次探测，成功才闭合恢复主路径</div>
+<div class="fig-caption" id="fig-12-3">图 12-3：调用方视角的失败处理时序——超时即退避，退避后重试直至成功；连错越限则熔断走降级，半开探测成功才恢复主路径。</div>
 <h2 id="122-源起它从哪里来">12.2 源起：它从哪里来</h2>
 <p>本章的每个构件都不是智能体时代的新发明，而是三个传统的接力。语言传统解决"如何表达失败"：PL/I 的 ON 条件让异常首次成为语言机制。分布式传统解决"跨系统操作如何干净退回"：1987 年的 SAGA 把长事务拆成子事务链、失败时逆序补偿。在线服务传统解决"真实故障率下如何活下来"：Nygard 2007 年的《Release It!》系统化熔断与舱壁，Brooker 2015 年给出退避抖动的定量设计。智能体框架把三个传统的成果组装进"LLM 步进执行"这个新运行时，检查点恢复随之成为框架标配。演化细节与定量的退避账见 12.5.7。</p>
 <table>
@@ -385,11 +401,12 @@ if __name__ == &quot;__main__&quot;:
 <li>AWS Well-Architected Agentic AI Lens：智能体负载的幂等任务执行模式（确定性幂等键、条件写）：<a href="https://docs.aws.amazon.com/wellarchitected/latest/agentic-ai-lens/agentrel06-bp04.html">docs.aws.amazon.com/wellarchitected</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch11-goal-monitoring.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第11章 目标设定与监控</span></a><a class="pager" href="../chapters/ch13-human-in-the-loop.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第13章 人在回路</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#121-模式概述">12.1 模式概述</a></li><li class="toc-l3"><a href="#1211-问题背景为什么需要这个模式">12.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1212-核心机制它如何工作">12.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1213-与相邻模式的关系与组合">12.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#122-源起它从哪里来">12.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#123-发挥的作用为什么重要">12.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#124-实际应用与案例">12.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#125-深度讲解">12.5 深度讲解</a></li><li class="toc-l3"><a href="#1251-agent-特有的故障分类四层故障与策略映射">12.5.1 agent 特有的故障分类：四层故障与策略映射</a></li><li class="toc-l3"><a href="#1252-重试与退避节奏设计的定量细节">12.5.2 重试与退避：节奏设计的定量细节</a></li><li class="toc-l3"><a href="#1253-熔断舱壁与错误预算">12.5.3 熔断、舱壁与错误预算</a></li><li class="toc-l3"><a href="#1254-检查点与恢复非确定性带来的新难题">12.5.4 检查点与恢复：非确定性带来的新难题</a></li><li class="toc-l3"><a href="#1255-幂等与补偿副作用世界的两把钥匙">12.5.5 幂等与补偿：副作用世界的两把钥匙</a></li><li class="toc-l3"><a href="#1256-降级链与失效模式">12.5.6 降级链与失效模式</a></li><li class="toc-l3"><a href="#1257-演化谱系定量的退避账与恰好一次的真相">12.5.7 演化谱系、定量的退避账与"恰好一次"的真相</a></li><li class="toc-l3"><a href="#1258-怎么用运用判断">12.5.8 怎么用：运用判断</a></li><li class="toc-l2"><a href="#126-工程落地核心源码与讲解">12.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1261-核心源码按序拼接即完整可运行">12.6.1 核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#1262-框架差异速览">12.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#1263-生产化改造清单">12.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#127-概览-核心要点-结论">12.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#128-延伸阅读与参考链接">12.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+<script src="../assets/anim.js"></script>
 </body>
 </html>

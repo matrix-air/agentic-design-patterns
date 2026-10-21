@@ -237,3 +237,54 @@ a:hover { text-decoration: underline; }
 /* 长 URL 防撑破（v1.2 补丁 2） */
 .chapter-body a, .chapter-body li, .chapter-body td, .quick-read { overflow-wrap: anywhere; }
 @media (max-width: 700px) { html, body { overflow-x: clip; } }
+
+/* ===== v1.4：mermaid 连线流动动效 + 动画演示播放器 ===== */
+body.anim-on .mermaid .flowchart-link,
+body.anim-on .mermaid .edgePaths path,
+body.anim-on .mermaid .relation {
+  stroke-dasharray: 7 5;
+  animation: adp-dash 1.1s linear infinite;
+}
+@keyframes adp-dash { to { stroke-dashoffset: -24; } }
+@media (prefers-reduced-motion: reduce) {
+  body.anim-on .mermaid .flowchart-link,
+  body.anim-on .mermaid .edgePaths path,
+  body.anim-on .mermaid .relation { animation: none; stroke-dasharray: none; }
+}
+
+.adp-btn { font-size: 12.5px; }
+.print-btn.anim-toggle { min-width: 64px; }
+.print-btn.anim-toggle.off { color: var(--muted); text-decoration: line-through; }
+
+.anim-wrap { margin: 22px 0 8px; }
+.anim-demo {
+  background: #ffffff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 12px 8px; overflow: hidden;
+}
+@media (prefers-color-scheme: dark) { .anim-demo { background: var(--panel); } }
+.adp-svg { width: 100%; height: auto; display: block; }
+.adp-edge { stroke: var(--muted); stroke-width: 1.6; opacity: .55; }
+.adp-edge-hot { stroke: var(--accent); opacity: 1; stroke-width: 2.2; stroke-dasharray: 7 5; animation: adp-dash 1s linear infinite; }
+.adp-arrowhead { fill: var(--muted); }
+.adp-edge-hot + .adp-arrowhead { fill: var(--accent); }
+.adp-node rect, .adp-node polygon { fill: var(--panel); stroke: var(--muted); stroke-width: 1.4; transition: all .25s; }
+.adp-node text { fill: var(--ink); font-size: 13px; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.adp-node.adp-hl rect, .adp-node.adp-hl polygon { stroke: var(--accent); stroke-width: 2.2; fill: var(--accent-soft); }
+.adp-node.adp-ok rect, .adp-node.adp-ok polygon { stroke: #1a7f37; fill: #e6f4ea; }
+.adp-node.adp-err rect, .adp-node.adp-err polygon { stroke: #c62828; fill: #fdecea; }
+@media (prefers-color-scheme: dark) {
+  .adp-node.adp-ok rect, .adp-node.adp-ok polygon { fill: #12351f; }
+  .adp-node.adp-err rect, .adp-node.adp-err polygon { fill: #3a1512; }
+}
+.adp-token { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
+.adp-token-err { fill: #c62828; }
+.adp-ctrl { display: flex; align-items: center; gap: 8px; padding: 8px 4px 4px; flex-wrap: wrap; }
+.adp-btn {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 7px; padding: 4px 12px; cursor: pointer; font-size: 13px;
+}
+.adp-btn:hover { border-color: var(--accent); color: var(--accent); }
+.adp-btn.adp-primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.adp-btn.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.adp-note { flex: 1; min-width: 160px; font-size: 14px; color: var(--ink); font-weight: 600; }
+.adp-step { color: var(--muted); font-size: 12px; }

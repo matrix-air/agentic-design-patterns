@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -55,6 +56,21 @@
     O --> M
     M -->|"final 声明 / 最大步数 / 预算耗尽 / 重复检测"| F["最终答案"]</div>
 <div class="fig-caption" id="fig-5-1">图 5-1：agent 循环——能力呈现、调用生成、校验执行、观察回注与四道停止条件</div>
+<div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;工具使用：思考→行动→观察，两轮后声明 final&quot;, &quot;w&quot;: 760, &quot;h&quot;: 240, &quot;nodes&quot;: [{&quot;id&quot;: &quot;ask&quot;, &quot;label&quot;: &quot;用户请求&quot;, &quot;x&quot;: 80, &quot;y&quot;: 120, &quot;w&quot;: 88, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;think&quot;, &quot;label&quot;: &quot;Agent 思考&quot;, &quot;x&quot;: 248, &quot;y&quot;: 120, &quot;w&quot;: 108, &quot;h&quot;: 40}, {&quot;id&quot;: &quot;tool&quot;, &quot;label&quot;: &quot;工具 执行&quot;, &quot;x&quot;: 460, &quot;y&quot;: 56, &quot;w&quot;: 100, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;obs&quot;, &quot;label&quot;: &quot;观察注入&quot;, &quot;x&quot;: 460, &quot;y&quot;: 190, &quot;w&quot;: 96, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;final&quot;, &quot;label&quot;: &quot;final 答案&quot;, &quot;x&quot;: 675, &quot;y&quot;: 120, &quot;w&quot;: 100, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}], &quot;edges&quot;: [[&quot;ask&quot;, &quot;think&quot;], [&quot;think&quot;, &quot;tool&quot;], [&quot;tool&quot;, &quot;obs&quot;], [&quot;obs&quot;, &quot;think&quot;], [&quot;think&quot;, &quot;final&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;agent 循环：思考→行动→观察，直到模型声明完成。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;ask&quot;, &quot;to&quot;: &quot;think&quot;, &quot;note&quot;: &quot;请求进入上下文，第一轮思考开始&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;think&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;思考：凭现有知识答不准——需要查实时库存&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;think&quot;, &quot;to&quot;: &quot;tool&quot;, &quot;note&quot;: &quot;行动：选「查库存」工具，生成调用参数&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;tool&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;schema 校验失败：缺 required 字段——拒绝执行&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;tool&quot;, &quot;to&quot;: &quot;obs&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;错误信息本身作为观察返回给模型&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;obs&quot;, &quot;to&quot;: &quot;think&quot;, &quot;note&quot;: &quot;观察注入上下文：模型看到失败原因&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;think&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;思考：按报错补全参数，重试同一工具&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;think&quot;, &quot;to&quot;: &quot;tool&quot;, &quot;note&quot;: &quot;行动（修正后）：再次调用「查库存」&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;tool&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;校验通过，handler 执行&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;tool&quot;, &quot;to&quot;: &quot;obs&quot;, &quot;note&quot;: &quot;执行结果作为观察返回&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;obs&quot;, &quot;to&quot;: &quot;think&quot;, &quot;note&quot;: &quot;观察注入上下文，下一轮思考开始&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;think&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;思考：数据到手，信息已足够——不再调用工具&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;think&quot;, &quot;to&quot;: &quot;final&quot;, &quot;note&quot;: &quot;模型声明 final，循环停止&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：执行失败也作为观察回注——错误是上下文，不是异常；四道停止条件（final / 最大步数 / 预算 / 重复检测）兜住循环。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
+<div class="fig-caption demo-cap" id="demo-5-1">演示 5-1：agent 循环的执行流程——思考、选工具、校验失败把错误当观察回注，修正重试后声明 final（点「▶ 播放」逐步观看）</div>
+<div class="mermaid">sequenceDiagram
+    participant U as 用户
+    participant A as Agent（模型）
+    participant T as 工具
+    participant E as 环境
+    Note over A: Thought：知识答不准，需要查实时数据
+    A->>T: Action：调用查询工具（参数过 schema 校验）
+    T->>E: 读写外部系统
+    E-->>T: 返回数据
+    T-->>A: Observation：结果注入上下文
+    Note over A: Thought：信息足够，无需再调用
+    A-->>U: final 答案，循环停止</div>
+<div class="fig-caption" id="fig-5-2">图 5-2：agent 循环的时序视图——用户、Agent、工具、环境四泳道之间跑满一轮 Thought-Action-Observation，模型在第二轮 Thought 后声明 final 停止。</div>
 <h3 id="513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</h3>
 <p>ReAct 与工具使用的关系是决策骨架与执行器官的关系：ReAct 定义了"思考—行动—观察"的循环结构，工具是"行动"的具体内容，两者在工程上几乎总是合并出现。与规划模式的关系是整体与局部：工具调用是计划的最小执行单元，长程任务由规划模式把目标分解成一串工具调用（<a href="../chapters/ch06-planning.html">第 6 章</a>）。与反思模式的关系是反馈来源：工具执行结果是最可靠的"外部反馈"，代码跑不通的报错比模型自评的批评有价值得多。与检索增强生成（RAG）的关系是包含：检索本质上是"只读工具"里最常用的一个，工具使用是 RAG 的推广。与记忆模式的关系是状态管理：工具调用的历史、结果摘要如何保存与复用，是记忆模式要回答的问题。</p>
 <h2 id="52-源起它从哪里来">5.2 源起：它从哪里来</h2>
@@ -379,11 +395,12 @@ if __name__ == &quot;__main__&quot;:
 <li>Manus《Context Engineering for AI Agents: Lessons from Building Manus》（2025-07）：https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch04-reflection.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第4章 反思</span></a><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第6章 规划</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#51-模式概述">5.1 模式概述</a></li><li class="toc-l3"><a href="#511-问题背景为什么需要这个模式">5.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#512-核心机制它如何工作">5.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#513-与相邻模式的关系与组合">5.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#52-源起它从哪里来">5.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#53-发挥的作用为什么重要">5.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#54-实际应用与案例">5.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#55-深度讲解">5.5 深度讲解</a></li><li class="toc-l3"><a href="#551-工具选择机制schema-描述质量决定选择质量">5.5.1 工具选择机制：schema 描述质量决定选择质量</a></li><li class="toc-l3"><a href="#552-参数生成与校验">5.5.2 参数生成与校验</a></li><li class="toc-l3"><a href="#553-结果观察注入上下文经济学">5.5.3 结果观察注入：上下文经济学</a></li><li class="toc-l3"><a href="#554-循环与停止agent-循环的骨架决策">5.5.4 循环与停止：agent 循环的骨架决策</a></li><li class="toc-l3"><a href="#555-并行工具调用">5.5.5 并行工具调用</a></li><li class="toc-l3"><a href="#556-幻觉调用的防线">5.5.6 幻觉调用的防线</a></li><li class="toc-l3"><a href="#557-怎么用运用判断">5.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#56-工程落地核心源码与讲解">5.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#561-框架无关实现片段-讲解">5.6.1 框架无关实现（片段 + 讲解）</a></li><li class="toc-l3"><a href="#562-框架差异速览google-adk">5.6.2 框架差异速览（Google ADK）</a></li><li class="toc-l3"><a href="#563-生产化改造清单">5.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#57-概览-核心要点-结论">5.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#571-本章小结">5.7.1 本章小结</a></li><li class="toc-l3"><a href="#572-核心要点">5.7.2 核心要点</a></li><li class="toc-l3"><a href="#573-结论">5.7.3 结论</a></li><li class="toc-l2"><a href="#58-延伸阅读与参考链接">5.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+<script src="../assets/anim.js"></script>
 </body>
 </html>

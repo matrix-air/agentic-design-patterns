@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -126,6 +127,18 @@
 <h3 id="2152-假设-实验-证伪循环可证伪性作为设计要求">21.5.2 假设-实验-证伪循环：可证伪性作为设计要求</h3>
 <p>Popper 的划界标准给了探索循环一条铁律：<strong>一个假设必须携带"什么结果算它失败"的承诺，否则不配进入实验预算</strong>。工程化为假设的三要素：可执行预言（"按价值密度排序能把加权完成数提高 10% 以上"——可计算）、判定判据（在固定评测集上，差额经 N 次重复后仍显著）、失败处置（未达标则回滚并记录）。缺任何一环的假设都是不可证伪的空话——"这个策略可能更优""值得再试试"，验证器无从下手，循环会空转。</p>
 <p>可证伪性在 LLM 探索循环里还有一个特殊敌人：<strong>生成器的自我辩护</strong>。模型提出假设后，如果你把验证的差结果喂回同一个模型问"这个假设还成立吗"，它会流畅地为失败辩护并修改预言（"我的意思是换个数据集后成立"）——<strong>预注册原则（先锁定判据与数据集，再出结果）是对策</strong>，与临床试验防 p-hacking 的机制完全相同。另一个工程化要点是<strong>预言的最小化</strong>：要求假设附带尽量窄的适用声明（"在处理时长小于 5 分钟的工单上有效"），窄预言被证伪时能精确定位边界，宽预言的失败则浪费整轮探索。</p>
+<div class="mermaid">sequenceDiagram
+    participant G as 假设生成器
+    participant V as 验证器
+    participant K as 进化库
+    G->>V: 候选 H7（附可执行预言与判据）
+    V-->>G: 证伪：训练集提升仅 2%，未达显著
+    Note over K: 失败记录入库，沉淀为先验
+    G->>V: 变异 H8（冠军母本 + H7 失败先验）
+    V-->>K: 通过：留出集复验达标
+    K-->>G: 冠军更新，证据包入库
+    Note over G: 下一轮以新冠军为母本继续变异</div>
+<div class="fig-caption" id="fig-21-3">图 21-3：假设-证伪-变异-入库的交互时序——生成与验证隔离、判据预注册，证伪不是浪费而是先验；只有通过留出集复验的候选才配更新冠军并入库。</div>
 <h3 id="2153-搜索预算管理何时停止探索">21.5.3 搜索预算管理：何时停止探索</h3>
 <p>停止条件是探索系统最容易漏配的部件——没有它的探索循环只有两种结局：预算烧穿，或者永远在等"下一个更好的解"。实用的停止条件组合有五层。<strong>硬上限</strong>：总迭代数、总 token/金额、墙钟时间，任一触顶即停——<strong>这是保险丝，无条件执行</strong>。<strong>无改进早停</strong>：连续 k 轮（如 10 轮）没有候选超过当前冠军即停；k 的选取与变异成功率的历史分布有关，过小会错过需要多步组合才能到达的改进，过大浪费预算。<strong>收益递减检测</strong>：最近 m 个冠军的改进幅度呈下降趋势且低于阈值——进化搜索的常见曲线是前期陡升后期平台，平台期的边际改进通常不值得继续。<strong>理论参照</strong>：UCB 的 regret 界告诉我们探索预算的边际价值随已试次数以对数速度衰减——预算分配应随置信度提升而向利用倾斜。<strong>外部触发</strong>：环境变化（语料更新、模型升级）使旧冠军的可信度失效，探索重开一轮——停止条件不是一次性的，是随环境周期性重置的。</p>
 <p>预算在"广度与深度"之间的分配是另一半管理：候选太单一会早熟收敛于局部最优，候选太发散则每个都浅尝辄止。进化计算的 MAP-Elites 类质量-多样性算法给了工程化的答案：保留多个"生态位"的最优解（比如按策略风格分桶），而不是只留全局冠军——多样性的母本池是大跳跃式改进的前提。LLM 变异的实践技巧与此一致：给生成器看冠军之外还要看若干"风格不同"的次优解，提示词里显式要求"提出与现有候选不同的方向"，否则模型会反复微调同一个局部。</p>
@@ -399,11 +412,12 @@ def discover(train: list[dict], holdout: list[dict],
 - FunSearch 发现过程官方解读（DeepMind 博客）：https://deepmind.google/discover/blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/
 - Google AI co-scientist 肝纤维化/AML 验证合作方说明（见官方博客"Validating in the lab"一节，合作方含 Houston Methodist、斯坦福医学院等）：https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist/</p></div>
     <div class="pagers"><a class="pager" href="../chapters/ch20-prioritization.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第20章 优先级排序</span></a><a class="pager" href="../chapters/ch22-conclusion.html"><span class="pager-dir">下一章 →</span><span class="pager-title">结语</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#211-模式概述">21.1 模式概述</a></li><li class="toc-l3"><a href="#2111-问题背景为什么需要这个模式">21.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#2112-核心机制它如何工作">21.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#2113-与相邻模式的关系与组合">21.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#212-源起它从哪里来">21.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#213-发挥的作用为什么重要">21.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#214-实际应用与案例">21.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#215-深度讲解">21.5 深度讲解</a></li><li class="toc-l3"><a href="#2151-探索-利用权衡在-agent-中的三形态">21.5.1 探索-利用权衡在 agent 中的三形态</a></li><li class="toc-l3"><a href="#2152-假设-实验-证伪循环可证伪性作为设计要求">21.5.2 假设-实验-证伪循环：可证伪性作为设计要求</a></li><li class="toc-l3"><a href="#2153-搜索预算管理何时停止探索">21.5.3 搜索预算管理：何时停止探索</a></li><li class="toc-l3"><a href="#2154-发现的验证闸门自动验证器与对抗审稿">21.5.4 发现的验证闸门：自动验证器与对抗审稿</a></li><li class="toc-l3"><a href="#2155-与学习适应第-9-章的配合及失效模式">21.5.5 与学习适应（第 9 章）的配合及失效模式</a></li><li class="toc-l3"><a href="#2156-怎么用运用判断">21.5.6 怎么用：运用判断</a></li><li class="toc-l2"><a href="#216-工程落地核心源码与讲解">21.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#2161-核心实现最小发现循环片段讲解">21.6.1 核心实现：最小发现循环（片段讲解）</a></li><li class="toc-l3"><a href="#2162-框架差异速览假设-验证循环的现成载体">21.6.2 框架差异速览（假设-验证循环的现成载体）</a></li><li class="toc-l3"><a href="#2163-生产化改造清单">21.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#217-概览-核心要点-结论">21.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#218-延伸阅读与参考链接">21.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+
 </body>
 </html>

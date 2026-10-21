@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第四部分 · 高级架构</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -144,6 +145,24 @@
 <h3 id="1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</h3>
 <p>门禁的本质是<strong>把质量分数变成发布流程的一等公民</strong>，与单元测试同级。设计门禁要回答四个问题。一是<strong>卡什么指标</strong>：核心维度设硬阈值（如忠实度均值不低于基线减 1 分），次要维度只记录不拦截；绝对阈值不如<strong>相对基线</strong>（与本版本相比下降超过 x% 即拦），后者能随系统演进自动校准。二是<strong>噪声怎么处理</strong>：非确定性输出意味着单次跑分有方差。对策是关键指标多次采样（每个案例跑 3-5 次报均值），并把采样方差计入判定——新版本均值微升但方差翻倍，通常应视为退化。统计上，小样本黄金集的分数差异要过显著性检验再下结论，两个版本 3% 的差距在 100 个案例上大概率是噪声。三是<strong>失败了怎么办</strong>：门禁失败分两型——确定性失败（断言不过、语法错误）直接打回；边缘失败（分数临界）允许标记例外并强制人工审批，但要留痕，例外不能静默累积成常态。四是<strong>门禁自身会不会腐化</strong>：阈值与 rubric 变更必须走与代码同样的评审流程，且<strong>"放宽门禁让这次改动通过"的每一次都应触发警报</strong>——门禁被业务压力侵蚀是这类体系最常见的死法。</p>
 <p>成本上，回归不必每次全量：CI 日常跑冒烟层加抽样回归（如每类型抽 20%），夜间或发布前跑全量。判分顺序也有讲究——先跑程序断言再跑 LLM 裁判，让免费判据先把结构性失败筛掉，裁判预算只花在语义判定上。</p>
+<div class="mermaid">sequenceDiagram
+    participant D as 开发者
+    participant C as CI 门
+    participant E as 评估器
+    participant P as 生产
+    D->>C: 提交改动
+    C->>E: 先跑程序断言（免费筛结构性失败）
+    E-->>C: 断言通过，进入黄金集回归
+    C->>E: 场景回归（关键指标 3-5 次采样报均值）
+    E-->>C: 分数低于相对基线阈值
+    C-->>D: 拦截发布，打回修复
+    Note over C: 放宽门禁须走评审并触发告警
+    D->>C: 修复后再次提交
+    C->>E: 回归重跑
+    E-->>C: 相对基线持平略升
+    C->>P: 放行发布
+    Note over P: 上线后 trace/metric/eval 持续监控</div>
+<div class="fig-caption" id="fig-19-3">图 19-3：离线评估与 CI 门禁的交互时序——断言先行省钱、黄金集回归判优劣，低于相对基线即打回；边缘失败可标记例外并强制人工审批，但例外必须留痕，不能静默累积成常态。</div>
 <h3 id="1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</h3>
 <p><strong>trace 是地基</strong>。每条执行轨迹应含：请求上下文、每步的模型调用（提示词摘要、模型版本、token 用量）、工具调用（名称、参数摘要、返回状态、耗时）、错误与降级事件。格式上不要自造标准——OpenTelemetry 的 GenAI 语义约定正在把 <code>gen_ai.system</code>、<code>gen_ai.request.model</code>、<code>gen_ai.usage.input_tokens</code> 这类属性名标准化，按它的形状存 trace，可以无缝汇入 Langfuse、LangSmith 或企业既有观测后端。trace 的价值在<strong>可回放</strong>：任何一条坏案例都应能凭 trace 完整复原执行过程。</p>
 <p><strong>metric 是仪表盘</strong>。质量类：任务完成率、裁判抽检均分、人工转接率、用户负反馈率。成本类：每任务 token 消耗与金额，按任务类型切片。延迟类：<strong>分位值而非均值</strong>——p50 回答"典型用户体验"，p95/p99 回答"最差的 5% 用户有多惨"；智能体系统延迟分布是重尾的（多步执行、重试、工具超时叠加），均值会被大量快请求掩埋少数灾难请求，用均值做 SLO 是最常见的观测错误。延迟还要按"步"分解：端到端 30 秒的任务，是模型慢、工具慢还是步数变多？只有分步 trace 能回答。metric 的另一个原则是<strong>切片</strong>：按任务类型、模型版本、用户群、时段切分看，全局均值几乎总是骗人的——某类任务从 90% 掉到 60%，被其他类型的 95% 平均后只剩一个无害的 88%。</p>
@@ -426,11 +445,12 @@ if __name__ == &quot;__main__&quot;:
 - Klarna AI 助手首月数据官方新闻稿（2024-02-27）：https://www.klarna.com/international/press/klarna-ai-assistant-handles-two-thirds-of-customer-service-chats-in-its-first-month/
 - OpenAI 发布 SWE-bench Verified（2024-08-13）：https://openai.com/index/introducing-swe-bench-verified/</p></div>
     <div class="pagers"><a class="pager" href="../chapters/ch18-guardrails-safety.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第18章 护栏机制</span></a><a class="pager" href="../chapters/ch20-prioritization.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第20章 优先级排序</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#191-模式概述">19.1 模式概述</a></li><li class="toc-l3"><a href="#1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#192-源起它从哪里来">19.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#194-实际应用与案例">19.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#195-深度讲解">19.5 深度讲解</a></li><li class="toc-l3"><a href="#1951-评估金字塔分层配比与预算分配">19.5.1 评估金字塔：分层、配比与预算分配</a></li><li class="toc-l3"><a href="#1952-llm-as-judge偏差来源与消偏工程">19.5.2 LLM-as-judge：偏差来源与消偏工程</a></li><li class="toc-l3"><a href="#1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</a></li><li class="toc-l3"><a href="#1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</a></li><li class="toc-l3"><a href="#1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</a></li><li class="toc-l3"><a href="#1956-失效模式反模式与何时不需要">19.5.6 失效模式、反模式与何时不需要</a></li><li class="toc-l3"><a href="#1957-怎么用运用判断">19.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#196-工程落地核心源码与讲解">19.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1961-核心实现带消偏的-llm-裁判片段讲解">19.6.1 核心实现：带消偏的 LLM 裁判（片段讲解）</a></li><li class="toc-l3"><a href="#1962-框架差异速览llm-观测与评估平台">19.6.2 框架差异速览（LLM 观测与评估平台）</a></li><li class="toc-l3"><a href="#1963-生产化改造清单">19.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#198-延伸阅读与参考链接">19.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+
 </body>
 </html>

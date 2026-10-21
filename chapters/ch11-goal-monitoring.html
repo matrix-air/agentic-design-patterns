@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第二部分 · 认知机制</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -60,6 +61,17 @@
 <div class="fig-caption" id="fig-11-1">图 11-1：目标-进度-偏差反馈环——判定用原始目标而非执行中的转述；修正回到执行，违规与预算耗尽走停车出口。</div>
 <h3 id="1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</h3>
 <p>目标监控与<strong>反思模式</strong>相邻但职责不同：反思是智能体对自己单步产出的自我批评，作用域是"这一步做得好不好"；目标监控作用域是"整个任务还该不该继续、方向对不对"。反思可以充当监控的信号源之一，但替代不了监控——自我批评对"方向性漂移"几乎无感，因为漂移的每一步单看都挺合理。与<strong>提示链</strong>的关系是上下游：链条上每个环节的产出物正是监控的采集点；链式任务天然适合里程碑式监控（每环节出口做一次终判式的检查）。与<strong>路由/规划</strong>的关系在执行面：漂移检测触发重规划，规划器需要监控提供的"偏差原因"作为输入。与<a href="../chapters/ch12-exception-recovery.html">第 12 章</a><strong>异常处理</strong>的关系在边界上：预算耗尽、连续失败正是异常恢复机制的触发条件；本章回答"该不该停"，<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>回答"停了之后怎么救"。与<a href="../chapters/ch10-mcp.html">第 10 章</a> <strong>MCP</strong> 的关系在数据面：工具调用产生标准化 trace，是监控信号最重要的来源。</p>
+<div class="mermaid">stateDiagram-v2
+    [*] --> 执行中
+    执行中 --> 比对中: 周期采集 trace / metric / eval
+    比对中 --> 执行中: 判定 on_track，无偏差继续
+    比对中 --> 修正中: 判定 drifted / stalled
+    修正中 --> 执行中: 重定向或重规划后继续
+    执行中 --> 已达成: 完成判据满足，退出成功
+    比对中 --> 停车: 违反约束或预算耗尽
+    停车 --> [*]
+    已达成 --> [*]</div>
+<div class="fig-caption" id="fig-11-2">图 11-2：检查循环下任务的状态机——执行与比对交替推进，偏差走修正回到执行，判据达成正常退出，违规或预算耗尽即停车升级。</div>
 <h2 id="112-源起它从哪里来">11.2 源起：它从哪里来</h2>
 <p>"目标-检测-行动"的循环比人工智能古老：维纳 1948 年的控制论确立负反馈原理，米勒等 1960 年的 TOTE 单元把它拆成可计算的"检验-操作-检验-退出"。智能体工程接力：1987 年的 PRS 首次把"目标的建立、维护与撤销"做成可运行系统，1995 年的 BDI 论文让意图持久性成为设计共识；管理学的 OKR 贡献另一半——目标要对齐、可度量、定期检视。LLM 时代补上两块拼图：模型裁判让语义质量可自动判定，可观测性标准让监控落地成基础设施；而规范博弈与目标误泛化研究敲响警钟——判据本身会出错。各思想如何汇入今天的检查循环，见 11.5.6。</p>
 <table>
@@ -383,11 +395,12 @@ if __name__ == &quot;__main__&quot;:
 <li>微软 Azure AI Foundry 推进 OpenTelemetry 多智能体观测（2025-10-01，Azure AI Foundry 官方博客）；框架内置 GenAI 埋点的实测记录：<a href="https://signoz.io/docs/microsoft-agent-framework-observability/">signoz.io/docs/microsoft-agent-framework-observability</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch10-mcp.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第10章 模型上下文协议</span></a><a class="pager" href="../chapters/ch12-exception-recovery.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第12章 异常处理与恢复</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#111-模式概述">11.1 模式概述</a></li><li class="toc-l3"><a href="#1111-问题背景为什么需要这个模式">11.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1112-核心机制它如何工作">11.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1113-与相邻模式的关系与组合">11.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#112-源起它从哪里来">11.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#113-发挥的作用为什么重要">11.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#114-实际应用与案例">11.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#115-深度讲解">11.5 深度讲解</a></li><li class="toc-l3"><a href="#1151-目标形式化判据约束预算的写法与写坏方式">11.5.1 目标形式化：判据、约束、预算的写法与写坏方式</a></li><li class="toc-l3"><a href="#1152-进度度量里程碑与终判的分工">11.5.2 进度度量：里程碑与终判的分工</a></li><li class="toc-l3"><a href="#1153-漂移检测目标侵蚀的三种形态">11.5.3 漂移检测：目标侵蚀的三种形态</a></li><li class="toc-l3"><a href="#1154-监控三件套tracemetriceval-的落地">11.5.4 监控三件套：trace、metric、eval 的落地</a></li><li class="toc-l3"><a href="#1155-设计权衡与失效模式">11.5.5 设计权衡与失效模式</a></li><li class="toc-l3"><a href="#1156-思想谱系定量证据与被-goodhart-化的监控">11.5.6 思想谱系、定量证据与被 Goodhart 化的监控</a></li><li class="toc-l3"><a href="#1157-怎么用运用判断">11.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#116-工程落地核心源码与讲解">11.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1161-核心源码按序拼接即完整可运行">11.6.1 核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#1162-框架差异速览">11.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#1163-生产化改造清单">11.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#117-概览-核心要点-结论">11.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#118-延伸阅读与参考链接">11.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+
 </body>
 </html>

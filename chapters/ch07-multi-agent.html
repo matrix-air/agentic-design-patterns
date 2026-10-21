@@ -19,6 +19,7 @@
   <a class="topbar-title" href="../index.html">智能体设计模式</a>
   <span class="topbar-part">第一部分 · 核心模式</span>
   <a class="topbar-link" href="../toc.html">总目录</a>
+  <button class="print-btn anim-toggle" id="anim-toggle" title="开/关图形流动动效">✦ 动效</button>
   <button class="print-btn" onclick="window.print()" title="打印本页或存为 PDF">🖨 打印/PDF</button>
   <input id="search-box" type="search" placeholder="搜索全书…" autocomplete="off">
   <div id="search-results"></div>
@@ -61,8 +62,24 @@
     R -->|"退回修订"| C
     C -->|"ESCALATE 升级"| H["人工介入"]</div>
 <div class="fig-caption" id="fig-7-1">图 7-1：星型协调器-专家拓扑：TASK/RESULT/ESCALATE 结构化消息流与独立评审闭环。</div>
+<div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;多智能体：星型协调器拆解-派发-归并&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;user&quot;, &quot;label&quot;: &quot;用户任务&quot;, &quot;x&quot;: 68, &quot;y&quot;: 125, &quot;w&quot;: 84, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;coord&quot;, &quot;label&quot;: &quot;协调器&quot;, &quot;x&quot;: 215, &quot;y&quot;: 125, &quot;w&quot;: 96, &quot;h&quot;: 44}, {&quot;id&quot;: &quot;e1&quot;, &quot;label&quot;: &quot;检索专家&quot;, &quot;x&quot;: 425, &quot;y&quot;: 52, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;e2&quot;, &quot;label&quot;: &quot;分析专家&quot;, &quot;x&quot;: 425, &quot;y&quot;: 125, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;e3&quot;, &quot;label&quot;: &quot;写手专家&quot;, &quot;x&quot;: 425, &quot;y&quot;: 198, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;agg&quot;, &quot;label&quot;: &quot;归并输出&quot;, &quot;x&quot;: 630, &quot;y&quot;: 125, &quot;w&quot;: 104, &quot;h&quot;: 40}], &quot;edges&quot;: [[&quot;user&quot;, &quot;coord&quot;], [&quot;coord&quot;, &quot;e1&quot;], [&quot;coord&quot;, &quot;e2&quot;], [&quot;coord&quot;, &quot;e3&quot;], [&quot;e1&quot;, &quot;agg&quot;], [&quot;e2&quot;, &quot;agg&quot;], [&quot;e3&quot;, &quot;agg&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;总任务到达。星型拓扑里只有协调器持有全局视图。&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;coord&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;协调器把总任务拆解为三个可并行的子任务&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;coord&quot;, &quot;to&quot;: &quot;e1&quot;, &quot;note&quot;: &quot;TASK：子任务 1「收集资料」派给检索专家&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;coord&quot;, &quot;to&quot;: &quot;e2&quot;, &quot;note&quot;: &quot;TASK：子任务 2「利弊分析」派给分析专家&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;coord&quot;, &quot;to&quot;: &quot;e3&quot;, &quot;note&quot;: &quot;TASK：子任务 3「成文初稿」派给写手专家&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;e1&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;三路并发执行：各专家独立上下文、专属工具箱&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;e2&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;分析完成——结果传结论不传过程&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;e1&quot;, &quot;to&quot;: &quot;agg&quot;, &quot;note&quot;: &quot;RESULT：带来源的要点清单回传&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;e2&quot;, &quot;to&quot;: &quot;agg&quot;, &quot;note&quot;: &quot;RESULT：分析结论回传，correlation_id 关联同一次协作&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;e3&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;写手专家执行失败：返回 ESCALATE 而不是含糊文本&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;coord&quot;, &quot;to&quot;: &quot;e3&quot;, &quot;note&quot;: &quot;协调器收到升级：带上下文摘要重派一次&quot;, &quot;cls&quot;: &quot;err&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;e3&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;重派后完成——失败不吞，重试有预算&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;e3&quot;, &quot;to&quot;: &quot;agg&quot;, &quot;note&quot;: &quot;RESULT：初稿回传&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;agg&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;协调器归并三份 RESULT，生成最终交付&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：工作者互不通信、失败显式升级；1 次拆解 + 3 次路由 + 3 次执行 + 1 次聚合 = 8 次调用的组织税。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
+<div class="fig-caption demo-cap" id="demo-7-1">演示 7-1：协调器拆解任务、并发派发三个专家并归并输出——星型拓扑的一次完整协作（点「▶ 播放」逐步观看）</div>
 <h3 id="713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</h3>
 <p>多智能体协作与多个模式存在亲缘关系。提示链（串行提示接力）可以看作它的退化形态：角色固定、顺序固定、每环只有一次调用。路由与编排模式对应它的星型拓扑：协调器本质上是一个会说话的路由器。反思模式常以"独立评审智能体"的身份嵌入多智能体系统——写作者与批评者分属两个上下文，制衡才真实成立。记忆管理提供多智能体的共享工作区（黑板），让协作不依赖消息全文转发。工具使用模式则为每个角色配置专属工具箱。生产中最常见的组合形态是：星型协调器 + 各专家 + 一个独立评审者 + 共享状态存储。</p>
+<div class="mermaid">sequenceDiagram
+    participant C as 协调器
+    participant A as 专家A
+    participant B as 专家B
+    participant G as 聚合器
+    C->>C: 拆解总任务为子任务
+    C->>A: TASK 子任务1（收集资料）
+    C->>B: TASK 子任务2（利弊分析）
+    Note over A,B: 并发执行：独立上下文、互不通信，失败显式 ESCALATE
+    A-->>G: RESULT 要点清单
+    B-->>G: RESULT 分析结论
+    G->>G: 归并校验与整合
+    G-->>C: 最终交付</div>
+<div class="fig-caption" id="fig-7-3">图 7-3：星型拓扑下的一次协作时序——协调器拆解后并行派发，专家回传结构化 RESULT，聚合器归并校验后交付。</div>
 <h2 id="72-源起它从哪里来">7.2 源起：它从哪里来</h2>
 <p>多智能体协作的根比 LLM 早半个世纪。1973 年，MIT 的 Hewitt 等人提出 Actor 模型，首次把计算单元定义为“带邮箱、收发消息的自治实体”——今天“智能体不共享脑子、只传消息”的约定正是它的后代。1980 年出现两类协调原语：Smith 的合同网协议用“招标—投标—中标”分配任务，Hearsay-II 确立了黑板架构。三十年间缓慢演进，直到 LLM 把约定协作的成本降到一句提示：CAMEL 证明两只智能体能自主对话完成任务，AutoGen 把可对话智能体抽象为可编排对象，MetaGPT 与 ChatDev 把团队 SOP 编译成流水线，CrewAI、OpenAI Swarm 与 Google ADK 把编排推进为生产套件。</p>
 <table>
@@ -454,11 +471,12 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://github.com/openai/swarm">OpenAI Swarm 实验性轻量编排库</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch06-planning.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第6章 规划</span></a><a class="pager" href="../chapters/ch08-memory.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第8章 记忆管理</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 19.5 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#71-模式概述">7.1 模式概述</a></li><li class="toc-l3"><a href="#711-问题背景为什么需要这个模式">7.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#712-核心机制它如何工作">7.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#713-与相邻模式的关系与组合">7.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#72-源起它从哪里来">7.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#73-发挥的作用为什么重要">7.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#74-实际应用与案例">7.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#75-深度讲解">7.5 深度讲解</a></li><li class="toc-l3"><a href="#751-四种通信拓扑及适用性">7.5.1 四种通信拓扑及适用性</a></li><li class="toc-l3"><a href="#752-消息协议设计">7.5.2 消息协议设计</a></li><li class="toc-l3"><a href="#753-上下文经济学">7.5.3 上下文经济学</a></li><li class="toc-l3"><a href="#754-失效模式与反模式">7.5.4 失效模式与反模式</a></li><li class="toc-l3"><a href="#755-何时不要用">7.5.5 何时不要用</a></li><li class="toc-l3"><a href="#756-怎么用运用判断">7.5.6 怎么用：运用判断</a></li><li class="toc-l2"><a href="#76-工程落地核心源码与讲解">7.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#761-框架无关核心源码按序拼接即完整可运行">7.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#762-框架差异速览">7.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#763-生产化改造清单">7.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#77-概览-核心要点-结论">7.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#78-延伸阅读与参考链接">7.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 <script src="../assets/vendor-mermaid.min.js"></script>
+<script src="../assets/anim.js"></script>
 </body>
 </html>
