@@ -377,7 +377,41 @@ if __name__ == &quot;__main__&quot;:
 </tr>
 </tbody>
 </table>
-<h3 id="863-生产化改造清单">8.6.3 生产化改造清单</h3>
+<h3 id="863-记忆引擎实战cognee">8.6.3 记忆引擎实战：Cognee</h3>
+<p>当"记住几条偏好"升级为"跨文档、跨会话的关系型记忆"——比如要知道"用户提过的需求"和"三周前那次投诉"之间的关系——事实条目式记忆（Mem0 路线）就不够了。<a href="https://github.com/topoteretes/cognee">Cognee</a>（开源，Apache-2.0，口号"Memory for AI Agents in 6 lines of code"）把摄取的文本经 LLM 抽取成<strong>实体关系图谱 + 向量</strong>双存储，检索时向量相似与图遍历并用，天然支持多跳关系问答；图库可选 Neo4j/Kuzu/NetworkX，向量库可选 Qdrant/LanceDB，关系库默认 SQLite——默认全本地零运维。学术口径见其团队论文（arXiv:2505.24478）。</p>
+<pre><code class="language-python">&quot;&quot;&quot;Cognee 实战：对话片段 → 知识图谱记忆 → 关系问答。
+依赖：pip install cognee（Python 3.10-3.12）；默认本地 SQLite+LanceDB，零外部服务。
+&quot;&quot;&quot;
+import asyncio
+import os
+
+import cognee
+
+async def main():
+    # Cognee 走自己的环境变量口径；这里把全书统一的 OpenAI 兼容变量桥接过去
+    os.environ.setdefault(&quot;LLM_API_KEY&quot;, os.environ[&quot;AGENT_LLM_API_KEY&quot;])
+    os.environ.setdefault(&quot;LLM_MODEL&quot;, os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;))
+    os.environ.setdefault(&quot;LLM_ENDPOINT&quot;, os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;,
+                                                          &quot;https://api.openai.com/v1&quot;))
+    try:
+        await cognee.add(&quot;乘客甲偏好靠窗过道座位，且对花生严重过敏。&quot;,
+                         dataset_name=&quot;user_profile&quot;)
+        await cognee.cognify([&quot;user_profile&quot;])          # LLM 抽取实体与关系，建图谱+向量
+
+        results = await cognee.search(&quot;这位乘客有什么饮食禁忌？&quot;)
+        for r in results:
+            print(r)
+    except Exception as exc:                            # 错误路径：建图失败不应拖垮主对话
+        print(f&quot;[记忆引擎降级] 本次不写入图谱：{exc}&quot;)
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：三步就是 Cognee 的全部心智模型——<code>add</code> 摄取（文本/PDF/对话都行）、<code>cognify</code> 让 LLM 抽实体关系并落图谱与向量、<code>search</code> 混合检索（向量找相似、图遍历找关联）。注意它读的是 <code>LLM_API_KEY/LLM_MODEL/LLM_ENDPOINT</code> 这套自己的环境变量，前两行桥接就是为了让它复用全书的兼容端点；接 Neo4j/Qdrant 只改环境变量，代码不动。错误路径把"记忆写入失败"降级为日志而非异常——记忆层故障不应打断主对话，这是分层的基本纪律。</p>
+</blockquote>
+<p>选型对比：<strong>Cognee</strong>（图谱+向量，要关系/多跳问答时）；<strong>Mem0</strong>（事实条目记忆即服务，托管省心）；<strong>Zep/Graphiti</strong>（时序图谱，要"某时间点的状态"）；<strong>ADK 三层</strong>（只要会话内分层，不要独立记忆服务）。何时不该用 Cognee：记忆规模小到几条偏好、无多跳查询需求——图谱抽取的 LLM 成本与图库运维是纯 overhead，摘要+向量足够。</p>
+<h3 id="864-生产化改造清单">8.6.4 生产化改造清单</h3>
 <ul>
 <li><strong>错误处理</strong>：向量化失败降级为时间序召回，抽取失败宁可不记，摘要失败截断保底——每层都有降级路径。</li>
 <li><strong>超时与异步</strong>：记忆写入（抽取/向量化）异步化，不阻塞主对话链路；检索设超时与兜底。</li>
@@ -405,6 +439,10 @@ if __name__ == &quot;__main__&quot;:
 <h3 id="结论">结论</h3>
 <p>记忆管理把智能体从"每见一次面都重新认识你"的状态里解放出来，它靠的不是更大的窗口，而是有纪律的信息分层：什么值得留、留多久、何时取回、何时放手。认知科学给了我们五十年的概念积累，工程社区给了我们成熟的原型与基础设施，剩下的工作是把写入策略、遗忘机制与安全边界当作一等设计对象认真对待。一个会遗忘、会分级、可被用户审视的记忆系统，远比一个"什么都记住"的记忆系统更接近可用。</p>
 <h2 id="88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</h2>
+<p>新增（记忆引擎）：</p>
+<ul>
+<li><a href="https://github.com/topoteretes/cognee">Cognee（topoteretes 开源记忆引擎，Apache-2.0）</a> · 团队论文 <a href="https://arxiv.org/abs/2505.24478">arXiv:2505.24478</a></li>
+</ul>
 <p><strong>论文</strong></p>
 <ul>
 <li><a href="https://arxiv.org/abs/2304.03442">arXiv:2304.03442</a>　Generative Agents：记忆流 + 三因子检索 + 反思固化（UIST 2023）。</li>
@@ -428,9 +466,9 @@ if __name__ == &quot;__main__&quot;:
 <li><a href="https://mem0.ai/series-a">Mem0 Series A 公告</a>（生产采用规模与 AWS Agent SDK 合作）</li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch07-multi-agent.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第7章 多智能体协作</span></a><a class="pager" href="../chapters/ch09-learning-adaptation.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第9章 学习与适应</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.4 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-源起它从哪里来">8.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l3"><a href="#857-怎么用运用判断">8.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#86-工程落地核心源码与讲解">8.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#861-框架无关核心源码按序拼接即完整可运行">8.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#862-框架差异速览">8.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#863-生产化改造清单">8.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-源起它从哪里来">8.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l3"><a href="#857-怎么用运用判断">8.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#86-工程落地核心源码与讲解">8.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#861-框架无关核心源码按序拼接即完整可运行">8.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#862-框架差异速览">8.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#863-记忆引擎实战cognee">8.6.3 记忆引擎实战：Cognee</a></li><li class="toc-l3"><a href="#864-生产化改造清单">8.6.4 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 

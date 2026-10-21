@@ -319,8 +319,56 @@ if __name__ == &quot;__main__&quot;:
 <blockquote>
 <p>▸ <strong>代码怎么读</strong>：<code>retrieve</code> 是管道的咽喉，注意降级顺序：重排全军覆没先落回 RRF 原序，而不是报错——检索管道的每一级都该有"降级但不中断"的出路。<code>RELEVANCE_FLOOR</code> 是防"检索不到硬答"的第一道闸：低于 4 分的块直接不进生成上下文。<code>answer</code> 的提示词把"资料不足以回答"定义为合法行为——这句是拒答通道的开关，删掉它模型就会对着弱相关资料硬编。main 的第二条查询（库外问题）专门演示拒答路径：跑一遍，对比两条查询的重排分数，看分叉点在哪里。读者要改的：<code>DOCS</code> 换成自己的文档集并按 14.5.1 分块。</p>
 </blockquote>
-<h3 id="1462-框架差异速览llamaindex">14.6.2 框架差异速览（LlamaIndex）</h3>
-<p>原 LlamaIndex 完整示例（自定义 LLM/embedding 注入 + 索引查询一条龙）压缩为下表：组件名为 llama-index-core==0.14.25 实测，细节以 <a href="https://docs.llamaindex.ai">LlamaIndex 官方文档</a>为准。</p>
+<h3 id="1462-框架实战llamaindex">14.6.2 框架实战：LlamaIndex</h3>
+<p>自研管道适合学习与深度定制；一旦要接入多格式文档装载、结构感知分块与"检索-生成"一条龙，用框架省下的就是整条胶水层。下面是 <a href="https://docs.llamaindex.ai">LlamaIndex</a>（llama-index-core==0.14.x 口径）的可运行最小实现：OpenAI 兼容端点注入、内存文档建索引、检索带拒答与引用。</p>
+<pre><code class="language-python">&quot;&quot;&quot;LlamaIndex 实战：兼容端点注入 + 向量索引 + 检索拒答 + 引用溯源。
+依赖：pip install llama-index-core llama-index-llms-openai-like llama-index-embeddings-openai-like
+&quot;&quot;&quot;
+import os
+
+from llama_index.core import Document, Settings, VectorStoreIndex
+from llama_index.embeddings.openai_like import OpenAILikeEmbedding
+from llama_index.llms.openai_like import OpenAILike
+
+BASE = os.environ.get(&quot;AGENT_LLM_BASE_URL&quot;, &quot;https://api.openai.com/v1&quot;)
+KEY = os.environ[&quot;AGENT_LLM_API_KEY&quot;]
+
+# 全局注入模型与嵌入：框架所有组件共用，也可按组件单独覆盖
+Settings.llm = OpenAILike(
+    model=os.environ.get(&quot;AGENT_LLM_MODEL&quot;, &quot;gpt-4o-mini&quot;),
+    api_base=BASE, api_key=KEY, is_chat_model=True,
+)
+Settings.embed_model = OpenAILikeEmbedding(
+    model_name=os.environ.get(&quot;AGENT_EMBED_MODEL&quot;, &quot;text-embedding-3-small&quot;),
+    api_base=BASE, api_key=KEY,
+)
+
+DOCS = [
+    Document(text=&quot;第六条 保密义务：乙方对合作期间知悉的商业秘密负永久保密责任。&quot;),
+    Document(text=&quot;第九条 违约责任：任何一方违约应赔偿对方直接损失及合理维权费用。&quot;),
+]
+
+index = VectorStoreIndex.from_documents(DOCS)          # 分块+嵌入+索引一条龙
+retriever = index.as_retriever(similarity_top_k=3)     # 默认纯向量；混合检索开 hybrid=True
+
+def answer(question):
+    try:
+        nodes = retriever.retrieve(question)
+    except Exception as exc:                            # 错误路径：检索层故障
+        return f&quot;[检索失败，已拒答] {exc}&quot;
+    if not nodes:                                       # 错误路径：零召回
+        return &quot;知识库中没有找到相关信息。&quot;
+    context = chr(10).join(f&quot;[{i+1}] {n.text}&quot; for i, n in enumerate(nodes))
+    prompt = f&quot;仅依据引用回答，不足则明说。{chr(10)}{context}{chr(10)}{chr(10)}问题：{question}&quot;
+    return str(Settings.llm.complete(prompt))
+
+if __name__ == &quot;__main__&quot;:
+    print(answer(&quot;保密义务的期限是多久？&quot;))
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>Settings.llm / Settings.embed_model</code> 是 LlamaIndex 的全局注入点——把任何 OpenAI 兼容端点（GLM、DeepSeek、自建网关）接进来，框架内检索后的生成、查询改写等组件就都走这一个出口。<code>VectorStoreIndex.from_documents</code> 替掉了 14.6.1 手写的"分块+嵌入+建库"三段；<code>as_retriever</code> 对应手写的向量召回，<code>similarity_top_k</code> 就是 K。注意错误路径的分工：检索层异常对外统一降级为"拒答"，零召回与故障分开提示——生产里这是两种完全不同的告警。要换混合检索，把 retriever 换成 <code>QueryFusionRetriever</code> 多路融合即可，调用方不变。</p>
+</blockquote>
+<p>组件对照（llama-index-core==0.14.x 实测，API 变动以 <a href="https://docs.llamaindex.ai">官方文档</a>为准）：</p>
 <table>
 <thead>
 <tr>
@@ -367,7 +415,52 @@ if __name__ == &quot;__main__&quot;:
 </tr>
 </tbody>
 </table>
-<h3 id="1463-生产化改造清单">14.6.3 生产化改造清单</h3>
+<h3 id="1463-框架实战ragflow生产级-rag-平台">14.6.3 框架实战：RAGFlow（生产级 RAG 平台）</h3>
+<p>文档脏（扫描件、多栏 PDF、表格密集）、要引用回溯到原文位置、要给非技术用户一个能直接用的界面——这时该上的是 <a href="https://github.com/infiniflow/ragflow">RAGFlow</a>（InfiniFlow 开源，Apache-2.0）这类<strong>生产级 RAG 平台</strong>，而不是应用内嵌的检索库。它的核心资产是 DeepDoc 深度文档解析：OCR、表格结构识别（TSR）、版式识别（DLR）先行，再按文档类型模板分块（General/Paper/Q&amp;A/Table 等），保证"表格不切烂、标题不跟正文分家"；检索是 BM25+向量混合可挂重排，答案带 chunk 级与原文位置级引用；Web UI、任务队列、REST API（v0.25 起统一 /api/v1）与 MCP 服务开箱即用。</p>
+<p>部署要点（以官方 README 为准）：Linux 先设 <code>vm.max_map_count=262144</code>；克隆仓库后 <code>cd ragflow/docker &amp;&amp; docker compose -f docker-compose.yml up -d</code> 会一并拉起 Elasticsearch/MySQL/Redis/MinIO，建议 16GB 内存起，低配可在 docker/.env 切 <code>DOC_ENGINE=infinity</code>；<strong>首次启动务必改掉 .env 里的默认密码</strong>。</p>
+<p>用官方 Python SDK（<code>pip install ragflow-sdk</code>）走一遍"建库→上传→轮询解析→问答带引用"：</p>
+<pre><code class="language-python">&quot;&quot;&quot;RAGFlow 实战：建知识库 → 上传解析 → 带引用问答。
+前置：docker compose 已起本地 RAGFlow（默认 API 口 9380）；
+在 Web UI 的 API 菜单生成 RAGFLOW_API_KEY。依赖：pip install ragflow-sdk
+&quot;&quot;&quot;
+import os
+import time
+
+from ragflow_sdk import RAGFlow
+
+rag = RAGFlow(
+    api_key=os.environ[&quot;RAGFLOW_API_KEY&quot;],
+    base_url=os.environ.get(&quot;RAGFLOW_BASE_URL&quot;, &quot;http://localhost:9380&quot;),
+)
+
+kb = rag.create_dataset(name=&quot;产品文档库&quot;, chunk_method=&quot;general&quot;)   # 分块模板按文档类型选
+with open(&quot;manual.pdf&quot;, &quot;rb&quot;) as f:
+    kb.upload_documents([{&quot;display_name&quot;: &quot;manual.pdf&quot;, &quot;blob&quot;: f.read()}])
+
+while True:                                             # 解析是异步任务，轮询到全部完成
+    docs = kb.list_documents()
+    if docs and all(d.run == &quot;DONE&quot; for d in docs):
+        break
+    if any(d.run == &quot;FAIL&quot; for d in docs):              # 错误路径：解析失败要能看见
+        raise RuntimeError(&quot;存在解析失败的文档，请检查 RAGFlow 日志&quot;)
+    time.sleep(5)
+
+assistant = rag.create_chat(name=&quot;文档问答&quot;, dataset_ids=[kb.id])
+session = assistant.create_session()
+try:
+    ans = session.ask(&quot;保密义务的期限是多久？&quot;)
+    print(ans.content)
+    refs = (getattr(ans, &quot;reference&quot;, None) or {}).get(&quot;chunks&quot;, [])
+    for c in refs:                                      # 引用带 chunk 与原文位置
+        print(&quot;--&quot;, c.get(&quot;document_name&quot;), &quot;:&quot;, str(c.get(&quot;content&quot;, &quot;&quot;))[:60])
+finally:
+    pass                                                # 临时会话用完即删（SDK 版本差异大，必要时走 REST 删除）
+</code></pre>
+<blockquote>
+<p>▸ <strong>代码怎么读</strong>：<code>create_dataset</code> 的 <code>chunk_method</code> 是 RAGFlow 的第一生产力——General 按语义段落、Paper 认得章节、Table 保住表格结构，选错模板 chunk 就碎（解析模板=告诉系统语义边界在哪）。上传后解析是异步队列任务，轮询 <code>d.run</code> 到 <code>DONE</code> 才能问答，<code>FAIL</code> 必须显式暴露而不是无限等。<code>session.ask</code> 返回的 <code>reference.chunks</code> 带 content 与原文位置，前端引用高亮直接用它。一个工程细节：RAGFlow 自带的会话历史与你的应用记忆模型不对齐，检索建议保持无状态（临时会话用完即删），多轮历史由应用侧管理。</p>
+</blockquote>
+<p>选型判据一句话：<strong>学原理用 14.6.1 的自研管道，Python 应用内嵌用 LlamaIndex，文档脏/要溯源/要界面/要交给业务团队自助运营，用 RAGFlow</strong>。几十个 Markdown 文件的 demo 场景，RAGFlow 的多容器部署成本大于收益——别用生产级平台做玩具题。</p>
+<h3 id="1464-生产化改造清单">14.6.4 生产化改造清单</h3>
 <ul>
 <li><strong>分块与索引</strong>：结构感知分块（代码/markdown/表格各有策略）；父子块双层索引；文档入库带版本与生效时间，失效文档必须下线。</li>
 <li><strong>增量更新</strong>：文档变更走增量索引流水线（内容哈希去重），全量重建只留给分块策略变更。</li>
@@ -395,6 +488,10 @@ if __name__ == &quot;__main__&quot;:
 <h3 id="结论">结论</h3>
 <p>检索增强生成的名字里，"增强"一词最容易让人误会——好像检索是给模型锦上添花的点缀。工程事实恰恰相反：在知识密集型应用里，<strong>检索质量是回答质量的天花板</strong>，模型只是这个天花板下的表演者。把文档清干净、把分块切对、把双路召回与重排搭好、把拒答通道留出来，这些不起眼的管道工作决定了系统的成败；模型升级能锦上添花，管道错误则让最贵的模型也救人无门。<strong>把 RAG 当检索系统工程来做，而不是当模型功能来用</strong>，是这一章最想留下的一句话。</p>
 <h2 id="148-延伸阅读与参考链接">14.8 延伸阅读与参考链接</h2>
+<p>新增（生产级平台）：</p>
+<ul>
+<li><a href="https://github.com/infiniflow/ragflow">RAGFlow（InfiniFlow 开源 RAG 平台，Apache-2.0）</a> · <a href="https://ragflow.io/docs">官方文档</a></li>
+</ul>
 <p><strong>论文</strong></p>
 <ul>
 <li>Lewis et al.,《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》，RAG 正式命名之作（NeurIPS 2020）：<a href="https://arxiv.org/abs/2005.11401">arXiv:2005.11401</a></li>
@@ -419,9 +516,9 @@ if __name__ == &quot;__main__&quot;:
 <li>微软 Ignite 2024 官方博客：贝莱德 Aladdin 平台上线生成式问答 Copilot：<a href="https://blogs.microsoft.com/blog/2024/11/19/ignite-2024-why-nearly-70-of-the-fortune-500-now-use-microsoft-365-copilot/">https://blogs.microsoft.com/blog/2024/11/19/ignite-2024-why-nearly-70-of-the-fortune-500-now-use-microsoft-365-copilot/</a></li>
 </ul></div>
     <div class="pagers"><a class="pager" href="../chapters/ch13-human-in-the-loop.html"><span class="pager-dir">← 上一章</span><span class="pager-title">第13章 人在回路</span></a><a class="pager" href="../chapters/ch15-agent-communication-a2a.html"><span class="pager-dir">下一章 →</span><span class="pager-title">第15章 智能体间通信</span></a></div>
-    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.2 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
+    <footer class="page-foot">《智能体设计模式》 · 24 章 · 约 20.4 万字 · 参照 A. Gulli《Agentic Design Patterns》(Springer 2025) 体系原创深讲</footer>
   </main>
-  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#141-模式概述">14.1 模式概述</a></li><li class="toc-l3"><a href="#1411-问题背景为什么需要这个模式">14.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1412-核心机制它如何工作">14.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1413-与相邻模式的关系与组合">14.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#142-源起它从哪里来">14.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#143-发挥的作用为什么重要">14.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#144-实际应用与案例">14.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#145-深度讲解">14.5 深度讲解</a></li><li class="toc-l3"><a href="#1451-分块策略谱系检索粒度的四代演进">14.5.1 分块策略谱系：检索粒度的四代演进</a></li><li class="toc-l3"><a href="#1452-混合检索与-rrf为什么-bm25-至今不可替代">14.5.2 混合检索与 RRF：为什么 BM25 至今不可替代</a></li><li class="toc-l3"><a href="#1453-重排召回求全重排求精的两段架构">14.5.3 重排：召回求全、重排求精的两段架构</a></li><li class="toc-l3"><a href="#1454-查询改写与多路召回弥合查询与文档的鸿沟">14.5.4 查询改写与多路召回：弥合查询与文档的鸿沟</a></li><li class="toc-l3"><a href="#1455-引用溯源与幻觉的两种来源">14.5.5 引用溯源与幻觉的两种来源</a></li><li class="toc-l3"><a href="#1456-何时不用-rag与长上下文微调的边界">14.5.6 何时不用 RAG：与长上下文、微调的边界</a></li><li class="toc-l3"><a href="#1457-怎么用运用判断">14.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#146-工程落地核心源码与讲解">14.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1461-核心源码与讲解框架无关实现">14.6.1 核心源码与讲解（框架无关实现）</a></li><li class="toc-l3"><a href="#1462-框架差异速览llamaindex">14.6.2 框架差异速览（LlamaIndex）</a></li><li class="toc-l3"><a href="#1463-生产化改造清单">14.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#147-概览-核心要点-结论">14.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#148-延伸阅读与参考链接">14.8 延伸阅读与参考链接</a></li></ul></nav></aside>
+  <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#141-模式概述">14.1 模式概述</a></li><li class="toc-l3"><a href="#1411-问题背景为什么需要这个模式">14.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1412-核心机制它如何工作">14.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1413-与相邻模式的关系与组合">14.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#142-源起它从哪里来">14.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#143-发挥的作用为什么重要">14.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#144-实际应用与案例">14.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#145-深度讲解">14.5 深度讲解</a></li><li class="toc-l3"><a href="#1451-分块策略谱系检索粒度的四代演进">14.5.1 分块策略谱系：检索粒度的四代演进</a></li><li class="toc-l3"><a href="#1452-混合检索与-rrf为什么-bm25-至今不可替代">14.5.2 混合检索与 RRF：为什么 BM25 至今不可替代</a></li><li class="toc-l3"><a href="#1453-重排召回求全重排求精的两段架构">14.5.3 重排：召回求全、重排求精的两段架构</a></li><li class="toc-l3"><a href="#1454-查询改写与多路召回弥合查询与文档的鸿沟">14.5.4 查询改写与多路召回：弥合查询与文档的鸿沟</a></li><li class="toc-l3"><a href="#1455-引用溯源与幻觉的两种来源">14.5.5 引用溯源与幻觉的两种来源</a></li><li class="toc-l3"><a href="#1456-何时不用-rag与长上下文微调的边界">14.5.6 何时不用 RAG：与长上下文、微调的边界</a></li><li class="toc-l3"><a href="#1457-怎么用运用判断">14.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#146-工程落地核心源码与讲解">14.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1461-核心源码与讲解框架无关实现">14.6.1 核心源码与讲解（框架无关实现）</a></li><li class="toc-l3"><a href="#1462-框架实战llamaindex">14.6.2 框架实战：LlamaIndex</a></li><li class="toc-l3"><a href="#1463-框架实战ragflow生产级-rag-平台">14.6.3 框架实战：RAGFlow（生产级 RAG 平台）</a></li><li class="toc-l3"><a href="#1464-生产化改造清单">14.6.4 生产化改造清单</a></li><li class="toc-l2"><a href="#147-概览-核心要点-结论">14.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#148-延伸阅读与参考链接">14.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
 
