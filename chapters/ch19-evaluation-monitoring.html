@@ -49,17 +49,7 @@
 <p>机制可以概括为"一座金字塔 + 一个双回路"。<strong>评估金字塔</strong>把评估手段按成本与置信度分层：塔基是<strong>单点断言</strong>（针对单个案例的程序化检查，快、便宜、确定，如"输出是合法 JSON""引用编号存在于源文档"）；中层是<strong>场景回归</strong>（在一个有代表性的任务集合上批量跑完整智能体，计算通过率与分维度得分，回答"这版改动让系统整体变好还是变坏"）；塔尖是<strong>在线 A/B</strong>（真实流量分桶对照，以业务指标裁决，是唯一能回答"用户是否真的受益"的手段）。层数越往上，越接近真相，也越贵、越慢、风险越高，所以好的实践是"塔基高频、塔尖低频"。</p>
 <p><strong>双回路</strong>指离线与在线的闭环。离线回路：从线上采样或人工构造<strong>黄金集</strong>（带参考答案或评分标准的任务集），每次改动后在黄金集上跑回归，分数低于阈值则 CI 门禁拦截发布。在线回路：生产流量的每条执行轨迹被记录为 <strong>trace</strong>（结构化的调用链），从 trace 聚合出 <strong>metric</strong>（成功率、成本、延迟分位值），并按比例抽样做 <strong>eval</strong>（程序断言或 LLM 裁判打分），eval 结果与业务指标共同构成发布后监控。在线发现的坏案例经过人工标注回流黄金集——这是评估体系自我进化的关键一环，也直接喂养<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>的学习与适应机制。</p>
 <p>判定手段上，本章与全书其余部分有一个重要交集：<strong>LLM-as-judge</strong>。程序断言覆盖不了语义质量（"这个摘要忠实吗"），人工标注太贵太慢，于是用强模型按评分规则（rubric）给输出打分。它灵活到几乎任何语义维度都能评，但它是一个有系统性偏差的裁判，必须配套消偏手段（19.5.2 节详解）。</p>
-<div class="mermaid">flowchart TD
-    PY1["塔基：单点断言（每次提交，成本趋零）"] --> PY2["塔身：场景回归（黄金集，发布前）"]
-    PY2 --> PY3["塔尖：在线 A/B（真实流量，低频终审）"]
-    OFF1["黄金集（分层/版本化/防污染）"] --> OFF2["离线回归跑分"]
-    OFF2 --> GATE["CI 门禁：低于阈值拦截发布"]
-    GATE --> DEPLOY["发布上线"]
-    DEPLOY --> ON1["在线 trace"]
-    ON1 --> ON2["metric：成功率/成本/p95"]
-    ON2 --> ON3["抽样 eval（LLM 裁判）"]
-    ON3 --> BAD["坏案例人工标注"]
-    BAD -->|"单向回流"| OFF1</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/6e57cbca31d6b6fd-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/6e57cbca31d6b6fd-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-19-1">图 19-1：评估金字塔与离线-在线双回路——在线发现的坏案例单向回流黄金集，是评估体系自我进化的关键一环。</div>
 <h3 id="1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</h3>
 <p>与<strong>目标设定与监控</strong>（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）是"点与面"：<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的判据、trace、metric、eval 四件套在单次任务尺度上运转，本章把它们在系统尺度上组织成评估金字塔与 CI 门禁；<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>的完成判据往往是本章场景回归中单个案例的判分函数。与<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的接口在监控侧：在线 metric 的异常（成功率骤降、p95 延迟飙升）是熔断与降级的触发源。与<strong>学习与适应</strong>（<a href="../chapters/ch09-learning-adaptation.html">第 9 章</a>）是上下游：在线评估发现的坏案例是优化提示词、微调与 few-shot 库的原料，而学习产出的新版本必须回到本章的场景回归里验证——没有评估闭环的"学习"无法区分改进与过拟合。与<strong>人机协同</strong>（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）的接口在标定环节：LLM 裁判的结论需要定期抽样人工复核以校准，争议样本升级人工标注。与<strong>多智能体/A2A</strong>（第 7、15 章）的关系在归因：多角色系统的失败定位需要按角色切分的 trace，本章的观测约定（19.5.5 节）为此提供结构。</p>
@@ -131,13 +121,7 @@
 <p><strong>冗长偏差</strong>：裁判系统性地偏爱更长的答案——长度本身成了质量信号，诱导被评系统学会"啰嗦"。对策有三：按维度拆分 rubric，把"简洁性"设为显式评分项而非让长度隐式影响总分；在裁判指令中显式声明"长度不计入质量，重复内容应扣分"；必要时做长度配对（比较前把两答案截断到相近长度）。<strong>自我偏好</strong>：模型偏爱与自己风格相近的输出，用 GPT 家族模型评 GPT 家族选手时最明显；对策是裁判与执行者使用不同家族的模型，至少不同版本。MT-Bench 团队还测得：GPT-4 裁判给自家家族输出的胜率平均高出约 10 个百分点（<a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a>）——同源评审的虚高不是怀疑，是测量结果。
 <strong>判分尺度漂移</strong>：让裁判直接输出 1-10 分，分数会随上下文、随时间漂移，跨版本不可比。对策是<strong>成对比较优先</strong>（只输出相对判断，天然免疫绝对尺度漂移）；必须用绝对分时，提供锚定样例（"这是 9 分的样例、这是 5 分的样例"）并把 rubric 写成可核对的判据清单而非形容词。</p>
 <p>消偏之外还有两条底线。<strong>裁判不能只输出结论</strong>：要求它逐条引用 rubric 给出理由再给分（先理由后结论），理由本身是可审计的证据，也为人工复核提供抓手。<strong>裁判需要定期标定</strong>：抽样若干裁判结论交人工复核，计算一致率；一致率跌破阈值（如 85%）说明裁判或 rubric 已经漂移，<strong>评估分数应视为不可信</strong>。一个实用的标定技巧：在评估集中混入"已知优劣"的对照样本（人工标注过），裁判判错对照样本的次数就是它的实时体检报告。</p>
-<div class="mermaid">flowchart LR
-    J1["候选 A/B 输出"] --> J2["程序断言：先筛结构性失败（免费）"]
-    J2 --> J3["LLM 裁判：逐条引用 rubric，先理由后结论"]
-    J3 --> J4["换序重判：两次一致才算胜（消位置偏差）"]
-    J4 --> J5{"结论可采信？"}
-    J5 -->|是| J6["计分并进 CI 门禁"]
-    J5 -->|否| J7["降级/平局 + 人工复核标定"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/e9ac653f526ca028-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/e9ac653f526ca028-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-19-2">图 19-2：LLM 裁判的消偏流水线——断言先行省钱，换序消位置偏差，人工抽检给裁判做实时体检。</div>
 <h3 id="1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</h3>
 <p>黄金集（golden set / 评估数据集）是整个体系的度量基准，它自身的管理比评估算法更值得投入。<strong>分层结构</strong>是第一原则：冒烟层（10-20 条，秒级，验证链路通不通）、回归层（100-500 条，覆盖各任务类型与历史事故案例）、挑战层（对抗样本、边界案例、已知难例，用于观察退化而非卡门禁）。每条样本包含：输入、判据（参考答案或 rubric）、元数据（任务类型、难度、来源、加入时间）。<strong>版本化</strong>是第二原则：黄金集与代码一样进版本管理，评估结果必须绑定"代码版本 × 数据集版本 × 裁判版本"三元组，否则任何跨时间的分数比较都是刻舟求剑。</p>
@@ -145,23 +129,7 @@
 <h3 id="1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</h3>
 <p>门禁的本质是<strong>把质量分数变成发布流程的一等公民</strong>，与单元测试同级。设计门禁要回答四个问题。一是<strong>卡什么指标</strong>：核心维度设硬阈值（如忠实度均值不低于基线减 1 分），次要维度只记录不拦截；绝对阈值不如<strong>相对基线</strong>（与本版本相比下降超过 x% 即拦），后者能随系统演进自动校准。二是<strong>噪声怎么处理</strong>：非确定性输出意味着单次跑分有方差。对策是关键指标多次采样（每个案例跑 3-5 次报均值），并把采样方差计入判定——新版本均值微升但方差翻倍，通常应视为退化。统计上，小样本黄金集的分数差异要过显著性检验再下结论，两个版本 3% 的差距在 100 个案例上大概率是噪声。三是<strong>失败了怎么办</strong>：门禁失败分两型——确定性失败（断言不过、语法错误）直接打回；边缘失败（分数临界）允许标记例外并强制人工审批，但要留痕，例外不能静默累积成常态。四是<strong>门禁自身会不会腐化</strong>：阈值与 rubric 变更必须走与代码同样的评审流程，且<strong>"放宽门禁让这次改动通过"的每一次都应触发警报</strong>——门禁被业务压力侵蚀是这类体系最常见的死法。</p>
 <p>成本上，回归不必每次全量：CI 日常跑冒烟层加抽样回归（如每类型抽 20%），夜间或发布前跑全量。判分顺序也有讲究——先跑程序断言再跑 LLM 裁判，让免费判据先把结构性失败筛掉，裁判预算只花在语义判定上。</p>
-<div class="mermaid">sequenceDiagram
-    participant D as 开发者
-    participant C as CI 门
-    participant E as 评估器
-    participant P as 生产
-    D->>C: 提交改动
-    C->>E: 先跑程序断言（免费筛结构性失败）
-    E-->>C: 断言通过，进入黄金集回归
-    C->>E: 场景回归（关键指标 3-5 次采样报均值）
-    E-->>C: 分数低于相对基线阈值
-    C-->>D: 拦截发布，打回修复
-    Note over C: 放宽门禁须走评审并触发告警
-    D->>C: 修复后再次提交
-    C->>E: 回归重跑
-    E-->>C: 相对基线持平略升
-    C->>P: 放行发布
-    Note over P: 上线后 trace/metric/eval 持续监控</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/cb2922f1ef9c7b20-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/cb2922f1ef9c7b20-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-19-3">图 19-3：离线评估与 CI 门禁的交互时序——断言先行省钱、黄金集回归判优劣，低于相对基线即打回；边缘失败可标记例外并强制人工审批，但例外必须留痕，不能静默累积成常态。</div>
 <h3 id="1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</h3>
 <p><strong>trace 是地基</strong>。每条执行轨迹应含：请求上下文、每步的模型调用（提示词摘要、模型版本、token 用量）、工具调用（名称、参数摘要、返回状态、耗时）、错误与降级事件。格式上不要自造标准——OpenTelemetry 的 GenAI 语义约定正在把 <code>gen_ai.system</code>、<code>gen_ai.request.model</code>、<code>gen_ai.usage.input_tokens</code> 这类属性名标准化，按它的形状存 trace，可以无缝汇入 Langfuse、LangSmith 或企业既有观测后端。trace 的价值在<strong>可回放</strong>：任何一条坏案例都应能凭 trace 完整复原执行过程。</p>
@@ -450,7 +418,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#191-模式概述">19.1 模式概述</a></li><li class="toc-l3"><a href="#1911-问题背景为什么需要这个模式">19.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1912-核心机制它如何工作">19.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1913-与相邻模式的关系与组合">19.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#192-源起它从哪里来">19.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#193-发挥的作用为什么重要">19.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#194-实际应用与案例">19.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#195-深度讲解">19.5 深度讲解</a></li><li class="toc-l3"><a href="#1951-评估金字塔分层配比与预算分配">19.5.1 评估金字塔：分层、配比与预算分配</a></li><li class="toc-l3"><a href="#1952-llm-as-judge偏差来源与消偏工程">19.5.2 LLM-as-judge：偏差来源与消偏工程</a></li><li class="toc-l3"><a href="#1953-黄金集管理与防污染">19.5.3 黄金集管理与防污染</a></li><li class="toc-l3"><a href="#1954-离线评估与-ci-门禁">19.5.4 离线评估与 CI 门禁</a></li><li class="toc-l3"><a href="#1955-在线监控三件套与成本延迟分位值">19.5.5 在线监控三件套与成本延迟分位值</a></li><li class="toc-l3"><a href="#1956-失效模式反模式与何时不需要">19.5.6 失效模式、反模式与何时不需要</a></li><li class="toc-l3"><a href="#1957-怎么用运用判断">19.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#196-工程落地核心源码与讲解">19.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1961-核心实现带消偏的-llm-裁判片段讲解">19.6.1 核心实现：带消偏的 LLM 裁判（片段讲解）</a></li><li class="toc-l3"><a href="#1962-框架差异速览llm-观测与评估平台">19.6.2 框架差异速览（LLM 观测与评估平台）</a></li><li class="toc-l3"><a href="#1963-生产化改造清单">19.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#197-概览-核心要点-结论">19.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#198-延伸阅读与参考链接">19.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 
 </body>
 </html>

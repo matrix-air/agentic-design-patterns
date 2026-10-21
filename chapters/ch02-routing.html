@@ -47,33 +47,11 @@
 <p>路由的解法朴素而有效：把"这个请求是什么"的判断从处理逻辑里拆出来，前移成一个独立的、可单独优化的决策点。判断本身很便宜——规则、小模型或一次向量相似度计算——但它换来的却是三条各自纯粹的处理路径：每条路径的提示只为一种任务调优，模型只为该任务的实际难度配置，护栏只为该任务的风险画像设计。</p>
 <h3 id="212-核心机制它如何工作">2.1.2 核心机制：它如何工作</h3>
 <p>路由器是一段"输入 → 目标通道"的映射逻辑，工程上由三部分组成。第一是决策信号：规则命中、分类器输出的意图标签、输入与路由规则的向量相似度，或级联中的实时代价信号。第二是路由表：每个目标通道对应一段提示、一个模型或一个子智能体，路由决策最终落到路由表的某一行。第三是兜底出口：当决策信号弱于阈值——置信度太低、多条规则同时沾边、解析失败——请求走默认通道（通常是最强也最稳的那条）或转人工，而不是硬塞给一个低把握的分支。执行完路由后，各通道独立处理，互不影响；路由器不参与处理本身，只负责"分诊"。</p>
-<div class="mermaid">flowchart LR
-    Q["用户请求"] --> R{"路由器<br/>规则 / 分类 / 语义 / 级联"}
-    R -->|"规则命中高危"| H["人工与专用通道"]
-    R -->|"意图明确，置信度高"| C["轻模型通道"]
-    R -->|"投诉等专用意图"| E["投诉专用通道"]
-    R -->|"置信度低于门槛"| S["强模型兜底"]
-    R -->|"解析失败，fail-open"| S
-    C --> OUT["响应"]
-    E --> OUT
-    S --> OUT
-    H --> OUT</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/74ccd856656a2e92-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/74ccd856656a2e92-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-2-1">图 2-1：入口路由的决策结构与兜底出口——低置信度与解析失败一律升舱到强模型，路由器只分诊、不处理，决策逻辑集中在这一处。</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;路由：高置信走语义支路，低置信 fail-open 兜底&quot;, &quot;w&quot;: 760, &quot;h&quot;: 240, &quot;nodes&quot;: [{&quot;id&quot;: &quot;req&quot;, &quot;label&quot;: &quot;用户请求&quot;, &quot;x&quot;: 80, &quot;y&quot;: 120, &quot;w&quot;: 88, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;router&quot;, &quot;label&quot;: &quot;路由器 分诊&quot;, &quot;x&quot;: 270, &quot;y&quot;: 120, &quot;w&quot;: 122, &quot;h&quot;: 58, &quot;shape&quot;: &quot;diamond&quot;}, {&quot;id&quot;: &quot;sem&quot;, &quot;label&quot;: &quot;语义通道 轻模型&quot;, &quot;x&quot;: 495, &quot;y&quot;: 58, &quot;w&quot;: 128, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;fb&quot;, &quot;label&quot;: &quot;强模型兜底&quot;, &quot;x&quot;: 495, &quot;y&quot;: 186, &quot;w&quot;: 112, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;out&quot;, &quot;label&quot;: &quot;响应&quot;, &quot;x&quot;: 685, &quot;y&quot;: 120, &quot;w&quot;: 70, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}], &quot;edges&quot;: [[&quot;req&quot;, &quot;router&quot;], [&quot;router&quot;, &quot;sem&quot;], [&quot;router&quot;, &quot;fb&quot;], [&quot;sem&quot;, &quot;out&quot;], [&quot;fb&quot;, &quot;out&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;路由器只做分诊不做处理：判断「这是什么请求」，然后放行。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;req&quot;, &quot;to&quot;: &quot;router&quot;, &quot;note&quot;: &quot;请求 A 到达入口，交给路由分类&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;router&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;语义匹配打分：命中「账单查询」，置信度 0.93&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;router&quot;, &quot;to&quot;: &quot;sem&quot;, &quot;note&quot;: &quot;高置信命中语义支路——轻模型通道接手&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;sem&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;这条支路的提示只为账单类任务调优&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;sem&quot;, &quot;to&quot;: &quot;out&quot;, &quot;note&quot;: &quot;通道直接响应，路由器不再介入&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;out&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;第一条请求完成：简单任务走了便宜通道&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;第二条请求到达：这一次分类器没有把握。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;req&quot;, &quot;to&quot;: &quot;router&quot;, &quot;note&quot;: &quot;请求 B 到达：措辞含糊，两条规则同时沾边&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;router&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;置信度 0.41 低于门槛——不猜意图&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;router&quot;, &quot;to&quot;: &quot;fb&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;fail-open：宁可升舱，不把请求塞进低把握的分支&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;fb&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;最强也最稳的兜底通道接手模糊请求&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;fb&quot;, &quot;to&quot;: &quot;out&quot;, &quot;note&quot;: &quot;兜底通道给出澄清式回答，而不是猜错方向&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：高置信走专用通道省钱，低置信 fail-open 到强模型——误路由代价不对称时，门槛向「宁可多升舱」倾斜。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-2-1">演示 2-1：路由的执行流程——高置信请求走语义支路，低置信请求 fail-open 升舱兜底（点「▶ 播放」逐步观看）</div>
-<div class="mermaid">sequenceDiagram
-    participant U as 请求方
-    participant R as 路由器
-    participant C as 语义通道
-    participant F as 强模型兜底
-    U->>R: 请求 A：查账单
-    Note over R: 语义匹配：置信度 0.93，高于门槛
-    R->>C: 命中语义支路，转发
-    C-->>U: 专用提示直接作答
-    U->>R: 请求 B：措辞含糊
-    Note over R: 置信度 0.41，低于门槛——不猜意图
-    R->>F: fail-open，升舱到兜底通道
-    F-->>U: 澄清式回答，不硬猜</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/0865295b003ee0cb-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/0865295b003ee0cb-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-2-2">图 2-2：一次路由的时序视图——高置信请求走语义支路，低置信请求 fail-open 升舱到兜底通道；路由器全程只分诊、不处理。</div>
 <h3 id="213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</h3>
 <p>路由与并行化（<a href="../chapters/ch03-parallelization.html">第 3 章</a>）常一起出现：分流之后的多个通道往往并发执行再汇合。路由是静态结构上的分支，而动态链（<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）里的条件步骤是链内的分支——前者在入口处分诊，后者在流程中途改道，两者可以叠加。级联路由与资源感知优化（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）是近亲：都关心成本与质量的权衡，区别在于级联只在"强弱模型"一维上排序，而资源感知优化把延迟、配额、上下文长度都纳入考量。路由器的决策质量本身需要评估与监控（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）来保障——路由分布的漂移往往先于业务指标恶化出现。</p>
@@ -414,7 +392,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#21-模式概述">2.1 模式概述</a></li><li class="toc-l3"><a href="#211-问题背景为什么需要这个模式">2.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#212-核心机制它如何工作">2.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#213-与相邻模式的关系与组合">2.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#22-源起它从哪里来">2.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#23-发挥的作用为什么重要">2.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#24-实际应用与案例">2.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#25-深度讲解">2.5 深度讲解</a></li><li class="toc-l3"><a href="#251-怎么用运用判断">2.5.1 怎么用：运用判断</a></li><li class="toc-l2"><a href="#26-工程落地核心源码与讲解">2.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#261-框架无关实现按序拼接即完整可运行">2.6.1 框架无关实现（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#262-框架差异速览langgraph-条件边">2.6.2 框架差异速览（LangGraph 条件边）</a></li><li class="toc-l3"><a href="#263-生产化改造清单">2.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#27-概览-核心要点-结论">2.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#271-本章小结">2.7.1 本章小结</a></li><li class="toc-l3"><a href="#272-核心要点">2.7.2 核心要点</a></li><li class="toc-l3"><a href="#273-结论">2.7.3 结论</a></li><li class="toc-l2"><a href="#28-延伸阅读与参考链接">2.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>

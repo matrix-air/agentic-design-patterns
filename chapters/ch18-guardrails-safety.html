@@ -47,15 +47,7 @@
 <p>2023 年，这类风险从直觉变成了实证：Greshake 等人系统演示了间接提示注入——不需要接触对话界面，仅凭智能体要读取的外部内容即可劫持其行为；同年 Zou 等人的 GCG 攻击表明，自动生成的对抗后缀可以稳定越狱对齐模型，且跨模型可迁移。结论已经清楚：<strong>没有任何单层防线是完备的</strong>——输入过滤挡不住所有变体，系统提示会被泄漏，模型对齐会被攻破。工程上唯一站得住的回应是纵深防御：像设计高可用系统一样设计安全性，假设每一层都会被穿透，靠层层衰减把单点失守压成可检测、可恢复的事件，而不是灾难。</p>
 <h3 id="1812-核心机制它如何工作">18.1.2 核心机制：它如何工作</h3>
 <p>护栏机制是一组作用在智能体执行路径不同截面上的闸门，共同点是把"内容"与"权限"都视为不可信的。<strong>输入闸门</strong>在内容进入上下文之前扫描：注入特征拦截、PII 识别与脱敏（Presidio 一类的工具）、对来源打信任分级——用户输入与检索内容必须区别对待。<strong>系统提示加固</strong>与<strong>权限最小化</strong>作用于执行配置：提示里显式声明角色边界与不可逾越的规则，但真正的保障来自代码侧——智能体只拿到本次任务需要的工具与凭证，高危工具单独授权。<strong>工具闸门</strong>是权限的代码化：白名单之外的工具不可见，参数按 schema 校验，危险动作强制人工确认（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）。<strong>沙箱执行</strong>把不可信的生成内容（代码、SQL、shell）关进无网络或最小网络的隔离环境里运行。<strong>输出闸门</strong>在结果离开系统前检查：结构校验（schema、JSON）、敏感信息外泄扫描、下游执行前的转义与参数化。<strong>人审兜底</strong>在所有自动防线之后：不可逆、高风险、低置信的动作升级给人。最后，<strong>红队与持续评估</strong>（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）闭环整个体系——防线是在对抗中存活下来的，不是一次写完的。</p>
-<div class="mermaid">flowchart TD
-    IN["不可信输入：用户 / 检索 / 他方内容"] --> L1["输入闸门：注入过滤 + PII 脱敏"]
-    L1 --> L2["提示结构：角色边界 + 内容分段"]
-    L2 --> L3["权限与凭证：最小权限 + 单次凭证"]
-    L3 --> L4["执行与工具：沙箱 + 白名单 + 参数校验"]
-    L4 --> L5["输出闸门：结构校验 + 外泄扫描"]
-    L5 --> L6["人审兜底：高危动作强制确认"]
-    L6 --> OK["放行执行 / 答复"]
-    L6 --> AUD["评估闭环：红队回归（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/1226255b422bb35c-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/1226255b422bb35c-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <p>图 18-1：纵深防御五层（正文 L1–L8 的工程主线）——内容自上而下流经各闸门，<strong>每层都假设前一层已被穿透</strong>，默认失败方向是拒绝或转人工（fail-closed）；评估闭环横向支撑所有层，防线靠对抗性回归保鲜。</p>
 <h3 id="1813-与相邻模式的关系与组合">18.1.3 与相邻模式的关系与组合</h3>
 <p>护栏与<strong>工具调用/MCP</strong>（<a href="../chapters/ch05-tool-use.html">第 5 章</a>）在边界上重合：最小权限与参数校验应实现于工具调用包装层，而不是散落在业务代码里。人审兜底是<strong>人机协同</strong>（<a href="../chapters/ch13-human-in-the-loop.html">第 13 章</a>）在安全域的投影——确认闸门、升级条件、兜底队列都是它的具体形态。红队与持续评估是<strong>评估</strong>（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）的对抗性分支：用攻击集回归防线，用越狱库做回归测试。<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）承接护栏的拦截事件——InputBlocked 不是崩溃，而是要走审计与降级路径的正常错误。<strong>多智能体</strong>（<a href="../chapters/ch07-multi-agent.html">第 7 章</a>）放大了"级联失权"风险，每个子智能体都应是独立的信任域。<strong>资源感知优化</strong>（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）与护栏共享一个经济学事实：防线有成本，按风险分级部署才划算。</p>
@@ -139,20 +131,7 @@ L8 评估闭环层       红队攻击集回归、越狱库测试、防线覆盖�
 </code></pre>
 <p>三层纪律让这张图真正生效。其一，<strong>每层独立有效</strong>：L3 的权限不依赖 L1 的过滤没被绕过——测试每层时都假设其余层不存在。其二，<strong>失败方向一致</strong>：所有层的默认失败方向是"拒绝或转人工"（fail-closed），而不是放行——与<a href="../chapters/ch02-routing.html">第 2 章</a>路由 fail-open 到强模型不同，安全域的开闸没有便宜的兜底。其三，<strong>层层留痕</strong>：每层的拦截与放行都写审计日志，事后才能回答"哪层被穿透、为什么"。</p>
 <p>纵深防御还有一笔必须先算清的可用性账：<strong>每加一层防线，正常流量也要多过一次闸</strong>。设各层误拦截率相互独立为 f_i，整体误拦率约为 1−∏(1−f_i)——不是简单相加，但侵蚀实打实地叠乘：五层各 2% 的误拦，合计约 9.6% 的正常请求被冤枉；十层各 2% 就是约 18.3%。单层分类器防线的真实量级可参照 Anthropic 公开的 Constitutional Classifiers 数据：即便最精工的一层，良性查询的拒绝率也上升了 0.38%（<a href="https://www.anthropic.com/news/constitutional-classifiers">官方发布</a>，2025-01）——单层看似无害，stacking 起来就是百分位级的流量损耗。所以层与层不该全量串联：<strong>按风险分级设防</strong>（低风险流量走 L1+L6 抽检，高风险流量全层通过）、误拦可申诉可快速放行，是让防线 stacking 不蚀本的唯一方式；反过来说，层也不是越多越好——每一层都要用"它能拦住哪类已发生的攻击"来论证存在，拦不住东西的层只剩误拦成本。</p>
-<div class="mermaid">sequenceDiagram
-    participant U as 请求
-    participant I as 输入闸
-    participant M as 模型
-    participant O as 输出闸
-    participant T as 工具
-    U->>I: 内容 A（含注入特征）
-    I-->>U: 拦截 InputBlocked，fail-closed 并留痕
-    Note over I: 假设前一层已被穿透
-    U->>I: 内容 B（已脱敏、来源可信）
-    I->>M: 放行进上下文
-    M->>O: 生成结果
-    O->>T: 结构校验通过，转义后参数化调用
-    T-->>U: 执行成功返回</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/50107dce1e35bf2e-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/50107dce1e35bf2e-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-18-2">图 18-2：一次被拦与一次放行的调用时序——输入闸按注入特征 fail-closed 拦截可疑内容，干净内容经模型、输出闸结构校验后才允许触达工具；拦截是留痕的正常错误，不是崩溃。</div>
 <h3 id="1853-最小权限与单次凭证">18.5.3 最小权限与单次凭证</h3>
 <p>最小权限是安全工程的老原则，翻译到智能体语境后有三条新纪律。<strong>权限跟任务走</strong>：智能体启动时按本次任务装配工具集与数据范围，任务结束权限即回收——"这个智能体全量权限"是事故的前奏。<strong>单次凭证</strong>：一次高风险操作对应一枚一次性凭证，动作完成即作废；重试不能复用旧凭证，被劫持的会话也拿不到下一发弹药。这与<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>的幂等键互补——幂等键防重复执行，单次凭证防未授权执行。<strong>dual-LLM 分工</strong>（Willison 2023 提出）：把"接触不可信内容的模型"与"持有特权的模型"分开——隔离模型读网页、读文档，产出摘要后交给特权模型决策；特权模型从不直接消化原始不可信内容，注入即使劫持了隔离模型，也拿不到凭证与写工具。它是权限隔离在模型层的投影，代价是多一次模型调用与信息损耗，适合高风险通道而非全量流量。最后一条反直觉的纪律：<strong>凭证的粒度要细到工具参数级</strong>——"可调用支付工具"不如"可对订单 X 退款不超过 Y 元"——细粒度让"被混淆的代理人"即使被劫持，能造成的损失也有硬上限。</p>
@@ -428,7 +407,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#181-模式概述">18.1 模式概述</a></li><li class="toc-l3"><a href="#1811-问题背景为什么需要这个模式">18.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1812-核心机制它如何工作">18.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1813-与相邻模式的关系与组合">18.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#182-源起它从哪里来">18.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#183-发挥的作用为什么重要">18.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#184-实际应用与案例">18.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#185-深度讲解">18.5 深度讲解</a></li><li class="toc-l3"><a href="#1851-威胁模型五类核心威胁">18.5.1 威胁模型：五类核心威胁</a></li><li class="toc-l3"><a href="#1852-纵深防御的层次图">18.5.2 纵深防御的层次图</a></li><li class="toc-l3"><a href="#1853-最小权限与单次凭证">18.5.3 最小权限与单次凭证</a></li><li class="toc-l3"><a href="#1854-工具白名单与参数校验">18.5.4 工具白名单与参数校验</a></li><li class="toc-l3"><a href="#1855-结构化输出闸门">18.5.5 结构化输出闸门</a></li><li class="toc-l3"><a href="#1856-人审兜底与红队持续评估">18.5.6 人审兜底与红队持续评估</a></li><li class="toc-l3"><a href="#1857-失效模式与何时不该过度设防">18.5.7 失效模式与何时不该过度设防</a></li><li class="toc-l3"><a href="#1858-怎么用运用判断">18.5.8 怎么用：运用判断</a></li><li class="toc-l2"><a href="#186-工程落地核心源码与讲解">18.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1861-框架无关实现片段式">18.6.1 框架无关实现（片段式）</a></li><li class="toc-l3"><a href="#1862-框架差异速览crewai">18.6.2 框架差异速览（CrewAI）</a></li><li class="toc-l3"><a href="#1863-生产化改造清单">18.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#187-概览-核心要点-结论">18.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1871-本章小结">18.7.1 本章小结</a></li><li class="toc-l3"><a href="#1872-核心要点">18.7.2 核心要点</a></li><li class="toc-l3"><a href="#1873-结论">18.7.3 结论</a></li><li class="toc-l2"><a href="#188-延伸阅读与参考链接">18.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 
 </body>
 </html>

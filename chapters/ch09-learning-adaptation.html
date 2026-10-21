@@ -49,31 +49,13 @@
 <h3 id="912-核心机制它如何工作">9.1.2 核心机制：它如何工作</h3>
 <p>所有形态的共同骨架是一个闭环。<strong>捕获</strong>：从任务执行中提取反馈——显式的（测试通过/失败、指标分数）或隐式的（用户改写了答案、会话被放弃）。<strong>工件化</strong>：把经验固化成可检索的单元，关键是带结构与元数据：什么情境下、什么做法、结果如何、教训是什么，而不是一段无上下文的日志。<strong>复用</strong>：下次遇到相似情境时按嵌入相似度或结构化条件检索，把相关经验注入上下文。<strong>修正</strong>：工件本身也受反馈约束——被复用后效果差的技能降权或改写，错误的经验被后续证据覆盖。</p>
 <p>进化循环是这个骨架的强化版：不满足于"记录已有经验"，而是主动生成变体（变异）、用评估器批量打分（选择）、保留最优并继续变异，把搜索做成一个自动化循环。它能否工作的前提是存在<strong>廉价、自动、可信的评估器</strong>——这也是本章最重要的判据，9.5 节会展开。</p>
-<div class="mermaid">flowchart LR
-    T["任务执行"] --> C["捕获反馈"]
-    C --> A["工件化：技能/经验入库"]
-    A --> R["检索复用"]
-    R --> E["评估器打分"]
-    E -->|"效果好：提置信度"| A
-    E -->|"效果差：降权/改写"| A
-    E -->|"触发变异"| M["LLM 语义变异"]
-    M --> EV["批量评估"]
-    EV --> SEL["选择：质量+多样性"]
-    SEL -->|"新种群"| EV
-    E -->|"满分或预算尽"| STOP["终止并沉淀"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/54d3b05ae4137ae9-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/54d3b05ae4137ae9-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-9-1">图 9-1：学习闭环的骨架（捕获-工件化-复用-修正）与强化版进化环（生成-评估-选择-变异）。</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;学习与适应：失败反思-经验复用-技能入库&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;t1&quot;, &quot;label&quot;: &quot;首次尝试&quot;, &quot;x&quot;: 80, &quot;y&quot;: 52, &quot;w&quot;: 92, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;ev&quot;, &quot;label&quot;: &quot;评估器&quot;, &quot;x&quot;: 270, &quot;y&quot;: 52, &quot;w&quot;: 96, &quot;h&quot;: 48, &quot;shape&quot;: &quot;diamond&quot;}, {&quot;id&quot;: &quot;rf&quot;, &quot;label&quot;: &quot;反思&quot;, &quot;x&quot;: 470, &quot;y&quot;: 52, &quot;w&quot;: 88, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;lib&quot;, &quot;label&quot;: &quot;经验库&quot;, &quot;x&quot;: 655, &quot;y&quot;: 130, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;t2&quot;, &quot;label&quot;: &quot;二次尝试&quot;, &quot;x&quot;: 270, &quot;y&quot;: 198, &quot;w&quot;: 92, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;fin&quot;, &quot;label&quot;: &quot;成功交付&quot;, &quot;x&quot;: 470, &quot;y&quot;: 198, &quot;w&quot;: 92, &quot;h&quot;: 38}], &quot;edges&quot;: [[&quot;t1&quot;, &quot;ev&quot;], [&quot;ev&quot;, &quot;rf&quot;], [&quot;rf&quot;, &quot;lib&quot;], [&quot;lib&quot;, &quot;t2&quot;], [&quot;t2&quot;, &quot;ev&quot;], [&quot;ev&quot;, &quot;fin&quot;], [&quot;fin&quot;, &quot;lib&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;学习闭环：反馈来自廉价可信的评估器，改的是工件不是权重。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;t1&quot;, &quot;to&quot;: &quot;ev&quot;, &quot;note&quot;: &quot;首次尝试完成，产物交评估器打分&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;ev&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;评估失败：测试未通过——失败是免费的学习信号&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;ev&quot;, &quot;to&quot;: &quot;rf&quot;, &quot;note&quot;: &quot;失败轨迹不丢弃，送入反思&quot;, &quot;cls&quot;: &quot;err&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;rf&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;反思提炼教训：什么情境、什么做法、错在哪&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rf&quot;, &quot;to&quot;: &quot;lib&quot;, &quot;note&quot;: &quot;经验工件化入库：带情境、结果、教训、置信度&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;lib&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;经验库可检索，静候相似情境&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;lib&quot;, &quot;to&quot;: &quot;t2&quot;, &quot;note&quot;: &quot;二次尝试：相似经验注入上下文&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;t2&quot;, &quot;to&quot;: &quot;ev&quot;, &quot;note&quot;: &quot;修正后的产物再过同一把尺子&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;ev&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;评估通过——评估器没有放水&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;ev&quot;, &quot;to&quot;: &quot;fin&quot;, &quot;note&quot;: &quot;产出进入交付&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;fin&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;任务成功：成功轨迹与失败同样值得入库&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;fin&quot;, &quot;to&quot;: &quot;lib&quot;, &quot;note&quot;: &quot;技能入库：验证过的做法沉淀为可复用技能&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：工件可读、可审计、可回滚、即时生效——这是非参数化学习对权重更新的治理优势。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-9-1">演示 9-1：任务尝试失败触发反思、经验入库，二次尝试复用经验直至成功并沉淀技能（点「▶ 播放」逐步观看）</div>
 <h3 id="913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</h3>
 <p>学习与适应是若干模式的"时间维度"扩展。反思模式（<a href="../chapters/ch04-reflection.html">第 4 章</a>）在单次任务内生成语言化反馈，学习模式把这些反馈持久化为跨会话工件——Reflexion 的情景记忆正是两者的衔接点。记忆管理（<a href="../chapters/ch08-memory.html">第 8 章</a>）提供存储与检索基础设施，经验库在工程上就是一种带信任等级的记忆。自我纠错（评估-修复循环）提供单次闭环，进化循环把它放大为跨代的搜索。组合上的典型形态：编码智能体 = 自我纠错的迭代修复 + 测试评估器 + 技能库沉淀；优化型智能体 = 进化循环 + 确定性评估器 + 进化数据库。</p>
-<div class="mermaid">stateDiagram-v2
-    [*] --> 候选
-    候选 --> 验证中: 提交评估器批量验证
-    验证中 --> 候选: 验证失败，附错误反馈退回
-    验证中 --> 已入库: 验证通过，赋予初始置信度
-    已入库 --> 已入库: 检索复用成功，置信度上调
-    已入库 --> 已弃用: 复用失败降权，或被更优技能取代
-    已弃用 --> [*]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/9bb741d4d4db27bd-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/9bb741d4d4db27bd-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-9-2">图 9-2：技能工件的状态机——候选技能先过验证器把关，验证失败退回候选，入库后靠复用效果升降级，被取代即弃用。</div>
 <h2 id="92-源起它从哪里来">9.2 源起：它从哪里来</h2>
 <p>这条路线的骨架来自 1975 年 John Holland 的遗传算法：它把自然选择抽象为“种群+变异+适应度”的可执行搜索。此后五十年它一直缺一个好用的变异算子——位翻转太盲目；直到 LLM 让变异升级为有语义的改写，闭环才跑通。2023 年 3 月 Reflexion 证明语言化自我反思可以当学习信号；同年 5 月 Voyager 把成功操作固化为可检索的技能代码；2023 年 10 月斯坦福的 DSPy 主张提示词应由编译器从数据自动优化；2024 年 1 月 AlphaCodium 给出测试驱动的编码流程；2025 年 5 月 Google DeepMind 的 AlphaEvolve 汇成完整闭环并进生产，开源社区的 OpenEvolve 随即复刻了它。</p>
@@ -448,7 +430,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#91-模式概述">9.1 模式概述</a></li><li class="toc-l3"><a href="#911-宏观视角智能体学习的两条路线">9.1.1 宏观视角：智能体学习的两条路线</a></li><li class="toc-l3"><a href="#912-核心机制它如何工作">9.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#913-与相邻模式的关系与组合">9.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#92-源起它从哪里来">9.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#93-发挥的作用为什么重要">9.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#94-实际应用与案例">9.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#95-深度讲解">9.5 深度讲解</a></li><li class="toc-l3"><a href="#951-非参数化与参数化的取舍">9.5.1 非参数化与参数化的取舍</a></li><li class="toc-l3"><a href="#952-进化循环在智能体中的形态">9.5.2 进化循环在智能体中的形态</a></li><li class="toc-l3"><a href="#953-技能库与自动课程">9.5.3 技能库与自动课程</a></li><li class="toc-l3"><a href="#954-从经验回放到经验库">9.5.4 从经验回放到经验库</a></li><li class="toc-l3"><a href="#955-失效模式与反模式">9.5.5 失效模式与反模式</a></li><li class="toc-l3"><a href="#956-何时不要用">9.5.6 何时不要用</a></li><li class="toc-l3"><a href="#957-怎么用运用判断">9.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#96-工程落地核心源码与讲解">9.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#961-框架无关核心源码按序拼接即完整可运行">9.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#962-框架差异速览">9.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#963-生产化改造清单">9.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#97-概览-核心要点-结论">9.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#98-延伸阅读与参考链接">9.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>

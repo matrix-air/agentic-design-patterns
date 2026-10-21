@@ -47,20 +47,7 @@
 <p>第二个动因是信任的建立过程。一个新上线的智能体系统，没有历史数据证明它可靠，全自动化等于拿生产环境做实验；合理的路径是先让人盯住关键环节，用积累的实测数据逐步放宽自动化的边界。第三个动因是问责：医疗、金融、法律等行业里，"算法决定的"不是免责理由，监管要求每个决策链上有一个可追责的主体。人在回路回答的就是这个问题——不是"人要不要参与"，而是"人在哪个位置、以什么成本、按什么规则参与"。</p>
 <h3 id="1312-核心机制它如何工作">13.1.2 核心机制：它如何工作</h3>
 <p>一套完整的人在回路机制由五个部件组成。<strong>介入点</strong>：决定"在哪里打断"——副作用执行前的审批闸门、执行中途的暂停协商、执行完成后的抽样复核，三者拦截力递减、摩擦也递减。<strong>置信度路由</strong>：决定"谁该被打断"——模型对每个输出给出置信度，高置信自动通过，中置信放行但进抽检池，低置信挂起转人工；<strong>路由的本质是把稀缺的人工注意力分配给错误代价最高的样本</strong>。<strong>闸门协议</strong>：决定"打断时呈现什么、人返回什么"——审批请求必须携带让人类能独立判断的证据（上下文、模型理由、备选项），人类返回的裁决是结构化的（批准/驳回/修正），而不是一句模糊的"嗯"。<strong>断点恢复</strong>：决定"暂停之后怎么续"——挂起不等于丢弃，流程状态要持久化，人的裁决以恢复信号的形式注回流程，执行从断点继续。<strong>审计留痕</strong>：每个分流决策和人工裁决都记录谁、何时、依据什么、改了什么——这既是合规要求，也是后续调优阈值和训练模型的数据来源。</p>
-<div class="mermaid">flowchart TD
-    A["工单/动作进入"] --> B["置信度评估（校准后）"]
-    B --> C{"双阈值路由"}
-    C -->|高置信 ≥ 0.90| D["自动执行"]
-    C -->|中置信 0.60–0.90| E["放行 + 进抽检池"]
-    C -->|低置信 < 0.60| F["挂起：状态写入检查点"]
-    F --> G["审批闸门：证据包呈现给人"]
-    G --> H{"人工裁决"}
-    H -->|批准/修正| I["断点恢复继续执行"]
-    H -->|驳回| J["拒绝执行，记驳回理由"]
-    D --> K["审计日志：AUTO/SAMPLE/裁决全留痕"]
-    E --> K
-    I --> K
-    J --> K</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/f9a51ee0834ebec4-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/f9a51ee0834ebec4-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-13-1">图 13-1：置信度分级路由与人工审批闸门——高置信自动通过、中置信放行加抽检、低置信挂起转人工，裁决后从断点恢复，全链路审计留痕。</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;人在回路：两条请求的分级路由&quot;, &quot;w&quot;: 760, &quot;h&quot;: 240, &quot;nodes&quot;: [{&quot;id&quot;: &quot;req&quot;, &quot;label&quot;: &quot;工单到达&quot;, &quot;x&quot;: 75, &quot;y&quot;: 120, &quot;w&quot;: 88, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;conf&quot;, &quot;label&quot;: &quot;置信度路由&quot;, &quot;x&quot;: 235, &quot;y&quot;: 120, &quot;w&quot;: 124, &quot;h&quot;: 54, &quot;shape&quot;: &quot;diamond&quot;}, {&quot;id&quot;: &quot;auto&quot;, &quot;label&quot;: &quot;自动执行&quot;, &quot;x&quot;: 445, &quot;y&quot;: 50, &quot;w&quot;: 96, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;gate&quot;, &quot;label&quot;: &quot;挂起+审批闸门&quot;, &quot;x&quot;: 430, &quot;y&quot;: 190, &quot;w&quot;: 130, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;human&quot;, &quot;label&quot;: &quot;审批人&quot;, &quot;x&quot;: 606, &quot;y&quot;: 190, &quot;w&quot;: 76, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;resume&quot;, &quot;label&quot;: &quot;断点恢复执行&quot;, &quot;x&quot;: 642, &quot;y&quot;: 50, &quot;w&quot;: 122, &quot;h&quot;: 38}], &quot;edges&quot;: [[&quot;req&quot;, &quot;conf&quot;], [&quot;conf&quot;, &quot;auto&quot;], [&quot;conf&quot;, &quot;gate&quot;], [&quot;gate&quot;, &quot;human&quot;], [&quot;human&quot;, &quot;resume&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;两条工单先后到达：高置信的直接过，低置信的必须过人。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;req&quot;, &quot;to&quot;: &quot;conf&quot;, &quot;note&quot;: &quot;工单甲进入置信度路由（校准后的分数，不是模型自报数）&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;conf&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;置信 0.96 ≥ 0.90：高置信档&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;conf&quot;, &quot;to&quot;: &quot;auto&quot;, &quot;note&quot;: &quot;高置信走自动通道，人不被打扰&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;auto&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;工单甲执行完成，审计记 AUTO&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;工单乙到达：模型自评置信只有 0.41。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;req&quot;, &quot;to&quot;: &quot;conf&quot;, &quot;note&quot;: &quot;同一个路由，另一个出口&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;conf&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;置信 0.41 &lt; 0.60：低置信，必须转人工&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;conf&quot;, &quot;to&quot;: &quot;gate&quot;, &quot;note&quot;: &quot;流程状态写入检查点挂起，证据包推给审批闸门&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;gate&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;审批请求带齐上下文、模型理由与备选项——人做判断而非确认&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;gate&quot;, &quot;to&quot;: &quot;human&quot;, &quot;note&quot;: &quot;人在证据最全的时点裁决&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;human&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;结构化裁决返回：批准（不是一句模糊的「嗯」）&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;human&quot;, &quot;to&quot;: &quot;resume&quot;, &quot;note&quot;: &quot;裁决作为恢复信号注回，执行从断点续跑&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;resume&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;工单乙恢复执行完成，审计记 APPROVE 与裁决人&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：高置信不打扰人，低置信不裸奔——稀缺的人工注意力花在错了最伤的样本上。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-13-1">演示 13-1：置信度分级路由——高置信自动执行、低置信升级人工审批并从断点恢复（点「▶ 播放」逐步观看）</div>
@@ -132,18 +119,7 @@
 <p>升级路由的核心公式是：<strong>人工注意力应该流向错误代价高且模型确信度低的样本</strong>。实现上是双阈值三档位：置信度高于 <code>AUTO_THRESHOLD</code> 的自动执行；低于 <code>ESCALATE_THRESHOLD</code> 的挂起转人工；中间档自动执行但进抽检池。双阈值的价值在中间档：单阈值系统里"不升级"等于"免检"，而中间档恰恰是<strong>错误率上升最快的区域</strong>——模型"有点拿不准"的输出比"完全拿不准"的输出更频繁，也更容易蒙混过关。</p>
 <p>两个工程细节决定路由是否真的有效。其一，<strong>置信度必须校准</strong>。模型自报的置信度（让它输出 0-1 的数）系统性过自信，直接用会让人审池里塞满其实不错的样本；校准手段包括：用保留集测每个分数段的经验准确率再映射（等值回归分箱）、用多次采样的自洽率（self-consistency）代替单次自白、用独立验证器模型打分。其二，路由判据要乘上风险权重，不只看"模型有多不确定"，还要看"这里错了多贵"：同样的置信度，涉及资金动作的工单应该比咨询类工单的升级阈值高得多。形式化地说，样本升级的期望收益是"人审纠错挽回的期望损失"减去"人审成本"，阈值应该让边际样本的期望收益为零——这也是主动学习"信息量"判据的风险加权版本：人该看的<strong>不是模型最难懂的样本，而是错了最伤的样本</strong>。</p>
 <p>校准为什么是前提，有官方证据可引。OpenAI 在 <a href="https://arxiv.org/abs/2303.08774">GPT-4 技术报告</a>中给出了一组反差鲜明的事实：预训练基模型的校准近乎完美——它预测"我有 70% 把握"时正确率确实接近 70%；但经过 RLHF 后训练，校准显著退化（官方原话是"calibration is reduced"，报告图 8 中校准曲线明显偏离对角线）。原因是 RLHF 的奖励来自人类偏好，而人类评分员天然偏爱听起来果断自信的回答。工程含义直白：<strong>模型说"90% 置信"时，真实正确率完全可能只有六成——升级路由的阈值必须画在校准曲线上，而不是画在自报分数上</strong>。度量工具就是期望校准误差（ECE）：把自报置信度分箱，逐箱算"平均自报置信度与真实准确率之差"再加权求和；ECE 大的模型，先做分箱再映射（或换自洽率信号），然后才配做路由的判据。</p>
-<div class="mermaid">sequenceDiagram
-    participant U as 用户
-    participant A as Agent
-    participant R as 审批人
-    U->>A: 工单甲（校准后置信 0.96）
-    A-->>U: 高置信 ≥ 0.90，自动执行
-    Note over A: 审计留痕 AUTO
-    U->>A: 工单乙（校准后置信 0.41）
-    A->>R: 低置信 < 0.60，挂起转人工（附证据包）
-    Note over A: 流程状态写入检查点
-    R-->>A: 结构化裁决：批准
-    A-->>U: 从断点恢复执行，留痕 APPROVE + 裁决人</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/c16afce1e8d0cfeb-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/c16afce1e8d0cfeb-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-13-2">图 13-2：一次自动执行与一次升级审批的调用时序——双阈值把高置信请求留在自动通道，低置信请求挂起转人工；裁决结构化返回，断点恢复后全链路留痕。</div>
 <h3 id="1353-审批疲劳与自动化偏见">13.5.3 审批疲劳与自动化偏见</h3>
 <p>先说一个反直觉的事实：<strong>给系统加人审并不必然更安全</strong>。大家默认"多一道人工确认总归多一道保险"，工程与实验事实是——一个被淹没、被训练出条件反射的审批人，拦截力可以低到近乎归零，而这道门还在制造"有人把关"的错觉，让上游放心地加大自动化力度。人在回路最大的敌人不是模型出错，而是人停止思考。Skitka、Mosier 与 Burdick 1999 年的实验给出了量化证据：在模拟飞行任务中，配了"非常可靠但非完美"自动辅助的实验组，整体监控表现反而差于无辅助组——漏报条件下，有辅助组正确识别并响应关键事件的比例仅约 59%，无辅助组为 97%（<a href="https://doi.org/10.1006/ijhc.1999.0252">DOI</a>）；错误分两类——omission（自动化没提示的事就没人管）与 commission（自动化建议与训练和其他可靠信息源冲突时仍然照办）。这不是实验室孤例，真实审批流给出的数据更冷：van der Sijs 等人对药物安全警报的系统综述发现，临床医生覆盖（override）了 <strong>49%-96%</strong> 的警报，连严重过量用药这类高危警报也有约四分之一被覆盖（转引自 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6913230/">JAMIA 系统综述</a>）。早在 80 年代玻璃驾驶舱普及期，NASA 的人因研究（如 Wiener 1989 年报告）就记录了同类现象，Parasuraman 等人 1993 年将其命名为"自动化诱发的自满"（complacency）。翻译到审批场景：审批人看到第 200 条连续通过的请求后，第 201 条的批准动作退化成条件反射；系统的拦截门还在，拦截力已经归零。</p>
@@ -436,7 +412,7 @@ class ReviewGateway:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#131-模式概述">13.1 模式概述</a></li><li class="toc-l3"><a href="#1311-问题背景为什么需要这个模式">13.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1312-核心机制它如何工作">13.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1313-与相邻模式的关系与组合">13.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#132-源起它从哪里来">13.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#133-发挥的作用为什么重要">13.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#134-实际应用与案例">13.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#135-深度讲解">13.5 深度讲解</a></li><li class="toc-l3"><a href="#1351-介入点设计事前审批事中暂停事后抽检">13.5.1 介入点设计：事前审批、事中暂停、事后抽检</a></li><li class="toc-l3"><a href="#1352-置信度升级路由低置信转人工">13.5.2 置信度升级路由：低置信转人工</a></li><li class="toc-l3"><a href="#1353-审批疲劳与自动化偏见">13.5.3 审批疲劳与自动化偏见</a></li><li class="toc-l3"><a href="#1354-批准成本经济学">13.5.4 批准成本经济学</a></li><li class="toc-l3"><a href="#1355-审计留痕不只是合规要求">13.5.5 审计留痕：不只是合规要求</a></li><li class="toc-l3"><a href="#1356-失效模式与何时不要用">13.5.6 失效模式与何时不要用</a></li><li class="toc-l3"><a href="#1357-怎么用运用判断">13.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#136-工程落地核心源码与讲解">13.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1361-核心源码与讲解框架无关实现">13.6.1 核心源码与讲解（框架无关实现）</a></li><li class="toc-l3"><a href="#1362-框架差异速览langgraph-interrupt">13.6.2 框架差异速览（LangGraph interrupt()）</a></li><li class="toc-l3"><a href="#1363-生产化改造清单">13.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#137-概览-核心要点-结论">13.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#138-延伸阅读与参考链接">13.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>

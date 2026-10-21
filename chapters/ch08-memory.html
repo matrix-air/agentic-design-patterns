@@ -48,31 +48,13 @@
 <h3 id="812-核心机制它如何工作">8.1.2 核心机制：它如何工作</h3>
 <p>工程上最有效的骨架是三层结构。<strong>工作层（短窗）</strong>：保留最近若干轮原始对话，信息零损失，随窗口滑动被逐出。<strong>压缩层（摘要）</strong>：被逐出的对话不直接丢弃，而是定期合并进一段不断更新的摘要，保留事实、决定与未完成事项，牺牲细节换长度。<strong>长期层（记忆库）</strong>：从对话中提取"值得跨会话记住"的离散事实（用户偏好、约束、身份信息），以条目形式存入可检索的库——通常是向量库，也可以是带时间属性的知识图谱。运行时按"长期检索命中 → 摘要 → 近期原文"的顺序拼装记忆上下文注入提示。</p>
 <p>围绕这三层还有两套策略。写入策略回答"什么值得记"：用户显式说"记住"的最优先；系统能识别的稳定事实（偏好、约束、事实性陈述）次之；一次性闲聊不记。读取策略回答"取回什么"：用当前话题对长期层做相似度检索，过相关性阈值才注入，宁缺毋滥——<strong>一条不相关的"记忆"比没有记忆更伤输出质量</strong>。</p>
-<div class="mermaid">flowchart LR
-    CH["对话轮次"] --> W["工作层：短窗"]
-    W -->|"窗口满，逐出"| S["压缩层：滚动摘要"]
-    S -->|"事实抽取"| L["长期层：记忆库"]
-    UE["用户显式指令"] -->|"最高优先级写入"| L
-    Q["当前查询"] --> REC["相似度检索+阈值过滤"]
-    L --> REC
-    REC --> CTX["记忆上下文拼装"]
-    S --> CTX
-    W --> CTX
-    CTX --> P["注入提示"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/d1561920febad685-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/d1561920febad685-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-8-1">图 8-1：三层记忆的写入路径（对话→短窗→摘要→长期库）与读取路径（检索→拼装→注入）。</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;记忆管理：写入-固化-检索注入&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;conv&quot;, &quot;label&quot;: &quot;对话轮次&quot;, &quot;x&quot;: 80, &quot;y&quot;: 52, &quot;w&quot;: 92, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;sw&quot;, &quot;label&quot;: &quot;短期记忆·短窗&quot;, &quot;x&quot;: 245, &quot;y&quot;: 52, &quot;w&quot;: 110, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;summ&quot;, &quot;label&quot;: &quot;滚动摘要&quot;, &quot;x&quot;: 440, &quot;y&quot;: 52, &quot;w&quot;: 104, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;lib&quot;, &quot;label&quot;: &quot;长期记忆库&quot;, &quot;x&quot;: 640, &quot;y&quot;: 52, &quot;w&quot;: 110, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;q&quot;, &quot;label&quot;: &quot;新会话提问&quot;, &quot;x&quot;: 80, &quot;y&quot;: 198, &quot;w&quot;: 110, &quot;h&quot;: 36, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;rec&quot;, &quot;label&quot;: &quot;检索 + 阈值过滤&quot;, &quot;x&quot;: 340, &quot;y&quot;: 198, &quot;w&quot;: 124, &quot;h&quot;: 40}, {&quot;id&quot;: &quot;ans&quot;, &quot;label&quot;: &quot;带上下文回答&quot;, &quot;x&quot;: 620, &quot;y&quot;: 198, &quot;w&quot;: 120, &quot;h&quot;: 38}], &quot;edges&quot;: [[&quot;conv&quot;, &quot;sw&quot;], [&quot;sw&quot;, &quot;summ&quot;], [&quot;summ&quot;, &quot;lib&quot;], [&quot;q&quot;, &quot;rec&quot;], [&quot;lib&quot;, &quot;rec&quot;], [&quot;rec&quot;, &quot;ans&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;写入路径：对话逐轮进入短期记忆（短窗）。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;conv&quot;, &quot;to&quot;: &quot;sw&quot;, &quot;note&quot;: &quot;本轮对话原文写入短窗，信息零损失&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;sw&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;短窗只保留最近 N 轮，随对话滑动&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;sw&quot;, &quot;to&quot;: &quot;summ&quot;, &quot;note&quot;: &quot;轮末窗口满：早期对话被逐出，不直接丢弃&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;summ&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;滚动摘要固化：保留事实、决定与未完成事项&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;summ&quot;, &quot;to&quot;: &quot;lib&quot;, &quot;note&quot;: &quot;抽取的稳定事实以带时间戳的条目写入长期库&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;lib&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;长期库可检索：偏好、约束、身份信息&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;—— 新会话开始，模型对用户一无所知 ——&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;q&quot;, &quot;to&quot;: &quot;rec&quot;, &quot;note&quot;: &quot;新会话提问：先检索，再回答&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;rec&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;一条记忆相关性低于阈值——被过滤，宁缺毋滥&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;lib&quot;, &quot;to&quot;: &quot;rec&quot;, &quot;note&quot;: &quot;高于阈值的记忆条目被取回&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rec&quot;, &quot;to&quot;: &quot;ans&quot;, &quot;note&quot;: &quot;记忆上下文按「长期命中→摘要→近期原文」拼装注入&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;ans&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;回答带上历史偏好——用户无需重述自己&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：写入宁缺毋滥、检索设阈值、遗忘必备——一条不相关的记忆比没有记忆更伤。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-8-1">演示 8-1：对话写入短期记忆、轮末摘要固化，新会话检索注入相关记忆后作答（点「▶ 播放」逐步观看）</div>
 <h3 id="813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</h3>
 <p>记忆管理与检索增强生成共享"检索后注入"的机制，区别在数据源：RAG 检索外部静态语料，记忆检索的是智能体自身经历中沉淀的条目。记忆是反思模式的落点——反思产生的洞见若不写入记忆，反思就只是一次性的。多智能体协作中的黑板/共享状态本质上是"会话内的共享记忆"。工具使用模式则常把记忆库封装为工具（<code>remember</code>/<code>recall</code>），让模型自己决定存取时机。在实际系统中，记忆管理几乎总是与这几者组合出现：一个长期运行的助手 = 分层记忆 + 会话末反思写入 + 记忆读写以工具形式暴露。</p>
-<div class="mermaid">stateDiagram-v2
-    [*] --> 已写入
-    已写入 --> 已巩固: 轮末摘要固化，保留事实与决定
-    已巩固 --> 可检索: 抽取为带时间戳条目，进入长期库
-    可检索 --> 弱化: 长期未被命中，置信度衰减
-    弱化 --> 可检索: 再次被引用，重新加权
-    可检索 --> 过期: 被新事实矛盾覆盖或 TTL 到期
-    弱化 --> 过期: 衰减到底仍无引用
-    过期 --> [*]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/fe08d1a2d72cf716-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/fe08d1a2d72cf716-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-8-2">图 8-2：单条记忆条目的生命周期——写入后经摘要巩固转为可检索，长期不用则弱化，矛盾覆盖或到期即过期删除。</div>
 <h2 id="82-源起它从哪里来">8.2 源起：它从哪里来</h2>
 <p>记忆管理源自认知科学与工程痛点的交汇。1968 年 Atkinson 与 Shiffrin 提出多重存储模型，把记忆分为感觉、短时、长时三级——预示了“窗口—摘要—长期库”的分层；1972 年 Tulving 区分情景记忆与语义记忆，对应“对话原文”与“事实条目”两类存储。工程线从“窗口不够用”出发：2023 年 4 月的 Generative Agents 做出记忆流+检索打分+反思固化的原型；同年 10 月 Berkeley 的 MemGPT 以虚拟内存隐喻让模型自主分页；此后 HippoRAG 引入图谱检索，Mem0 做成记忆服务，Zep 用时序图谱维护演化关系，Google ADK 又把它推向托管服务——记忆从应用逻辑变成平台基础设施。</p>
@@ -451,7 +433,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#81-模式概述">8.1 模式概述</a></li><li class="toc-l3"><a href="#811-问题背景为什么需要这个模式">8.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#812-核心机制它如何工作">8.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#813-与相邻模式的关系与组合">8.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#82-源起它从哪里来">8.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#83-发挥的作用为什么重要">8.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#84-实际应用与案例">8.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#85-深度讲解">8.5 深度讲解</a></li><li class="toc-l3"><a href="#851-四条技术线的取舍">8.5.1 四条技术线的取舍</a></li><li class="toc-l3"><a href="#852-记忆写入策略什么值得记">8.5.2 记忆写入策略：什么值得记</a></li><li class="toc-l3"><a href="#853-遗忘与过期">8.5.3 遗忘与过期</a></li><li class="toc-l3"><a href="#854-隐私与安全">8.5.4 隐私与安全</a></li><li class="toc-l3"><a href="#855-认知科学对照与边界">8.5.5 认知科学对照与边界</a></li><li class="toc-l3"><a href="#856-何时不要用">8.5.6 何时不要用</a></li><li class="toc-l3"><a href="#857-怎么用运用判断">8.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#86-工程落地核心源码与讲解">8.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#861-框架无关核心源码按序拼接即完整可运行">8.6.1 框架无关核心源码（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#862-框架差异速览">8.6.2 框架差异速览</a></li><li class="toc-l3"><a href="#863-生产化改造清单">8.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#87-概览-核心要点-结论">8.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#本章小结">本章小结</a></li><li class="toc-l3"><a href="#核心要点">核心要点</a></li><li class="toc-l3"><a href="#结论">结论</a></li><li class="toc-l2"><a href="#88-延伸阅读与参考链接">8.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>

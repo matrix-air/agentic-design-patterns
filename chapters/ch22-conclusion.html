@@ -129,13 +129,7 @@
 </tbody>
 </table>
 <p>组合有一条通读原则：<strong>从保障层借模式的时机宜早不宜迟</strong>。实践反复证明，"先上线再补监控""先跑通再加守护栏"的欠账，补起来的成本是初次设计的数倍，而且往往是在一次事故之后被迫补的。另一个原则是<strong>组合从简</strong>：先用最少的模式达到可用，让真实流量暴露问题，再引入下一个模式——每引入一个模式都在增加系统的维护面，这个成本必须由真实的问题来证明其正当性。</p>
-<div class="mermaid">flowchart LR
-    S1["智能客服"] --> M1["路由+提示链+RAG+记忆+守护栏+评估"]
-    S2["深度研究"] --> M2["规划+工具+并行化+探索+评估+人在回路"]
-    S3["编码智能体"] --> M3["规划+工具+反思+异常恢复+评估"]
-    S4["自动化运维"] --> M4["目标监控+异常恢复+优先级+工具+人在回路"]
-    S5["内容生产"] --> M5["提示链+并行化+反思+路由+评估"]
-    S6["多部门协作"] --> M6["多智能体+A2A+优先级+目标监控+守护栏"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/b38d7e8323a79e2b-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/b38d7e8323a79e2b-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-22-1">图 22-1：典型场景到主干模式组合的映射（模式名对应章号见 22.2 节速查表；评估(19)与守护栏(18)几乎在所有场景都应早接入）。</div>
 <h2 id="223-从原型到生产五级成熟度阶梯">22.3 从原型到生产：五级成熟度阶梯</h2>
 <p>把一个智能体 demo 变成生产系统，中间要爬一道阶梯。五级划分的依据是：<strong>每一级回答一个此前可以回避的问题</strong>。</p>
@@ -178,7 +172,7 @@
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#221-二十一个模式一张架构视图">22.1 二十一个模式，一张架构视图</a></li><li class="toc-l2"><a href="#222-场景到模式组合速查表">22.2 场景到模式组合：速查表</a></li><li class="toc-l2"><a href="#223-从原型到生产五级成熟度阶梯">22.3 从原型到生产：五级成熟度阶梯</a></li><li class="toc-l2"><a href="#224-开放问题与展望">22.4 开放问题与展望</a></li><li class="toc-l2"><a href="#225-结语">22.5 结语</a></li><li class="toc-l2"><a href="#延伸阅读与参考链接">延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 
 </body>
 </html>

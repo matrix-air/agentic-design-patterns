@@ -184,39 +184,7 @@
 </tr>
 </tbody>
 </table>
-<div class="mermaid">flowchart LR
-    subgraph P1["第一部分 · 核心模式（1-7 章）"]
-        c1["提示链"]
-        c2["路由"]
-        c3["并行化"]
-        c4["反思"]
-        c5["工具使用"]
-        c6["规划"]
-        c7["多智能体"]
-    end
-    subgraph P2["第二部分 · 认知机制（8-11 章）"]
-        c8["记忆管理"]
-        c9["学习与适应"]
-        c10["模型上下文协议 MCP"]
-        c11["目标设定与监控"]
-    end
-    subgraph P3["第三部分 · 容错与扩展（12-14 章）"]
-        c12["异常处理与恢复"]
-        c13["人在回路"]
-        c14["知识检索 RAG"]
-    end
-    subgraph P4["第四部分 · 高级架构（15-21 章）"]
-        c15["智能体间通信 A2A"]
-        c16["资源感知优化"]
-        c17["推理技术"]
-        c18["守护栏与安全"]
-        c19["评估与监控"]
-        c20["优先级排序"]
-        c21["探索与发现"]
-    end
-    c1 --> c2 --> c3 --> c4 --> c5 --> c6 --> c7
-    c7 --> c15
-    c14 --> c18</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/7588ecdbc6fc5e33-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/7588ecdbc6fc5e33-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-0-1">图 0-1：全书二十一种模式全景——四个 subgraph 对应四部分，实线标出主干阅读顺序（核心模式依次递进，多智能体通向高级架构，RAG 为守护栏的前置知识）。</div>
 <h2 id="如何使用本书">如何使用本书</h2>
 <p>本书支持两种主读法（封面另给出三条现成的组合路线）。<strong>按序读</strong>：第 1 至 7 章是地基，建议所有读者先过一遍——这七个模式覆盖了搭任何一个智能体系统的主干决策；第 8 至 14 章解决"系统要长期跑、要扛住失败"的问题；第 15 至 21 章面向多智能体与大规模场景。每章自包含，代码可独立运行，因此也支持<strong>按查读</strong>：遇到具体问题时，按上面地图的"核心问题"一列直接翻到对应章节。</p>
@@ -255,7 +223,7 @@
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#从语言模型到智能体">从语言模型到智能体</a></li><li class="toc-l2"><a href="#为什么需要设计模式">为什么需要设计模式</a></li><li class="toc-l2"><a href="#本书与原书的关系">本书与原书的关系</a></li><li class="toc-l2"><a href="#全书二十一章地图">全书二十一章地图</a></li><li class="toc-l2"><a href="#如何使用本书">如何使用本书</a></li><li class="toc-l2"><a href="#代码约定">代码约定</a></li><li class="toc-l2"><a href="#延伸阅读与参考链接">延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 
 </body>
 </html>

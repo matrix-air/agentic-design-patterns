@@ -48,15 +48,7 @@
 <h3 id="1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</h3>
 <p>推理技术的机制可以沿"推理在哪里发生"分为三代。<strong>第一代：提示引出</strong>。在少样本示例里展示"问题→分步推理→答案"的格式（思维链，CoT），或者干脆附加一句"让我们一步一步思考"（零样本思维链），模型就会把答案前的 token 预算花在中间推理上。<strong>第二代：采样与搜索</strong>。自洽性（Self-Consistency）对同一问题温度采样多条思维链、抽取最终答案做多数投票，用冗余压制单链的随机错误；思维树（ToT）把推理重组为树——每层生成多个候选"想法"、用模型自评或外部校验打分、可回溯地搜索，思维第一次成为可搜索的空间；思维图（GoT）进一步把推理单元组织成任意图，允许合并与聚合。<strong>第三代：训练内化</strong>。过程监督（逐步打分的奖励模型）与强化学习把"长而正确的思维链"变成训练目标，<a href="https://openai.com/index/learning-to-reason-with-llms/">o1 系列</a>与 <a href="https://api-docs.deepseek.com/">DeepSeek-R1</a> 这类推理模型在回答前生成成千上万 token 的内部思考，把"深思"变成了模型的原生行为而非提示技巧。</p>
 <p>三代机制共享同一个控制旋钮：<strong>测试时算力</strong>。同一个问题，可以只推理一次，也可以采样二十次投票，可以搜两层树，也可以让推理模型思考三分钟——推理技术工程化的核心，就是把这个旋钮按问题难度和 SLO 拧到合适的位置。</p>
-<div class="mermaid">flowchart LR
-    Q["问题输入"] --> D{"难度估计（一致性等轻量信号）"}
-    D -->|"简单"| S1["系统 1：一步作答"]
-    D -->|"困难"| S2["系统 2：显式思维链"]
-    S2 --> SC["自洽性投票：采样 n 条链"]
-    SC -->|"高一致"| A["最终答案"]
-    S1 --> A
-    SC -->|"分歧 → 升级"| RM["推理模型更长思考（测试时算力上调）"]
-    RM --> A</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/cbd813810d605f90-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/cbd813810d605f90-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-17-1">图 17-1：系统 1 / 系统 2 与测试时算力分配——难度决定走一步作答还是显式推理，投票的一致与分歧决定"再想多少"；算力沿"一步作答 → 多链投票 → 推理模型"逐级上调，收益边际递减，故按难度分配而非无脑拉满。</div>
 <h3 id="1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</h3>
 <p>推理技术与<strong>反思</strong>（<a href="../chapters/ch04-reflection.html">第 4 章</a>）是同一枚硬币的两面：推理是前向展开（答案产生前的思考），反思是回看修正（答案产生后的审视）；自洽性投票与反思的"再试一次"常串联使用——一致性低就触发反思。思维树本质上是<strong>规划</strong>（<a href="../chapters/ch06-planning.html">第 6 章</a>）在推理空间的实例：候选分支、评估、回溯，与任务规划的分解评估同构。<strong>ReAct 式交错</strong>把推理节点嵌进<strong>工具调用</strong>（<a href="../chapters/ch05-tool-use.html">第 5 章</a>）循环——观察之后、行动之前插入一个简短的"想法"，这正是智能体循环中最小粒度的推理节点。推理模型选型与<strong>路由</strong>（<a href="../chapters/ch02-routing.html">第 2 章</a>）和<strong>资源感知优化</strong>（<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）直接相关：按难度把请求分流到普通模型与推理模型，是 2024 年后级联的新维度。显式思维链的每一步都是<strong>异常处理</strong>（<a href="../chapters/ch12-exception-recovery.html">第 12 章</a>）的检查点素材，而"思考多少步"的预算约束属于<strong>目标与监控</strong>（<a href="../chapters/ch11-goal-monitoring.html">第 11 章</a>）。</p>
@@ -131,12 +123,7 @@
 <h3 id="1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</h3>
 <p>"多想更准"不是无限线性、而是<strong>边际收益递减</strong>的曲线：同一问题采样第 2 条链的期望增益远高于第 40 条；树搜索加一层深度的收益随深度递减；推理模型把思考 token 从一千涨到一万，正确率曲线先陡后平。Snell 等人 2024 年的论文把这幅图定量化了，并给出两个工程级结论。其一，<strong>算力应按难度分配</strong>：简单问题少量采样即收敛，过度思考反而可能把正确答案"投"没了；困难问题值得多采样、深搜索——固定预算下按难度优化分配，一个明显更小的模型可以胜过大约 14 倍大的模型。其二，<strong>难度要先估</strong>：分配的前提是知道谁难谁易，实践中用轻量信号（自洽性一致性、第一次尝试的正确性、任务元数据）做难度路由，这本质上是<a href="../chapters/ch02-routing.html">第 2 章</a>的路由问题在"思考深度"维度的重演。把三件事连起来——难度估计、按难度给预算、预算内选最优技术（投票 vs 搜索 vs 推理模型）——就是推理技术的调度层，也是它从论文变成生产组件的最后一公里。</p>
 <p>两个常被读丢的定量细节值得补进工程判断。其一，"按难度分配"不是一句正确的口号，它有价签：Snell 等人的论文里，compute-optimal 策略相对最优 best-of-N 基线把测试时算力的<strong>扩展效率提升超过 4 倍</strong>（<a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a>）——同样的正确率，四分之一的算力就够。其二，"小模型胜 14 倍大模型"有明确的适用边界：实验前提是该问题对小模型具有<strong>非平凡的成功率</strong>——小模型必须"偶尔答对"，测试时算力才能把概率质量集中到正确答案上；对小模型完全不咬合的任务（专有领域长尾、特殊输出格式），多采样只会把预算烧成一致错误的投票，这条路线失效，只能换模型。回看 17.2 的演化线，其主线是<strong>推理从提示技巧升格为训练目标</strong>：第一代靠示例与咒语"求"模型思考，第二代在输出分布上做统计与搜索的工程，第三代直接把"生成正确思维链"写进损失函数；与此同时，"何时推理、推理多久"从研究员的兴趣变成工程师的调度问题——这正是本章与<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>交接的地方。</p>
-<div class="mermaid">pie showData
-    title 典型 agent 工作负载的算力/成本分配（示例口径）
-    "检索与重排" : 25
-    "普通生成" : 35
-    "深度推理" : 30
-    "工具执行" : 10</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/7181c3fad02caf6e-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/7181c3fad02caf6e-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-17-2">图 17-2：典型 agent 工作负载的算力/成本分配示例（示例口径，随任务形态浮动）——深度推理虽只服务少数困难请求，却能占去近三分之一预算，这正是"按难度分配测试时算力"的经济动机；检索与工具执行是常被低估的固定开销。</div>
 <h3 id="1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</h3>
 <p>o1 系列与 DeepSeek-R1 一类推理模型把长思维链内化后，选型问题浮出水面：什么时候该付"思考税"？<strong>该用的场景</strong>：多步数学与逻辑、算法级代码、复杂调试、智能体的规划与根因分析——特征是"步骤多、单步难、答错贵"，且延迟可容忍（推理模型的思考常以十秒计）。<strong>不该用的场景</strong>同样明确。分类、抽取、格式转换、简单改写这类任务，普通模型一步到位且更稳，推理模型不仅慢一个数量级、贵若干倍，还可能"过度思考"——把简单问题绕进复杂的自我怀疑，反而增加出错面。高 QPS 主链路要把延迟与成本算进 SLO，默认不用推理模型，困难请求经路由升级（<a href="../chapters/ch02-routing.html">第 2 章</a>、<a href="../chapters/ch16-resource-aware-optimization.html">第 16 章</a>）。两个选型纪律：其一，<strong>用自家难任务集做升级判据</strong>，通用基准的"更强"未必落在你的长尾上；其二，<strong>注意推理 token 的计费口径</strong>——推理模型的思维链往往不返回原文（或只返回摘要），但 token 照常计费，成本核算必须读 usage 而不是估算输出长度。</p>
@@ -424,7 +411,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#171-模式概述">17.1 模式概述</a></li><li class="toc-l3"><a href="#1711-问题背景为什么需要这个模式">17.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#1712-核心机制它如何工作">17.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#1713-与相邻模式的关系与组合">17.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#172-源起它从哪里来">17.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#173-发挥的作用为什么重要">17.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#174-实际应用与案例">17.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#175-深度讲解">17.5 深度讲解</a></li><li class="toc-l3"><a href="#1751-系统-1-系统-2-类比与它的边界">17.5.1 系统 1 / 系统 2 类比与它的边界</a></li><li class="toc-l3"><a href="#1752-结果监督与过程监督">17.5.2 结果监督与过程监督</a></li><li class="toc-l3"><a href="#1753-测试时扩展律与算力最优分配">17.5.3 测试时扩展律与算力最优分配</a></li><li class="toc-l3"><a href="#1754-推理模型与普通模型的选型">17.5.4 推理模型与普通模型的选型</a></li><li class="toc-l3"><a href="#1755-推理节点在智能体循环中的位置">17.5.5 推理节点在智能体循环中的位置</a></li><li class="toc-l3"><a href="#1756-显式思维链的成本与失效模式">17.5.6 显式思维链的成本与失效模式</a></li><li class="toc-l3"><a href="#1757-怎么用运用判断">17.5.7 怎么用：运用判断</a></li><li class="toc-l2"><a href="#176-工程落地核心源码与讲解">17.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#1761-框架无关实现片段式">17.6.1 框架无关实现（片段式）</a></li><li class="toc-l3"><a href="#1762-框架差异速览langgraph">17.6.2 框架差异速览（LangGraph）</a></li><li class="toc-l3"><a href="#1763-生产化改造清单">17.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#177-概览-核心要点-结论">17.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#1771-本章小结">17.7.1 本章小结</a></li><li class="toc-l3"><a href="#1772-核心要点">17.7.2 核心要点</a></li><li class="toc-l3"><a href="#1773-结论">17.7.3 结论</a></li><li class="toc-l2"><a href="#178-延伸阅读与参考链接">17.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 
 </body>
 </html>

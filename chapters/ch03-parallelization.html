@@ -47,28 +47,11 @@
 <p>并行化针对这两点给出了对称的解法。对付延迟：如果子任务之间互相独立，就没有理由排队——三路评审同时发出，总耗时从三倍压缩到一倍加一点汇合开销。对付随机性：如果失误是随机的，就让多次独立采样互相暴露——同一问题问五遍，三次说 A 两次说 B，多数派比任何单次采样都更可信。这两种用法（切分与投票）加一个收尾环节（聚合器），构成了并行化的全部骨架。</p>
 <h3 id="312-核心机制它如何工作">3.1.2 核心机制：它如何工作</h3>
 <p>并行化的执行由三个阶段构成。<strong>切分阶段</strong>决定怎么把工作拆开：切分可以按内容维度（一份技术方案拆成技术、安全、成本三路评审）、按数据块（长文档切成章节分别翻译）、或按采样次数（同一个问题独立采样 N 次）。切分的铁律是独立性：每一路在执行时不能依赖其他路的中间结果。<strong>执行阶段</strong>用线程池、异步协程或框架的并行原语把 N 个调用同时发出，并对每一路设置超时与失败隔离——一路崩了不影响其他路。<strong>归并阶段（join）</strong>是关键：N 份输出按三种语义之一合成一份——结果天然独立时按序拼接（分块翻译）；结果互为替代品时投票（多采样推理）；结果互为素材时交给一个聚合器模型融合裁决（多维评审意见）。归并阶段还必须回答一个工程问题：部分路失败时，整体算成功还是失败——这由 quorum（法定多数）语义决定。</p>
-<div class="mermaid">flowchart TD
-    IN["输入任务"] --> SP["切分：按维度 / 数据块 / 采样次数"]
-    SP --> W1["分支 1"]
-    SP --> W2["分支 2"]
-    SP --> W3["分支 N"]
-    W1 --> J["join 归并：拼接 / 投票 / 聚合器"]
-    W2 --> J
-    W3 --> J
-    J -->|"成功路数达到 quorum"| OUT["最终输出"]
-    J -->|"成功路数不足"| FB["整体失败或降级"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/f26bca6484a30b7f-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/f26bca6484a30b7f-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-3-1">图 3-1：并行化的三阶段结构——切分前验证"真独立"，执行时单路失败只影响自己，join 点显式实现 quorum 语义：缺席的路不允许被静默当作已评审。</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;并行化：三路并发投票，quorum 达成即提前终止&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;task&quot;, &quot;label&quot;: &quot;任务&quot;, &quot;x&quot;: 68, &quot;y&quot;: 125, &quot;w&quot;: 70, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;fan&quot;, &quot;label&quot;: &quot;切分&quot;, &quot;x&quot;: 218, &quot;y&quot;: 125, &quot;w&quot;: 76, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;w1&quot;, &quot;label&quot;: &quot;采样 1&quot;, &quot;x&quot;: 420, &quot;y&quot;: 52, &quot;w&quot;: 84, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;w2&quot;, &quot;label&quot;: &quot;采样 2&quot;, &quot;x&quot;: 420, &quot;y&quot;: 125, &quot;w&quot;: 84, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;w3&quot;, &quot;label&quot;: &quot;采样 3&quot;, &quot;x&quot;: 420, &quot;y&quot;: 198, &quot;w&quot;: 84, &quot;h&quot;: 38}, {&quot;id&quot;: &quot;vote&quot;, &quot;label&quot;: &quot;join 投票&quot;, &quot;x&quot;: 628, &quot;y&quot;: 125, &quot;w&quot;: 118, &quot;h&quot;: 62, &quot;shape&quot;: &quot;diamond&quot;}], &quot;edges&quot;: [[&quot;task&quot;, &quot;fan&quot;], [&quot;fan&quot;, &quot;w1&quot;], [&quot;fan&quot;, &quot;w2&quot;], [&quot;fan&quot;, &quot;w3&quot;], [&quot;w1&quot;, &quot;vote&quot;], [&quot;w2&quot;, &quot;vote&quot;], [&quot;w3&quot;, &quot;vote&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;同一问题独立采样三路并发：互不依赖，失败互不传染。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;task&quot;, &quot;to&quot;: &quot;fan&quot;, &quot;note&quot;: &quot;任务到达，按采样次数切分三路&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;fan&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;切分铁律：三路不得依赖彼此的中间结果&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;fan&quot;, &quot;to&quot;: &quot;w1&quot;, &quot;note&quot;: &quot;三路同时发出（并发执行）&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;fan&quot;, &quot;to&quot;: &quot;w2&quot;, &quot;note&quot;: &quot;每路独立调用一次模型&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;fan&quot;, &quot;to&quot;: &quot;w3&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;w3&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;第 3 路超时失败——失败隔离，其余两路照常&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;w1&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;第 1 路返回候选答案&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;w1&quot;, &quot;to&quot;: &quot;vote&quot;, &quot;note&quot;: &quot;票 1 到达 join 点，计入&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;w2&quot;, &quot;to&quot;: &quot;vote&quot;, &quot;note&quot;: &quot;票 2 计入：2 票已达 quorum（2/3 多数）&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;vote&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;多数已定——提前终止，不再重试第 3 路&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;省算力：第 3 路不重发、join 不空等，省下一次模型调用与全部等待时间。&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：quorum 让并发对失败免疫——缺席的路不许静默充数，也不必为它拖住整体。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-3-1">演示 3-1：并行化的执行流程——三路并发、单路失败被隔离、quorum 达成即提前终止省算力（点「▶ 播放」逐步观看）</div>
-<div class="mermaid">stateDiagram-v2
-    [*] --> 待切分
-    待切分 --> 运行中: 切分校验通过，各路并发下发
-    运行中 --> 失败重试: 单路超时或报错
-    失败重试 --> 运行中: 重试预算内重发该路
-    运行中 --> 成功: 该路产出候选结果
-    成功 --> 已汇合: 成功路数达到 quorum
-    失败重试 --> 已汇合: 其余路已达 quorum，该路被放弃
-    已汇合 --> [*]: 输出最终结果</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/6fbd645a291b9190-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/6fbd645a291b9190-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-3-2">图 3-2：单个并行子任务的状态机——失败只滞留该路自己；join 点按 quorum 收束，允许"带缺席"汇合而不静默充数。</div>
 <h3 id="313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</h3>
 <p>并行化与提示链（<a href="../chapters/ch01-prompt-chaining.html">第 1 章</a>）互为补充：链是纵向的顺序骨架，并行化是链上某个节点的横向展开——"带并行分支的链"就是两者的复合。投票与反思（<a href="../chapters/ch04-reflection.html">第 4 章</a>）是提升输出质量的两种路径：反思让模型自查一次，投票让多次独立生成互相印证，实践常在投票之后再接一轮反思做最终裁决。多智能体协作（<a href="../chapters/ch07-multi-agent.html">第 7 章</a>）可以看作并行化的组织形态升级：从"一把任务撒给 N 个无差别的调用"升级为"分工、角色与协调"。聚合器与评估监控（<a href="../chapters/ch19-evaluation-monitoring.html">第 19 章</a>）共享一套思想：如何为多个输出建立可比的评价尺度。</p>
@@ -401,7 +384,7 @@ return top
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#31-模式概述">3.1 模式概述</a></li><li class="toc-l3"><a href="#311-问题背景为什么需要这个模式">3.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#312-核心机制它如何工作">3.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#313-与相邻模式的关系与组合">3.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#32-源起它从哪里来">3.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#33-发挥的作用为什么重要">3.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#34-实际应用与案例">3.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#35-深度讲解">3.5 深度讲解</a></li><li class="toc-l3"><a href="#351-怎么用运用判断">3.5.1 怎么用：运用判断</a></li><li class="toc-l2"><a href="#36-工程落地核心源码与讲解">3.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#361-框架无关实现按序拼接即完整可运行">3.6.1 框架无关实现（按序拼接即完整可运行）</a></li><li class="toc-l3"><a href="#362-框架差异速览langchain-lcel">3.6.2 框架差异速览（LangChain LCEL）</a></li><li class="toc-l3"><a href="#363-生产化改造清单">3.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#37-概览-核心要点-结论">3.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#371-本章小结">3.7.1 本章小结</a></li><li class="toc-l3"><a href="#372-核心要点">3.7.2 核心要点</a></li><li class="toc-l3"><a href="#373-结论">3.7.3 结论</a></li><li class="toc-l2"><a href="#38-延伸阅读与参考链接">3.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>

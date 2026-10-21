@@ -46,35 +46,11 @@
 <p>把一个二十步的任务直接交给模型逐步处理，会同时踩中三个陷阱。其一是组合漂移：每步决策都是独立采样，模型对"全局目标"的把握随上下文变长而稀释，走到第八步时常常已经忘了第三步为什么那么做。其二是错误累积：前面步骤的小偏差不被察觉，后续在错误的前提下继续建设，成品与目标相去甚远。其三是不可观测：没有显式的中间结构，失败时无法定位坏在哪一环，也无法告诉用户"完成了多少"。这三个陷阱的共同根源是"计划只存在于模型的隐式状态里"。规划模式的做法是把计划显式化：行动之前先产出一份子任务清单作为一等公民的数据结构，执行时逐项核对状态，发现偏差时带着证据修订。计划一旦显式，<strong>进度可报、失败可定位、修订有据</strong>——长程任务从"赌模型状态够稳"变成"管理一份可审计的工作分解结构"。</p>
 <h3 id="612-核心机制它如何工作">6.1.2 核心机制：它如何工作</h3>
 <p>规划模式的最小系统有四个部件。计划生成：把目标交给模型，产出结构化的子任务清单（通常是带顺序或依赖的 JSON 数组），每条子任务应在执行器能力范围内。执行：按序或按依赖拓扑执行，每项产出结果与状态。状态跟踪：维护每个子任务的状态（待办/完成/失败）与已完成产出，这是后续一切决策的依据。重规划：触发条件命中时——子任务反复失败、观察与计划假设不符、环境变化、预算超限——带着已完成状态与失败证据重新生成剩余计划。两个贯穿全局的设计决策是：计划与执行分离到什么程度（一次性全计划，还是边走边计划）；计划写到多细（细到每条工具调用，还是粗到里程碑）。这两问没有普适答案，6.5 节展开这些权衡。</p>
-<div class="mermaid">flowchart TD
-    G["目标"] --> P["计划生成"]
-    P --> SV{"结构验证"}
-    SV -->|"不通过：带错误重试"| P
-    SV -->|"通过"| EX["按依赖执行子任务"]
-    EX --> T{"重规划触发器"}
-    T -->|"未触发"| EX
-    T -->|"反复失败 / 假设证伪 / 环境变化 / 预算越界"| RP["带证据局部重规划"]
-    RP --> EX
-    EX -->|"全部完成"| S["成功交付"]
-    T -->|"重规划次数耗尽"| F["如实报告失败"]</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/284b541fb424c27f-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/284b541fb424c27f-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-6-1">图 6-1：规划状态机——计划生成、结构验证、执行跟踪与带证据重规划（重规划次数设硬上限）</div>
 <div class="anim-wrap"><div class="anim-demo" data-spec="{&quot;title&quot;: &quot;规划：三步计划、第 2 步失败、带证据重规划换路径&quot;, &quot;w&quot;: 760, &quot;h&quot;: 250, &quot;nodes&quot;: [{&quot;id&quot;: &quot;goal&quot;, &quot;label&quot;: &quot;目标&quot;, &quot;x&quot;: 65, &quot;y&quot;: 125, &quot;w&quot;: 70, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;plan&quot;, &quot;label&quot;: &quot;规划器&quot;, &quot;x&quot;: 218, &quot;y&quot;: 125, &quot;w&quot;: 92, &quot;h&quot;: 42}, {&quot;id&quot;: &quot;exe&quot;, &quot;label&quot;: &quot;执行器&quot;, &quot;x&quot;: 432, &quot;y&quot;: 125, &quot;w&quot;: 90, &quot;h&quot;: 42}, {&quot;id&quot;: &quot;done&quot;, &quot;label&quot;: &quot;交付&quot;, &quot;x&quot;: 662, &quot;y&quot;: 52, &quot;w&quot;: 70, &quot;h&quot;: 38, &quot;shape&quot;: &quot;pill&quot;}, {&quot;id&quot;: &quot;rep&quot;, &quot;label&quot;: &quot;重规划 带证据&quot;, &quot;x&quot;: 652, &quot;y&quot;: 198, &quot;w&quot;: 132, &quot;h&quot;: 42}], &quot;edges&quot;: [[&quot;goal&quot;, &quot;plan&quot;], [&quot;plan&quot;, &quot;exe&quot;], [&quot;exe&quot;, &quot;done&quot;], [&quot;exe&quot;, &quot;rep&quot;], [&quot;rep&quot;, &quot;exe&quot;]], &quot;steps&quot;: [{&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;规划模式：先出计划，再按依赖执行；失败带证据重规划，而不是推倒重来。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;goal&quot;, &quot;to&quot;: &quot;plan&quot;, &quot;note&quot;: &quot;目标交给规划器&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;plan&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;产出三步计划：抓取页面 → 解析数据 → 入库&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;plan&quot;, &quot;to&quot;: &quot;exe&quot;, &quot;note&quot;: &quot;结构验证通过，计划交执行器按序执行&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;exe&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;步骤 1 完成：页面抓取成功，状态记为已完成&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;exe&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;步骤 2 失败：页面改版，解析选择器全部落空&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;重规划触发器命中：子任务失败 + 观察与计划假设不符。&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;exe&quot;, &quot;to&quot;: &quot;rep&quot;, &quot;cls&quot;: &quot;err&quot;, &quot;note&quot;: &quot;带证据上报：错误日志 + 各步状态&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;rep&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;局部重规划：保留步骤 1 成果，只为剩余步骤换路径&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;rep&quot;, &quot;to&quot;: &quot;exe&quot;, &quot;note&quot;: &quot;新计划：改用结构化接口取数，替换原步骤 2、3&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;exe&quot;, &quot;cls&quot;: &quot;hl&quot;, &quot;note&quot;: &quot;新路径执行成功：接口返回结构化数据&quot;}, {&quot;t&quot;: &quot;tok&quot;, &quot;from&quot;: &quot;exe&quot;, &quot;to&quot;: &quot;done&quot;, &quot;note&quot;: &quot;计划全部完成&quot;}, {&quot;t&quot;: &quot;hl&quot;, &quot;node&quot;: &quot;done&quot;, &quot;cls&quot;: &quot;ok&quot;, &quot;note&quot;: &quot;交付：一次失败只损失一次尝试，不是整场任务&quot;}, {&quot;t&quot;: &quot;note&quot;, &quot;text&quot;: &quot;要点：状态跟踪让重规划带着已完成产出与失败证据走；重规划次数设硬上限，防止「计划—失败」死循环烧预算。&quot;}]}"><div class="adp-stage"></div><div class="adp-ctrl"><span class="adp-note"></span><span class="adp-step"></span></div></div></div>
 <div class="fig-caption demo-cap" id="demo-6-1">演示 6-1：规划模式的执行流程——三步计划、第 2 步失败、带证据重规划换路径后完成（点「▶ 播放」逐步观看）</div>
-<div class="mermaid">sequenceDiagram
-    participant P as 规划器
-    participant X as 执行器
-    participant T as 工具
-    P->>X: 下发三步计划（结构验证已通过）
-    X->>T: 执行步骤 1：抓取页面
-    T-->>X: 成功，状态记为已完成
-    X->>T: 执行步骤 2：解析数据
-    T-->>X: 失败：页面改版，选择器落空
-    X->>P: 带证据重规划：错误日志 + 各步状态
-    Note over P: 保留步骤 1 成果，为剩余步骤换路径
-    P->>X: 下发新计划
-    X->>T: 新路径执行剩余步骤
-    T-->>X: 全部成功
-    X-->>P: 计划完成，交付结果</div>
+<figure class="mermaid-img"><picture><source srcset="../assets/mermaid-svg/40553d9219c2b5fd-dark.svg" media="(prefers-color-scheme: dark)"><img src="../assets/mermaid-svg/40553d9219c2b5fd-light.svg" loading="lazy" alt="机制图"></picture></figure>
 <div class="fig-caption" id="fig-6-2">图 6-2：规划—执行—失败的时序视图——执行器只上报状态与证据，重规划由规划器带证据完成；换路径不推倒重来，已完成的产出全部保留。</div>
 <h3 id="613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</h3>
 <p>与 ReAct 的关系最微妙：ReAct 每步基于全部历史重新决策，规划隐式发生在模型内部，好处是适应快，坏处是全局一致性弱、每步昂贵。规划模式把它改成"一次计划、分步执行"，是互补而非替代——<strong>执行器内部常常就是一个 ReAct 循环</strong>。与工具使用是整体与局部：每条计划项的最小执行单元就是工具调用，计划验证的第一课是核对计划引用的工具是否真实存在。与反思是证据链：Reflexion 式的失败反思为重规划提供"为什么失败"的证据，没有反思的重规划只是换个姿势再赌一次。与 Tree of Thoughts 是搜索化：当"生成一份好计划"本身需要探索——分支、评估、回溯——规划就从序列生成升级为树搜索。与多智能体是分派：计划项是天然的分工单元，管理者智能体的核心工作就是把计划项派给合适的执行者（<a href="https://docs.crewai.com/">CrewAI</a> 的 hierarchical 模式即此形态）。</p>
@@ -403,7 +379,7 @@ if __name__ == &quot;__main__&quot;:
   <aside class="toc-rail"><nav class="toc"><div class="toc-title">本章目录</div><ul><li class="toc-l2"><a href="#61-模式概述">6.1 模式概述</a></li><li class="toc-l3"><a href="#611-问题背景为什么需要这个模式">6.1.1 问题背景：为什么需要这个模式</a></li><li class="toc-l3"><a href="#612-核心机制它如何工作">6.1.2 核心机制：它如何工作</a></li><li class="toc-l3"><a href="#613-与相邻模式的关系与组合">6.1.3 与相邻模式的关系与组合</a></li><li class="toc-l2"><a href="#62-源起它从哪里来">6.2 源起：它从哪里来</a></li><li class="toc-l2"><a href="#63-发挥的作用为什么重要">6.3 发挥的作用：为什么重要</a></li><li class="toc-l2"><a href="#64-实际应用与案例">6.4 实际应用与案例</a></li><li class="toc-l3"><a href="#真实世界实例">真实世界实例</a></li><li class="toc-l2"><a href="#65-深度讲解">6.5 深度讲解</a></li><li class="toc-l3"><a href="#651-计划执行分离-vs-交织一个光谱而非二选一">6.5.1 计划—执行分离 vs 交织：一个光谱而非二选一</a></li><li class="toc-l3"><a href="#652-计划粒度细到哪一步算合适">6.5.2 计划粒度：细到哪一步算合适</a></li><li class="toc-l3"><a href="#653-重规划触发条件与修订纪律">6.5.3 重规划触发条件与修订纪律</a></li><li class="toc-l3"><a href="#654-计划验证执行前与执行中">6.5.4 计划验证：执行前与执行中</a></li><li class="toc-l3"><a href="#655-失效模式与何时不要规划">6.5.5 失效模式与何时不要规划</a></li><li class="toc-l3"><a href="#656-怎么用运用判断">6.5.6 怎么用：运用判断</a></li><li class="toc-l2"><a href="#66-工程落地核心源码与讲解">6.6 工程落地：核心源码与讲解</a></li><li class="toc-l3"><a href="#661-框架无关实现片段-讲解">6.6.1 框架无关实现（片段 + 讲解）</a></li><li class="toc-l3"><a href="#662-框架差异速览crewai">6.6.2 框架差异速览（CrewAI）</a></li><li class="toc-l3"><a href="#663-生产化改造清单">6.6.3 生产化改造清单</a></li><li class="toc-l2"><a href="#67-概览-核心要点-结论">6.7 概览 / 核心要点 / 结论</a></li><li class="toc-l3"><a href="#671-本章小结">6.7.1 本章小结</a></li><li class="toc-l3"><a href="#672-核心要点">6.7.2 核心要点</a></li><li class="toc-l3"><a href="#673-结论">6.7.3 结论</a></li><li class="toc-l2"><a href="#68-延伸阅读与参考链接">6.8 延伸阅读与参考链接</a></li></ul></nav></aside>
 </div>
 <script src="../assets/app.js"></script>
-<script src="../assets/vendor-mermaid.min.js"></script>
+
 <script src="../assets/anim.js"></script>
 </body>
 </html>
