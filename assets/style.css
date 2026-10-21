@@ -288,3 +288,7 @@ body.anim-on .mermaid .relation {
 .adp-btn.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .adp-note { flex: 1; min-width: 160px; font-size: 14px; color: var(--ink); font-weight: 600; }
 .adp-step { color: var(--muted); font-size: 12px; }
+
+/* 预渲染 mermaid 图：<img> 按栏宽等比缩放居中；特宽图容器内横滚兜底（v1.4.3） */
+.mermaid-img { margin: 22px 0 6px; text-align: center; overflow-x: auto; }
+.mermaid-img img { max-width: 100%; height: auto; }
